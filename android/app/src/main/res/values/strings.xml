@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        تنظیمات اصلی برنامه
+        app_url: آدرس سرور سامانه مدیریت مسجد
+        توجه: آدرس زیر را به آدرس سرور خود تغییر دهید.
+        مثال: https://mosque.example.com
+        مقدار پیش‌فرض http://10.0.2.2:8000 برای تست روی شبیه‌ساز اندروید است
+        (10.0.2.2 از داخل شبیه‌ساز به localhost کامپیوتر شما اشاره می‌کند).
+    -->
+    <string name="app_name">سامانه مدیریت مسجد صاحب‌الزمان</string>
+    <string name="app_url">https://srbazgmnam849-creator.github.io/sahibolzaman-mosque/</string>
+
+    <string name="error_offline">اتصال به سامانه برقرار نشد. لطفاً اتصال اینترنت و آدرس سرور را بررسی کنید.</string>
+    <string name="retry">تلاش مجدد</string>
+    <string name="loading">در حال بارگذاری سامانه…</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    مسیرهای مجاز برای FileProvider (اشتراک‌گذاری فایل‌های آپلودی، مثلاً
+    تصاویر اسناد مسجد). اگر در آینده <provider> با
+    androidx.core.content.FileProvider به AndroidManifest اضافه کردید، این
+    فایل را به‌صورت android:resource="@xml/file_paths" معرفی کنید.
+-->
+<paths>
+    <!-- فایل‌های داخلی برنامه (internal storage) -->
+    <files-path
+        name="uploads"
+        path="." />
+    <!-- فایل‌های موقت (cache) -->
+    <cache-path
+        name="cache"
+        path="." />
+    <!-- حافظه خارجی اشتراکی -->
+    <external-storage-path
+        name="external_storage"
+        path="." />
+</paths>

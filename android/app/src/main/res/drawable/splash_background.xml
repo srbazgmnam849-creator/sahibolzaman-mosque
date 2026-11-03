@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    اسپلش‌اسکرین: پس‌زمینه سبز یکدست + لوگوی مسجد در مرکز.
+    توسط Theme.MosqueSplash در themes.xml استفاده می‌شود.
+    (فایل لوگو: res/drawable-nodpi/splash_logo.png)
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/primary" />
+    <item>
+        <bitmap
+            android:src="@drawable/splash_logo"
+            android:gravity="center" />
+    </item>
+</layer-list>

@@ -1,0 +1,61 @@
+name: Build Android APK (همگام با سایت)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'index.html'
+      - '.github/workflows/android-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
+      - name: Build APK (debug — installable)
+        working-directory: android
+        run: gradle :app:assembleDebug --no-daemon
+
+      - name: Publish APK to app/ (دانلود از داخل سایت)
+        run: |
+          mkdir -p app
+          cp android/app/build/outputs/apk/debug/app-debug.apk app/app.apk
+          VER=$(grep -o 'versionName "[^"]*"' android/app/build.gradle | head -1 | cut -d'"' -f2)
+          cp app/app.apk "app/MosqueSahibZaman-v${VER}.apk"
+          ls -la app/
+
+      - name: Commit & Push APK
+        run: |
+          git config user.name "android-build-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/
+          if git diff --cached --quiet; then
+            echo "APK unchanged"
+          else
+            git commit -m "build: APK v$(grep -o 'versionName "[^"]*"' android/app/build.gradle | head -1 | cut -d'"' -f2) — همگام با سایت"
+            for i in 1 2 3; do
+              git push && break || (sleep 10; git pull --rebase)
+            done
+          fi

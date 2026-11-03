@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- پالت رنگ سامانه مدیریت مسجد صاحب‌الزمان -->
+    <color name="primary">#183D30</color>      <!-- سبز زمردی تیره -->
+    <color name="primaryDark">#122C23</color>  <!-- نوار وضعیت / هدر -->
+    <color name="accent">#B49A60</color>       <!-- طلایی -->
+    <color name="bg">#F6F7F3</color>           <!-- پس‌زمینه بدنه -->
+    <color name="text">#26352D</color>         <!-- متن اصلی -->
+    <color name="white">#FFFFFF</color>
+</resources>

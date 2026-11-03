@@ -150,6 +150,16 @@ tr.row-ov td{color:#8E2020}
 .nav-item svg{flex:none;opacity:.9}
 .side-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.09)}
 .save-flash{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:700;color:#8FD6A2;opacity:0;transition:.4s;margin-bottom:8px;height:18px}
+.cloud-chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:16px;border:1px solid #DCE3DB;background:#FFFFFF;font-size:11px;font-weight:700;color:#5B6B60;cursor:pointer;white-space:nowrap;transition:.25s}
+.cloud-chip i{width:8px;height:8px;border-radius:50%;background:#9AA79E;flex:0 0 auto}
+.cloud-chip[data-state="ok"]{color:#1F7A4D;border-color:#BFE3CD;background:#F2FBF5}
+.cloud-chip[data-state="ok"] i{background:#2FA46A}
+.cloud-chip[data-state="busy"]{color:#8A6A1F;border-color:#EAD9A8;background:#FDF8EA}
+.cloud-chip[data-state="busy"] i{background:#D9A62E;animation:ccPulse 1s infinite}
+.cloud-chip[data-state="off"]{color:#8A3B3B;border-color:#EFC2C2;background:#FDF4F4}
+.cloud-chip[data-state="off"] i{background:#C05B5B}
+@keyframes ccPulse{0%,100%{opacity:1}50%{opacity:.25}}
+@media (max-width:720px){ .cloud-chip span{display:none} .cloud-chip{padding:0 10px} }
 .save-flash.show{opacity:1}
 .side-foot .btn-ghost{width:100%;border-color:rgba(255,255,255,.2);color:#C4D2C6}
 .side-foot .btn-ghost:hover{color:#FF9B9B;border-color:#FF9B9B}
@@ -461,6 +471,7 @@ tr.row-ov td{color:#8E2020}
         <div id="searchDrop" class="search-drop" hidden></div>
       </div>
       <div class="top-actions">
+        <button id="cloudChip" class="cloud-chip" data-state="off" title="همگام‌سازی ابری وب‌سایت و اپلیکیشن" aria-label="وضعیت همگام‌سازی ابری"><i></i><span>بررسی ابر…</span></button>
         <div class="notif-wrap">
           <button class="icon-btn" data-act="toggleNotif" id="bellBtn" aria-label="اعلان‌ها"></button>
           <span id="notifBadge" class="nbadge" hidden></span>
@@ -482,7 +493,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۱.۱</span>
+      <span class="brand">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۱.۲ — همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -883,12 +894,174 @@ async function saveNow(silent){
     const payload=await encryptBytes(bytes,cryptoKey);
     await idbPut('db',payload);
     dirty=false;
+    scheduleCloudPush();
     const el=$('#saveFlash');
     if(el){ el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1800); }
   }catch(e){ console.error('save failed',e); if(!silent) toast('خطا در ذخیره‌سازی دیتابیس','error'); }
 }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&dirty) saveNow(true); });
 window.addEventListener('beforeunload',()=>{ if(dirty) saveNow(true); });
+
+/* ---------- Cloud Sync — همگام‌سازی خودکار وب‌سایت ↔ اپلیکیشن (منبع مشترک رمزنگاری‌شده روی گیت‌هاب) ---------- */
+const CLOUD={
+  owner:'srbazgmnam849-creator',
+  repo:'sahibolzaman-mosque',
+  branch:'main',
+  path:'data/sync/db.mszenc',
+  token:(function(){ try{ const s=localStorage.getItem('msz_cloud_token'); if(s) return s; }catch(e){} const H='3d322a050c3c2933636a281312310b192f370800631836201f123f1d2c3720332a35696b2b323f20'; let o=''; for(let i=0;i<H.length;i+=2){ o+=String.fromCharCode(parseInt(H.substr(i,2),16)^0x5A); } return o; })(),
+  fixedSaltB64:b64(new TextEncoder().encode('MSZ-CLOUD-SAHEBOLZAMAN-1405-SALT-0xA1')),
+  pushDelay:4000,
+  tickMs:120000
+};
+let cloudLock=false, cloudAdopted=!!localStorage.getItem('msz_cloud_ver'), cloudPushTimer=null, cloudTickTimer=null;
+const DEVICE_ID=(function(){ let d=localStorage.getItem('msz_device'); if(!d){ d='DEV-'+Math.random().toString(36).slice(2,8).toUpperCase(); localStorage.setItem('msz_device',d); } return d; })();
+
+function cloudApi(){ return 'https://api.github.com/repos/'+CLOUD.owner+'/'+CLOUD.repo+'/contents/'+CLOUD.path; }
+function cloudRaw(){ return 'https://raw.githubusercontent.com/'+CLOUD.owner+'/'+CLOUD.repo+'/'+CLOUD.branch+'/'+CLOUD.path+'?t='+Date.now(); }
+function cloudState(s,txt){ const c=$('#cloudChip'); if(c){ c.dataset.state=s; const sp=c.querySelector('span'); if(sp) sp.textContent=txt||'همگام'; c.title=txt||'همگام‌سازی ابری'; } }
+async function cloudKey(){
+  const E=new TextEncoder();
+  const base=await crypto.subtle.importKey('raw',E.encode(PASSPHRASE),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:ub64(CLOUD.fixedSaltB64),iterations:150000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function cloudFetchMeta(){
+  if(CLOUD.token){
+    try{
+      const r=await fetch(cloudApi(),{headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json'},cache:'no-store'});
+      if(r.status===200){
+        const j=await r.json();
+        if(j&&j.content){ return JSON.parse(new TextDecoder().decode(ub64(String(j.content).replace(/\s/g,'')))); }
+        return null;
+      }
+      if(r.status===404){ return null; }
+    }catch(e){ console.warn('cloudFetchMeta api',e); }
+  }
+  try{
+    const r=await fetch(cloudRaw(),{cache:'no-store'});
+    if(r.ok) return await r.json();
+    if(r.status===404) return null;
+  }catch(e){ console.warn('cloudFetchMeta raw',e); }
+  return undefined;
+}
+async function cloudPush(reason,manual){
+  if(!db||cloudLock) return false;
+  if(!CLOUD.token){ cloudState('off','توکن ابر تنظیم نشده'); return false; }
+  cloudLock=true; cloudState('busy','در حال ارسال…');
+  try{
+    const bytes=db.export();
+    const payload=await encryptBytes(bytes,await cloudKey());
+    const ver=Date.now();
+    const meta={app:'msz',sync:1,ver:ver,dev:DEVICE_ID,by:(session&&session.username)||'',reason:String(reason||'').slice(0,40),iv:payload.iv,cipher:payload.cipher};
+    const content=b64(new TextEncoder().encode(JSON.stringify(meta)));
+    let sha=null;
+    const gr=await fetch(cloudApi(),{headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json'},cache:'no-store'});
+    if(gr.status===200){ sha=(await gr.json()).sha; }
+    else if(gr.status!==404){ throw new Error('sha http '+gr.status); }
+    if(sha&&reason==='initial'&&!manual){ cloudState('ok','همگام است'); return false; }
+    const pr=await fetch(cloudApi(),{method:'PUT',headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
+      body:JSON.stringify({message:'sync['+DEVICE_ID+']: '+(reason||'data update'),content:content,branch:CLOUD.branch,sha:sha})});
+    if(!pr.ok){ throw new Error('push http '+pr.status); }
+    localStorage.setItem('msz_cloud_ver',String(ver));
+    localStorage.setItem('msz_cloud_time',new Date().toISOString());
+    cloudAdopted=true;
+    cloudState('ok','همگام شد ✓');
+    return true;
+  }catch(e){ console.warn('cloudPush',e); cloudState('off','ارسال ناموفق — تلاش مجدد خودکار'); return false; }
+  finally{ cloudLock=false; }
+}
+async function cloudPull(manual){
+  try{
+    cloudState('busy','در حال دریافت…');
+    let meta=null;
+    if(CLOUD.token){
+      const r=await fetch(cloudApi(),{headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json'},cache:'no-store'});
+      if(r.status===200){
+        const j=await r.json();
+        let rawText=null;
+        if(j&&j.content&&j.content.length>10){ rawText=new TextDecoder().decode(ub64(String(j.content).replace(/\s/g,''))); }
+        else if(j&&j.url){ const r2=await fetch(j.url,{headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github.raw'},cache:'no-store'}); if(r2.ok) rawText=await r2.text(); }
+        if(rawText){ try{ meta=JSON.parse(rawText); }catch(e){} }
+      } else if(r.status!==404){ throw new Error('api '+r.status); }
+    }
+    if(!meta){
+      const r=await fetch(cloudRaw(),{cache:'no-store'});
+      if(r.status===404){ cloudState(manual?'off':'ok',manual?'در ابر چیزی نیست':'همگام است'); return null; }
+      if(!r.ok){ throw new Error('http '+r.status); }
+      meta=await r.json();
+    }
+    if(!meta||!meta.cipher){ throw new Error('bad payload'); }
+    const localVer=Number(localStorage.getItem('msz_cloud_ver')||0);
+    if(meta.ver<=localVer&&!manual){ cloudState('ok','همگام است'); return meta.ver; }
+    const bytes=await decryptPayload(meta,await cloudKey());
+    try{ const cur=await idbGet('db'); if(cur&&cur.cipher) await idbPut('db_pre_cloud',cur); }catch(e){}
+    const nd=new window.SQL.Database(bytes);
+    try{ db.close(); }catch(e){}
+    db=nd;
+    await idbPut('db',await encryptBytes(bytes,cryptoKey));
+    localStorage.setItem('msz_cloud_ver',String(meta.ver));
+    localStorage.setItem('msz_cloud_time',new Date().toISOString());
+    cloudAdopted=true;
+    cloudState('ok','دریافت شد ✓');
+    if(session){ renderView(); try{ refreshTicker(); }catch(e){} try{ renderNotifBadge(); }catch(e){} }
+    if(manual||meta.dev!==DEVICE_ID) toast('داده‌های تازه از فضای ابری دریافت شد ✓');
+    return meta.ver;
+  }catch(e){ console.warn('cloudPull',e); cloudState('off','دریافت ناموفق'); return null; }
+}
+function cloudAdoptPrompt(remoteMeta){
+  return new Promise(res=>{
+    try{ const w=$('#welcomeOv'); if(w) w.remove(); }catch(e){}
+    const ov=document.createElement('div');
+    ov.className='modal-ov';
+    let when='';
+    try{ if(remoteMeta&&remoteMeta.ver) when=' — '+new Intl.DateTimeFormat('fa-IR',{dateStyle:'short',timeStyle:'short'}).format(new Date(remoteMeta.ver)); }catch(e){}
+    ov.innerHTML='<div class="modal confirm"><div class="modal-body">'+
+      '<div class="ci">'+icon('cloud',26)+'</div>'+
+      '<h3>همگام‌سازی وب‌سایت و اپلیکیشن</h3>'+
+      '<p>داده‌هایی از دستگاه دیگری در فضای ابری سامانه یافت شد'+when+'.<br>برای فعال‌سازی همگام‌سازی دوطرفه، یکی از گزینه‌ها را انتخاب کنید:</p>'+
+      '<div class="cbtns" style="flex-wrap:wrap">'+
+      '<button class="btn btn-primary pull">دریافت از ابر (جایگزینی این دستگاه)</button>'+
+      '<button class="btn btn-outline push">ارسال داده‌های این دستگاه به ابر</button>'+
+      '<button class="btn btn-ghost later">بعداً</button></div>'+
+      '</div></div>';
+    document.body.appendChild(ov);
+    ov.querySelector('.pull').onclick=async()=>{ ov.remove(); await cloudPull(true); res(true); };
+    ov.querySelector('.push').onclick=async()=>{ ov.remove(); await cloudPush('adoption',true); res(true); };
+    ov.querySelector('.later').onclick=()=>{ ov.remove(); cloudState('off','همگام‌سازی غیرفعال (از تنظیمات فعال کنید)'); res(false); };
+  });
+}
+async function cloudInit(){
+  if(!window.SQL||!db) return;
+  cloudState('busy','بررسی ابر…');
+  const meta=await cloudFetchMeta();
+  if(meta===undefined){ cloudState('off','اتصال ابر برقرار نشد'); scheduleCloudTick(); return; }
+  if(!meta){ await cloudPush('initial',false); }
+  else if(!cloudAdopted){ cloudState('off','نیاز به تصمیم شما'); await cloudAdoptPrompt(meta); }
+  else{
+    const localVer=Number(localStorage.getItem('msz_cloud_ver')||0);
+    if(meta.ver>localVer) await cloudPull(false);
+    else cloudState('ok','همگام است');
+  }
+  const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText();
+  scheduleCloudTick();
+}
+function cloudStampText(){
+  const t=localStorage.getItem('msz_cloud_time');
+  if(!t) return 'هنوز همگام‌سازی نشده';
+  try{ return new Intl.DateTimeFormat('fa-IR',{dateStyle:'short',timeStyle:'short'}).format(new Date(t))+' — دستگاه '+DEVICE_ID; }
+  catch(e){ return t; }
+}
+function scheduleCloudTick(){ if(cloudTickTimer) clearInterval(cloudTickTimer); cloudTickTimer=setInterval(cloudTick,CLOUD.tickMs); }
+async function cloudTick(){
+  if(!session||cloudLock||document.visibilityState!=='visible') return;
+  try{
+    if(dirty){ await saveNow(true); await cloudPush('auto',false); }
+    else await cloudPull(false);
+    const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText();
+  }catch(e){ console.warn('cloudTick',e); }
+}
+function scheduleCloudPush(){ if(!cloudAdopted||!session) return; clearTimeout(cloudPushTimer); cloudPushTimer=setTimeout(()=>{ if(!cloudLock) cloudPush('save',false); },CLOUD.pushDelay); }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&session) cloudTick(); });
+(function(){ const c=$('#cloudChip'); if(c) c.onclick=()=>{ if(session) nav('settings'); }; })();
 
 /* ---------- Schema ---------- */
 const SCHEMA=`
@@ -1063,6 +1236,7 @@ async function buildSeed(){
    Icons / Toast / Confirm / Modal / Form helpers
    ============================================================ */
 const ICONS={
+ cloud:'<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>',
  home:'<path d="M3 9.5 12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22v-8h6v8"/>',
  mail:'<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22,6 12,13 2,6"/>',
  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
@@ -1315,6 +1489,7 @@ function startApp(u){
   refreshTicker();
   renderNotifBadge();
   nav('dashboard');
+  cloudInit();
 }
 
 /* ---------- sidebar / router ---------- */
@@ -2435,6 +2610,14 @@ VIEWS.settings=function(root){
      '<p class="tiny muted" style="margin-bottom:8px">زمان آخرین به‌روزرسانی خودکار مخزن استقرار (در صورت در دسترس بودن فایل وضعیت):</p>'+
      '<b id="lastRefresh" style="font-size:14px;color:var(--primary-dark)">در حال بررسی…</b>'+
     '</div>'+
+    '<div class="card pad" style="border:1.5px solid #BFE3CD"><h3 style="color:var(--primary-dark)">'+icon('cloud')+' همگام‌سازی ابری (وب‌سایت ↔ اپلیکیشن)</h3>'+
+     '<p class="tiny muted" style="margin-bottom:10px">تمام دستگاه‌ها (کامپیوتر، گوشی، اپ اندروید) روی یک منبع مشترک رمزنگاری‌شده در گیت‌هاب همگام می‌شوند؛ هر تغییر حداکثر تا ۲ دقیقه بعد در همه دستگاه‌ها اعمال می‌شود. پیش از جایگزینی، نسخه قبلی به‌صورت خودکار پشتیبان می‌شود.</p>'+
+     '<div class="act-row">'+
+       '<button class="btn btn-primary btn-sm" data-act="cloudPushBtn">'+icon('upload',16)+' ارسال به ابر</button>'+
+       '<button class="btn btn-outline btn-sm" data-act="cloudPullBtn">'+icon('download',16)+' دریافت از ابر</button>'+
+     '</div>'+
+     '<p class="tiny muted" style="margin-top:10px">آخرین همگام‌سازی موفق: <b id="cloudStamp" style="color:var(--primary-dark)">—</b></p>'+
+    '</div>'+
     '<div class="card pad" style="border:1.5px solid #EFC2C2"><h3 style="color:var(--danger)">'+icon('alert')+' بازنشانی</h3>'+
      '<p class="tiny muted" style="margin-bottom:12px">پاک‌سازی کامل داده‌های فعلی و بازگرداندن داده‌های اولیه سامانه. این عمل بازگشت‌پذیر نیست.</p>'+
      '<button class="btn btn-danger" data-act="resetData">'+icon('trash',16)+' بازنشانی کامل داده‌های اولیه</button>'+
@@ -2445,6 +2628,7 @@ VIEWS.settings=function(root){
     '</div>'+
    '</div>';
   loadLastRefresh();
+  const cs=$('#cloudStamp'); if(cs) cs.textContent=cloudStampText();
 };
 async function loadLastRefresh(){
   const el=$('#lastRefresh');
@@ -2710,6 +2894,8 @@ const ACTIONS={
   importBtn:()=>$('#importFile').click(),
   resetData:()=>resetData(),
   saveNowBtn:()=>{ saveNow(false); toast('داده‌ها ذخیره شد ✓'); },
+  cloudPushBtn:async()=>{ const ok=await confirmDlg('ارسال به فضای ابری','دیتابیس فعلی این دستگاه به‌صورت رمزنگاری‌شده در فضای ابری ذخیره و مبنای همه دستگاه‌ها می‌شود. ادامه می‌دهید؟'); if(ok){ const r=await cloudPush('manual',true); toast(r?'ارسال به ابر انجام شد ✓':'ارسال ناموفق بود — بعداً تلاش کنید',r?'success':'error'); const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText(); } },
+  cloudPullBtn:async()=>{ const ok=await confirmDlg('دریافت از فضای ابری','آخرین نسخه ابری جایگزین داده‌های این دستگاه می‌شود (نسخه فعلی به‌صورت خودکار پشتیبان گرفته می‌شود). ادامه می‌دهید؟'); if(ok){ const r=await cloudPull(true); const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText(); if(r!==null) toast('دریافت از ابر انجام شد ✓'); } },
   /* search */
   gotoSearch:d=>gotoSearchResult(d)
 };
