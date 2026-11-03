@@ -1,0 +1,2459 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سامانه جامع مدیریت مسجد صاحب‌الزمان</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#245743;--primary-dark:#183D30;--gold:#B49A60;--bg:#F6F7F3;--text:#26352D;
+  --card:#FFFFFF;--muted:#6B7A70;--border:#E3E8E2;--soft:#EEF2EC;
+  --success:#2E7D32;--success-bg:#E6F2E7;--danger:#C62828;--danger-bg:#FBE9E9;
+  --warning:#B26A00;--warning-bg:#FBF1E2;--info:#1F6E63;--info-bg:#E5F0EE;
+  --radius:14px;--shadow:0 1px 2px rgba(24,61,48,.06),0 6px 20px rgba(24,61,48,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Vazirmatn',Tahoma,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.7}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit}
+a{color:var(--primary)}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.tiny{font-size:11px}
+b,strong{font-weight:700}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#C7D2CA;border-radius:8px}
+::-webkit-scrollbar-thumb:hover{background:#A9B8AE}
+.scroll-y{max-height:380px;overflow-y:auto;padding-left:4px}
+
+/* ---------- Loading overlay ---------- */
+.load-ov{position:fixed;inset:0;background:linear-gradient(160deg,#F6F7F3,#E7EDE6);display:flex;align-items:center;justify-content:center;z-index:99999}
+.load-box{text-align:center;padding:32px}
+.spinner{width:52px;height:52px;border:5px solid var(--soft);border-top-color:var(--primary);border-radius:50%;margin:0 auto 18px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-box .t1{font-size:17px;font-weight:700;color:var(--primary-dark)}
+.load-box .t2{font-size:13px;color:var(--muted);margin-top:8px}
+.dome-mini{width:64px;height:64px;margin:0 auto 14px}
+
+/* ---------- Toasts ---------- */
+.toast-wrap{position:fixed;top:16px;left:16px;z-index:100000;display:flex;flex-direction:column;gap:8px;max-width:min(92vw,380px)}
+.toast{display:flex;align-items:center;gap:10px;background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 8px 30px rgba(24,61,48,.18);border-right:4px solid var(--primary);font-weight:600;font-size:13px;animation:tin .3s ease}
+.toast.success{border-right-color:var(--success)}.toast.success svg{color:var(--success)}
+.toast.error{border-right-color:var(--danger)}.toast.error svg{color:var(--danger)}
+.toast.info{border-right-color:var(--info)}.toast.info svg{color:var(--info)}
+.toast.out{opacity:0;transform:translateY(-8px);transition:.3s}
+@keyframes tin{from{opacity:0;transform:translateY(-10px)}to{opacity:1}}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;transition:.18s;min-height:44px;text-decoration:none}
+.btn svg{flex:none}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(36,87,67,.25)}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-outline{background:#fff;color:var(--primary);border:1.5px solid var(--primary)}
+.btn-outline:hover{background:var(--soft)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#A02020}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border)}
+.btn-ghost:hover{color:var(--danger);border-color:var(--danger)}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-gold:hover{background:#9A8250}
+.btn-sm{padding:7px 13px;min-height:36px;font-size:12px;border-radius:8px}
+.btn-block{width:100%}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--muted);transition:.18s;position:relative;flex:none}
+.icon-btn:hover{color:var(--primary);border-color:var(--primary);background:var(--soft)}
+.icon-btn.danger:hover{color:var(--danger);border-color:var(--danger);background:var(--danger-bg)}
+
+/* ---------- Fields ---------- */
+.field{margin-bottom:14px;min-width:0}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--primary-dark);margin-bottom:6px}
+.inp{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;font-size:13.5px;background:#fff;color:var(--text);transition:.15s;min-height:44px}
+.inp:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(36,87,67,.12)}
+.inp[readonly]{background:var(--soft);color:var(--muted)}
+.inp.bad{border-color:var(--danger);background:var(--danger-bg)}
+textarea.inp{min-height:auto;resize:vertical}
+select.inp{appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7A70' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:34px}
+.ferr{color:var(--danger);font-size:11.5px;font-weight:600;min-height:16px;margin-top:3px}
+.frow2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fbar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:16px}
+.fbar .field{margin-bottom:0}
+.fbar .grow{flex:1;min-width:200px}
+.fbar .field{width:170px}
+.fbar .grow{width:auto}
+.file-row{display:flex;gap:8px;align-items:center}
+.file-row .inp{flex:1}
+.file-row label.btn{flex:none}
+.draft-hint{font-size:11px;color:var(--success);font-weight:700;min-height:16px;text-align:left}
+
+/* ---------- Cards & layout ---------- */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+.card.pad{padding:18px 20px}
+.card h3{font-size:15px;color:var(--primary-dark);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.page-head h2{font-size:20px;font-weight:800;color:var(--primary-dark)}
+.page-head p{font-size:12.5px;color:var(--muted)}
+.grid-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:16px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);border-right:4px solid var(--primary);display:flex;flex-direction:column;gap:4px}
+.stat-card.accent-gold{border-right-color:var(--gold)}
+.stat-card.accent-danger{border-right-color:var(--danger)}
+.stat-card.accent-info{border-right-color:var(--info)}
+.stat-card.accent-success{border-right-color:var(--success)}
+.stat-label{font-size:11.5px;color:var(--muted);font-weight:600}
+.stat-num{font-size:21px;font-weight:800;color:var(--primary-dark);line-height:1.4}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-2>.card{margin-bottom:0}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.empty{text-align:center;padding:34px 16px;color:var(--muted)}
+.empty svg{width:44px;height:44px;margin-bottom:10px;opacity:.5}
+.empty p{font-size:13px;font-weight:600}
+.c-success{color:var(--success)!important}.c-danger{color:var(--danger)!important}.c-gold{color:var(--gold)!important}
+.act-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.inline-box{background:var(--soft);border:1px dashed #CBD6CC;border-radius:12px;padding:14px;margin-top:12px}
+
+/* ---------- Badges ---------- */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+.b-neutral{background:#EDF1EC;color:#5C6B61}
+.b-info{background:var(--info-bg);color:var(--info)}
+.b-success{background:var(--success-bg);color:var(--success)}
+.b-danger{background:var(--danger-bg);color:var(--danger)}
+.b-warn{background:var(--warning-bg);color:var(--warning)}
+.b-gold{background:#F5EEDF;color:#8A7440}
+
+/* ---------- Tables ---------- */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.tbl{width:100%;border-collapse:collapse;min-width:680px}
+table.tbl th{background:var(--soft);color:var(--primary-dark);font-size:12px;font-weight:800;text-align:right;padding:11px 14px;white-space:nowrap}
+table.tbl td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-align:middle}
+table.tbl tbody tr{transition:.12s}
+table.tbl tbody tr:hover{background:#FAFBF8}
+tr.row-ov{background:var(--danger-bg)!important}
+tr.row-ov td{color:#8E2020}
+.ltr-num{color:var(--primary);white-space:nowrap}
+
+/* ---------- Sidebar ---------- */
+.app{display:flex;min-height:100vh}
+.sidebar{width:262px;flex:none;background:var(--primary-dark);color:#DDE7DF;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:70}
+.side-head{display:flex;align-items:center;gap:10px;padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.09)}
+.side-head .lg{width:42px;height:42px;background:rgba(255,255,255,.08);border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
+.side-head b{font-size:13.5px;line-height:1.5;display:block}
+.side-head small{font-size:10.5px;color:var(--gold);font-weight:600}
+#sideNav{flex:1;overflow-y:auto;padding:10px 10px}
+.nav-item{display:flex;align-items:center;gap:11px;width:100%;text-align:right;background:transparent;border:none;color:#C4D2C6;padding:11px 12px;border-radius:10px;font-size:13.5px;font-weight:600;margin-bottom:3px;transition:.15s;min-height:44px}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.nav-item svg{flex:none;opacity:.9}
+.side-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.09)}
+.save-flash{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:700;color:#8FD6A2;opacity:0;transition:.4s;margin-bottom:8px;height:18px}
+.save-flash.show{opacity:1}
+.side-foot .btn-ghost{width:100%;border-color:rgba(255,255,255,.2);color:#C4D2C6}
+.side-foot .btn-ghost:hover{color:#FF9B9B;border-color:#FF9B9B}
+.backdrop{display:none}
+
+/* ---------- Main column / topbar ---------- */
+.main-col{flex:1;min-width:0;display:flex;flex-direction:column;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:9px 18px}
+.hamburger{display:none}
+.vt{font-size:14px;font-weight:800;color:var(--primary-dark);white-space:nowrap}
+.search-wrap{flex:1;max-width:430px;position:relative;margin:0 4px}
+.search-wrap>svg{position:absolute;top:50%;right:12px;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+#gSearch{width:100%;border:1.5px solid var(--border);border-radius:999px;padding:9px 38px 9px 14px;font-size:13px;background:var(--bg);min-height:42px}
+#gSearch:focus{outline:none;border-color:var(--primary);background:#fff}
+.search-drop{position:absolute;top:calc(100% + 8px);right:0;left:0;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 40px rgba(24,61,48,.18);max-height:420px;overflow-y:auto;z-index:100}
+.sr-group{padding:8px 14px 3px;font-size:11px;font-weight:800;color:var(--gold)}
+.sr-item{display:block;width:100%;text-align:right;background:none;border:none;padding:9px 14px;font-size:12.5px;cursor:pointer;border-top:1px solid #F2F5F0}
+.sr-item:hover{background:var(--soft)}
+.sr-item b{color:var(--primary-dark)}
+.sr-item small{display:block;color:var(--muted);font-size:11px}
+.sr-empty{padding:18px;text-align:center;color:var(--muted);font-size:12px}
+.top-actions{display:flex;align-items:center;gap:10px;margin-right:auto}
+.notif-wrap{position:relative}
+.nbadge{position:absolute;top:-4px;left:-4px;background:var(--danger);color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.notif-panel{position:absolute;top:calc(100% + 10px);left:0;width:min(88vw,350px);background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 40px rgba(24,61,48,.2);z-index:100;overflow:hidden}
+.np-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border);font-weight:800;font-size:13px;color:var(--primary-dark)}
+.np-list{max-height:340px;overflow-y:auto}
+.notif-item{padding:11px 14px;border-top:1px solid #F2F5F0;position:relative}
+.notif-item:first-child{border-top:none}
+.notif-item.unread{background:#F4F9F4}
+.notif-item.unread:before{content:'';position:absolute;top:16px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--success)}
+.notif-item b{font-size:12.5px;color:var(--primary-dark)}
+.notif-item p{font-size:11.5px;color:var(--muted);margin:2px 0}
+.notif-item small{font-size:10px;color:#9AA8A0}
+.user-chip{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:999px;padding:5px 14px 5px 8px;max-width:250px}
+.user-chip .uc-av{width:34px;height:34px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
+.user-chip b{font-size:12.5px;display:block;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-chip small{font-size:10.5px;color:var(--muted);display:block;white-space:nowrap}
+.user-chip .uinfo{min-width:0}
+
+/* ---------- Ticker ---------- */
+.ticker{display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid var(--border);padding:0 18px;height:40px;overflow:hidden}
+.tk-label{background:var(--gold);color:#fff;font-size:11px;font-weight:800;padding:3px 12px;border-radius:999px;flex:none}
+.tk-viewport{flex:1;overflow:hidden;position:relative;height:100%;display:flex;align-items:center}
+.tk-track{display:inline-flex;gap:44px;white-space:nowrap;animation:tick 32s linear infinite;will-change:transform}
+.tk-item{font-size:12.5px;font-weight:600;color:var(--primary-dark);display:inline-flex;align-items:center;gap:7px}
+.tk-item svg{color:var(--gold)}
+.tk-item em{font-style:normal;color:var(--muted);font-size:11px}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(50%)}}
+
+/* ---------- View + footer ---------- */
+.view-root{flex:1;padding:20px 22px;max-width:1280px;width:100%;margin:0 auto}
+.app-foot{margin-top:auto;background:#fff;border-top:1px solid var(--border);padding:12px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.app-foot .brand{font-weight:800;color:var(--primary-dark)}
+
+/* ---------- Login ---------- */
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;background:linear-gradient(160deg,#F6F7F3 0%,#E7EDE6 60%,#DDE7DD 100%)}
+.login-card{background:#fff;border:1px solid var(--border);border-radius:20px;box-shadow:0 20px 60px rgba(24,61,48,.15);width:100%;max-width:440px;padding:32px 30px;position:relative}
+.login-card .lg-big{width:76px;height:76px;border-radius:22px;background:var(--primary);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 10px 24px rgba(36,87,67,.3)}
+.login-card h1{font-size:17.5px;font-weight:800;color:var(--primary-dark);text-align:center;line-height:1.8}
+.login-card .sub{text-align:center;color:var(--muted);font-size:12.5px;margin:6px 0 20px}
+.pw-wrap{position:relative}
+.pw-wrap .inp{padding-left:44px}
+.pw-eye{position:absolute;left:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:none;background:transparent;color:var(--muted);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.pw-eye:hover{color:var(--primary);background:var(--soft)}
+#loginErr{color:var(--danger);font-size:12px;font-weight:700;min-height:18px;margin-bottom:8px}
+.test-acc{margin-top:18px;border:1px dashed var(--border);border-radius:12px;background:#FBFCFA}
+.test-acc summary{padding:11px 14px;font-size:12px;font-weight:800;color:var(--primary);cursor:pointer;user-select:none}
+.test-acc .ta-warn{margin:0 14px;font-size:11px;font-weight:700;color:var(--warning);background:var(--warning-bg);border-radius:8px;padding:6px 10px}
+.test-acc .ta-body{max-height:300px;overflow-y:auto;margin:10px 14px 14px}
+.test-acc table{width:100%;border-collapse:collapse;font-size:11px;min-width:340px}
+.test-acc th{background:var(--soft);padding:7px 8px;color:var(--primary-dark);text-align:right}
+.test-acc td{padding:6px 8px;border-top:1px solid var(--border)}
+.test-acc code{font-size:10.5px;background:var(--soft);padding:2px 6px;border-radius:6px;direction:ltr;display:inline-block}
+.login-foot{margin-top:18px;font-size:11.5px;color:var(--muted)}
+
+/* ---------- Modal ---------- */
+.modal-ov{position:fixed;inset:0;background:rgba(24,61,48,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;animation:tin .2s ease}
+.modal{background:#fff;border-radius:18px;width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.3);animation:mup .22s ease}
+@keyframes mup{from{opacity:0;transform:translateY(14px)}to{opacity:1}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:15px 20px;border-bottom:1px solid var(--border)}
+.modal-head h3{font-size:15px;font-weight:800;color:var(--primary-dark)}
+.modal-body{padding:18px 20px;overflow-y:auto}
+.modal.confirm{max-width:420px}
+.confirm .modal-body{text-align:center;padding:26px 24px}
+.confirm .ci{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;background:var(--danger-bg);color:var(--danger)}
+.confirm h3{justify-content:center}
+.confirm p{color:var(--muted);font-size:13px}
+.confirm .cbtns{display:flex;gap:10px;margin-top:20px}
+.confirm .cbtns .btn{flex:1}
+
+/* ---------- Detail grid / comments ---------- */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 16px}
+.detail-grid>div{min-width:0}
+.detail-grid small{display:block;color:var(--muted);font-size:11px;margin-bottom:2px}
+.detail-grid b{font-size:13px;word-break:break-word}
+.detail-grid .span2{grid-column:span 3}
+.detail-grid p{font-size:13px}
+.thread{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.comment{background:var(--soft);border-radius:12px;padding:11px 14px}
+.c-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.c-head b{font-size:12.5px;color:var(--primary-dark)}
+.c-head small{color:var(--muted);font-size:10.5px;margin-right:auto}
+.comment p{font-size:12.5px}
+.chip{background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow)}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:16px}
+.chip b{display:block;font-size:13px;color:var(--primary-dark)}
+.chip small{color:var(--muted);font-size:11px}
+
+/* ---------- Calendar ---------- */
+.cal-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cal-nav b{font-size:15px;color:var(--primary-dark);min-width:110px;text-align:center}
+.seg{display:flex;background:var(--soft);border-radius:10px;padding:3px;gap:2px}
+.seg-btn{border:none;background:transparent;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;color:var(--muted);min-height:36px}
+.seg-btn.on{background:#fff;color:var(--primary);box-shadow:0 2px 6px rgba(24,61,48,.12)}
+.cal-week-head,.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-week-head div{text-align:center;font-size:11.5px;font-weight:800;color:var(--muted);padding:8px 2px;background:var(--soft)}
+.cal-week-head div:last-child{color:var(--danger)}
+.cal-grid{border-right:1px solid var(--border);border-top:1px solid var(--border)}
+.cal-cell{min-height:74px;border-left:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 8px;cursor:pointer;transition:.12s;background:#fff}
+.cal-cell:hover{background:var(--soft)}
+.cal-cell.blank{cursor:default;background:#FBFCFA}
+.cal-cell .cal-d{font-size:12.5px;font-weight:700;color:var(--primary-dark)}
+.cal-cell.today{background:#F2F7EF;box-shadow:inset 0 0 0 2px var(--gold);border-radius:4px}
+.cal-cell.today .cal-d{color:var(--gold)}
+.dots{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.d-primary{background:var(--primary)}.d-gold{background:var(--gold)}.d-info{background:var(--info)}.d-warn{background:var(--warning)}.d-success{background:var(--success)}
+.dot.more{background:#CBD6CC}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.week-col{border:1px solid var(--border);border-radius:12px;padding:10px 8px;min-height:180px;cursor:pointer;background:#fff}
+.week-col:hover{border-color:var(--primary)}
+.week-col.today{box-shadow:inset 0 0 0 2px var(--gold)}
+.week-col .wh{font-size:11.5px;font-weight:800;color:var(--primary-dark);text-align:center;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:8px}
+.week-col .wh small{display:block;font-weight:600;color:var(--muted)}
+.wk-ev{font-size:10.5px;border-right:3px solid var(--primary);border-radius:6px;background:var(--soft);padding:5px 7px;margin-bottom:6px}
+.wk-ev small{display:block;color:var(--muted)}
+.day-list{display:flex;flex-direction:column;gap:10px}
+.day-ev{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--border);border-right:4px solid var(--primary);border-radius:12px;padding:12px 14px;background:#fff}
+.day-ev.d-gold{border-right-color:var(--gold)}.day-ev.d-info{border-right-color:var(--info)}.day-ev.d-warn{border-right-color:var(--warning)}.day-ev.d-success{border-right-color:var(--success)}
+.day-ev b{font-size:13.5px}
+.day-ev small{display:block;color:var(--muted);font-size:11.5px}
+.cal-day-title{font-size:15px;font-weight:800;color:var(--primary-dark);margin-bottom:14px}
+
+/* ---------- Reminders & logs ---------- */
+.rem-list,.log-list{list-style:none}
+.rem-list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;margin-bottom:8px;font-size:12.5px}
+.rem-list li small{display:block;color:var(--muted);font-size:11px}
+.rem-soon{background:var(--warning-bg);border:1px solid #EAD3AE}
+.rem-ov{background:var(--danger-bg);border:1px solid #EFC2C2;color:#8E2020}
+.rem-ov small{color:#B06A6A!important}
+.log-list li{display:flex;gap:10px;align-items:flex-start;padding:9px 2px;border-bottom:1px dashed var(--border);font-size:12.5px}
+.log-list li:last-child{border-bottom:none}
+.log-list small{display:block;color:var(--muted);font-size:10.5px}
+.log-list .badge{flex:none;margin-top:2px}
+
+/* ---------- Bars & charts ---------- */
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12px}
+.bar-row .bl{width:130px;flex:none;color:var(--primary-dark);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-row .bar-track{flex:1;height:20px;background:var(--soft);border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;background:linear-gradient(270deg,var(--primary),#3A7A5F);display:flex;align-items:center;justify-content:flex-end;min-width:2px}
+.bar-fill.red{background:linear-gradient(270deg,var(--danger),#D96A6A)}
+.bar-fill.gold{background:linear-gradient(270deg,var(--gold),#CBAE72)}
+.bar-fill.info{background:linear-gradient(270deg,var(--info),#4E9388)}
+.bar-row .bv{width:44px;flex:none;font-weight:800;color:var(--primary-dark);text-align:left}
+.month-chart{display:flex;gap:10px;align-items:flex-end;justify-content:space-around;padding:10px 0 0;min-height:190px}
+.mcol{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1}
+.mbars{display:flex;gap:5px;align-items:flex-end;height:140px}
+.mb{width:16px;border-radius:6px 6px 0 0;min-height:3px;display:block}
+.mb.inc{background:linear-gradient(180deg,#3A9A4E,var(--success))}
+.mb.exp{background:linear-gradient(180deg,#E06666,var(--danger))}
+.mcol small{font-size:10.5px;color:var(--muted);font-weight:700;text-align:center}
+.legend{display:flex;gap:16px;font-size:11px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-left:5px}
+
+/* ---------- Attendance ---------- */
+.att-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px}
+.att-row:last-child{border-bottom:none}
+.att-btns{display:flex;gap:6px}
+.att-btn{border:1.5px solid var(--border);background:#fff;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;color:var(--muted);min-height:36px}
+.att-btn.on-p{background:var(--success-bg);border-color:var(--success);color:var(--success)}
+.att-btn.on-a{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}
+.chk{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:6px 8px;border-radius:8px;cursor:pointer}
+.chk:hover{background:var(--soft)}
+.chk.dis{opacity:.6;cursor:not-allowed}
+.att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px}
+.switch{position:relative;width:42px;height:23px;flex:none;display:inline-block}
+.switch input{opacity:0;width:0;height:0}
+.switch i{position:absolute;inset:0;background:#C7D0C9;border-radius:999px;transition:.2s;cursor:pointer}
+.switch i:before{content:'';position:absolute;width:17px;height:17px;border-radius:50%;background:#fff;top:3px;right:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch input:checked+i{background:var(--success)}
+.switch input:checked+i:before{transform:translateX(-19px)}
+
+/* ---------- Level matrix ---------- */
+.lvl-row{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;background:#FBFCFA}
+.lvl-row .ln{width:64px;flex:none;text-align:center;background:var(--primary);color:#fff;border-radius:10px;padding:6px 4px;font-size:11px;font-weight:800}
+.lvl-row b{font-size:13px;color:var(--primary-dark);display:block}
+.lvl-row p{font-size:12px;color:var(--muted)}
+
+/* ---------- Users table ---------- */
+.u-med{display:block;font-size:10px;color:var(--warning);font-weight:700}
+
+/* ---------- Responsive ---------- */
+@media (max-width:900px){
+  .sidebar{position:fixed;right:0;top:0;bottom:0;height:100dvh;transform:translateX(105%);transition:transform .28s ease;box-shadow:-10px 0 40px rgba(0,0,0,.25)}
+  .sidebar.open{transform:translateX(0)}
+  .backdrop{display:block;position:fixed;inset:0;background:rgba(24,61,48,.45);z-index:60;opacity:0;pointer-events:none;transition:.25s}
+  .backdrop.show{opacity:1;pointer-events:auto}
+  .hamburger{display:inline-flex}
+  .vt{display:none}
+  .grid-2{grid-template-columns:1fr}
+  .view-root{padding:14px 12px}
+  .topbar{padding:8px 12px;gap:8px}
+  .user-chip{display:none}
+  .detail-grid{grid-template-columns:1fr 1fr}
+  .detail-grid .span2{grid-column:span 2}
+  .week-grid{grid-template-columns:repeat(2,1fr)}
+  .frow2{grid-template-columns:1fr}
+  .cal-cell{min-height:56px;padding:4px 5px}
+  .cal-cell .cal-d{font-size:11px}
+  .app-foot{padding:10px 14px}
+}
+@media (max-width:520px){
+  .week-grid{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr}
+  .detail-grid .span2{grid-column:span 1}
+  .fbar .field{width:100%}
+}
+
+/* ---------- Print ---------- */
+@media print{
+  body{background:#fff}
+  .sidebar,.topbar,.ticker,.app-foot,.no-print,#toastWrap,.backdrop,.modal-ov,.load-ov{display:none!important}
+  .app{display:block}
+  .view-root{padding:0;max-width:none}
+  .card{box-shadow:none;border:1px solid #D5DCD4;break-inside:avoid;margin-bottom:12px}
+  .page-head{margin-bottom:8px}
+}
+</style>
+</head>
+<body>
+
+<noscript><div style="padding:40px;text-align:center">برای استفاده از سامانه، جاوااسکریپت باید فعال باشد.</div></noscript>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay" class="load-ov">
+  <div class="load-box">
+    <div class="dome-mini">
+      <svg viewBox="0 0 64 64" width="64" height="64" fill="none">
+        <path d="M32 4c1.6 2.9 2.7 4.8 2.7 6.7a2.7 2.7 0 1 1-5.4 0c0-1.9 1.1-3.8 2.7-6.7z" fill="#B49A60"/>
+        <path d="M14 33c0-9.5 8.5-15 18-20.6C41.5 18 50 23.5 50 33v3H14v-3z" fill="#245743"/>
+        <rect x="9" y="36" width="46" height="18" rx="2" fill="#245743"/>
+        <rect x="6" y="19" width="6.5" height="35" rx="1.5" fill="#B49A60"/>
+        <rect x="51.5" y="19" width="6.5" height="35" rx="1.5" fill="#B49A60"/>
+        <rect x="27" y="44" width="10" height="10" rx="1" fill="#F6F7F3"/>
+      </svg>
+    </div>
+    <div class="t1">سامانه جامع مدیریت مسجد صاحب‌الزمان</div>
+    <div class="t2" id="loadText">در حال بازیابی رمز دیتابیس…</div>
+  </div>
+</div>
+
+<!-- Boot error -->
+<div id="bootError" class="load-ov" hidden>
+  <div class="load-box">
+    <div class="t1" style="color:var(--danger)">خطا در راه‌اندازی سامانه</div>
+    <div class="t2" id="bootErrorMsg"></div>
+  </div>
+</div>
+
+<!-- ======== LOGIN ======== -->
+<div id="loginScreen" class="login-wrap hidden">
+  <div class="login-card">
+    <div class="lg-big">
+      <svg viewBox="0 0 64 64" width="46" height="46" fill="none">
+        <path d="M32 4c1.6 2.9 2.7 4.8 2.7 6.7a2.7 2.7 0 1 1-5.4 0c0-1.9 1.1-3.8 2.7-6.7z" fill="#B49A60"/>
+        <path d="M14 33c0-9.5 8.5-15 18-20.6C41.5 18 50 23.5 50 33v3H14v-3z" fill="#fff"/>
+        <rect x="9" y="36" width="46" height="18" rx="2" fill="#fff"/>
+        <rect x="27" y="44" width="10" height="10" rx="1" fill="#245743"/>
+      </svg>
+    </div>
+    <h1>سامانه جامع مدیریت مسجد صاحب‌الزمان</h1>
+    <p class="sub">برای ورود، نام کاربری و رمز عبور خود را وارد کنید</p>
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label>نام کاربری</label>
+        <input id="loginUser" class="inp" autocomplete="username" placeholder="مثال: secretary" dir="ltr" style="text-align:right">
+        <div class="ferr" data-err></div>
+      </div>
+      <div class="field">
+        <label>رمز عبور</label>
+        <div class="pw-wrap">
+          <input id="loginPass" class="inp" type="password" autocomplete="current-password" placeholder="••••••••" dir="ltr" style="text-align:right">
+          <button type="button" class="pw-eye" id="pwToggle" aria-label="نمایش/مخفی کردن رمز"></button>
+        </div>
+        <div class="ferr" data-err></div>
+      </div>
+      <div id="loginErr"></div>
+      <button type="submit" id="loginBtn" class="btn btn-primary btn-block">ورود به سامانه</button>
+    </form>
+    <details class="test-acc">
+      <summary>حساب‌های آزمایشی (نمایش/مخفی)</summary>
+      <div style="height:10px"></div>
+      <div class="ta-warn">⚠️ داده‌های آزمایشی — فقط برای بررسی و تست سامانه</div>
+      <div class="ta-body" id="taList"></div>
+    </details>
+  </div>
+  <div class="login-foot">داده‌های نمایشی – نسخه آزمایشی</div>
+</div>
+
+<!-- ======== APP SHELL ======== -->
+<div id="appShell" class="app hidden">
+  <aside id="sidebar" class="sidebar">
+    <div class="side-head">
+      <div class="lg">
+        <svg viewBox="0 0 64 64" width="26" height="26" fill="none">
+          <path d="M32 4c1.6 2.9 2.7 4.8 2.7 6.7a2.7 2.7 0 1 1-5.4 0c0-1.9 1.1-3.8 2.7-6.7z" fill="#B49A60"/>
+          <path d="M14 33c0-9.5 8.5-15 18-20.6C41.5 18 50 23.5 50 33v3H14v-3z" fill="#fff"/>
+          <rect x="9" y="36" width="46" height="18" rx="2" fill="#fff"/>
+        </svg>
+      </div>
+      <div>
+        <b>مسجد صاحب‌الزمان</b>
+        <small>سامانه جامع مدیریت</small>
+      </div>
+    </div>
+    <nav id="sideNav" aria-label="فهرست اصلی"></nav>
+    <div class="side-foot">
+      <div id="saveFlash" class="save-flash">ذخیره شد ✓</div>
+      <button class="btn btn-ghost btn-block" data-act="logout" id="logoutBtn"></button>
+    </div>
+  </aside>
+  <div id="backdrop" class="backdrop" data-act="closeSidebar"></div>
+  <div class="main-col">
+    <header class="topbar">
+      <button class="icon-btn hamburger" data-act="toggleSidebar" aria-label="باز کردن فهرست" id="hamburgerBtn"></button>
+      <span class="vt" id="viewTitle">داشبورد</span>
+      <div class="search-wrap">
+        <input id="gSearch" placeholder="جست‌وجوی فراگیر…" aria-label="جست‌وجوی فراگیر" autocomplete="off">
+        <div id="searchDrop" class="search-drop" hidden></div>
+      </div>
+      <div class="top-actions">
+        <div class="notif-wrap">
+          <button class="icon-btn" data-act="toggleNotif" id="bellBtn" aria-label="اعلان‌ها"></button>
+          <span id="notifBadge" class="nbadge" hidden></span>
+          <div id="notifPanel" class="notif-panel" hidden></div>
+        </div>
+        <div class="user-chip">
+          <div class="uc-av" id="uAv">?</div>
+          <div class="uinfo">
+            <b id="uName"></b>
+            <small id="uRole"></small>
+            <span id="uMediaBadge" class="badge b-warn" style="font-size:9px;padding:1px 7px;margin-top:2px" hidden>دسترسی محدود رسانه (بدون اختیار سازمانی)</span>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div id="ticker" class="ticker" hidden>
+      <span class="tk-label">اطلاعیه‌ها</span>
+      <div class="tk-viewport"><div id="tickerTrack" class="tk-track"></div></div>
+    </div>
+    <main id="viewRoot" class="view-root"></main>
+    <footer class="app-foot">
+      <span class="brand">سامانه جامع مدیریت مسجد صاحب‌الزمان</span>
+      <span class="badge b-gold">داده‌های نمایشی – نسخه آزمایشی</span>
+    </footer>
+  </div>
+</div>
+
+<div id="toastWrap" class="toast-wrap" aria-live="polite"></div>
+<input type="file" id="importFile" accept=".mszbak,.sql,.json,.txt" hidden>
+
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+<script>
+'use strict';
+/* ============================================================
+   سامانه جامع مدیریت مسجد صاحب‌الزمان — نسخه استاتیک (GitHub Pages)
+   data layer: sql.js (SQLite/WASM) + AES-GCM encrypted persistence
+   ============================================================ */
+
+/* ---------- tiny DOM helpers ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function faNum(v){ return String(v).replace(/[0-9]/g, d=>'۰۱۲۳۴۵۶۷۸۹'[d]); }
+function enNum(v){ return String(v).replace(/[۰-۹]/g, d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+
+/* ---------- Jalaali (Shamsi) calendar — jalaali-js algorithm inline ---------- */
+function jDiv(a,b){ return ~~(a/b); }
+function jMod(a,b){ return a-~~(a/b)*b; }
+const J_BREAKS=[-61,9,38,199,426,686,756,818,1111,1181,1210,1635,2060,2097,2192,2262,2324,2394,2456,3178];
+function jalCal(jy){
+  const bl=J_BREAKS.length, gy=jy+621;
+  let leapJ=-14, jp=J_BREAKS[0], jm, jump=0, leap, leapG, march, n, i;
+  for(i=1;i<bl;i+=1){ jm=J_BREAKS[i]; jump=jm-jp; if(jy<jm) break; leapJ=leapJ+jDiv(jump,33)*8+jDiv(jMod(jump,33),4); jp=jm; }
+  n=jy-jp;
+  leapJ=leapJ+jDiv(n,33)*8+jDiv(jMod(n,33)+3,4);
+  if(jMod(jump,33)===4 && jump-n===4) leapJ+=1;
+  leapG=jDiv(gy,4)-jDiv((jDiv(gy,100)+1)*3,4)-150;
+  march=20+leapJ-leapG;
+  if(jump-n<6) n=n-jump+jDiv(jump+4,33)*33;
+  leap=jMod(jMod(n+1,33)-1,4);
+  if(leap===-1) leap=4;
+  return {leap:leap, gy:gy, march:march};
+}
+function g2d(gy,gm,gd){
+  let d=jDiv((gy+jDiv(gm-8,6)+100100)*1461,4)+jDiv(153*jMod(gm+9,12)+2,5)+gd-34840408;
+  d=d-jDiv(jDiv(gy+100100+jDiv(gm-8,6),100)*3,4)+752;
+  return d;
+}
+function d2g(jdn){
+  let j=4*jdn+139361631;
+  j=j+jDiv(jDiv(4*jdn+183187720,146097)*3,4)*4-3908;
+  const i=jDiv(jMod(j,1461),4)*5+308;
+  const gd=jDiv(jMod(i,153),5)+1;
+  const gm=jMod(jDiv(i,153),12)+1;
+  const gy=jDiv(j,1461)-100100+jDiv(8-gm,6);
+  return {gy:gy, gm:gm, gd:gd};
+}
+function j2d(jy,jm,jd){ const r=jalCal(jy); return g2d(r.gy,3,r.march)+(jm-1)*31-jDiv(jm,7)*(jm-7)+jd-1; }
+function d2j(jdn){
+  const gy=d2g(jdn).gy; let jy=gy-621;
+  const r=jalCal(jy); const jdn1f=g2d(gy,3,r.march);
+  let jd, jm, k=jdn-jdn1f;
+  if(k>=0){ if(k<=185){ jm=1+jDiv(k,31); jd=jMod(k,31)+1; return {jy:jy,jm:jm,jd:jd}; } else { k-=186; } }
+  else { jy-=1; k+=179; if(r.leap===1) k+=1; }
+  jm=7+jDiv(k,30); jd=jMod(k,30)+1;
+  return {jy:jy,jm:jm,jd:jd};
+}
+function toJalaali(gy,gm,gd){ return d2j(g2d(gy,gm,gd)); }
+function toGregorian(jy,jm,jd){ return d2g(j2d(jy,jm,jd)); }
+function isLeapJalaaliYear(jy){ return jalCal(jy).leap===0; }
+function jalaaliMonthLength(jy,jm){ if(jm<=6) return 31; if(jm<=11) return 30; return isLeapJalaaliYear(jy)?30:29; }
+
+const J_MONTHS=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+const J_WEEKDAYS=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'];
+
+/* ---------- Gregorian ISO helpers ---------- */
+function todayIso(){ const d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function isoToDate(iso){ const p=String(iso).split('-').map(Number); return new Date(p[0],p[1]-1,p[2]); }
+function dateToIso(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function addDaysIso(iso,n){ const d=isoToDate(iso); d.setDate(d.getDate()+n); return dateToIso(d); }
+function diffDays(aIso,bIso){ return Math.round((isoToDate(bIso)-isoToDate(aIso))/86400000); }
+function isoToJ(iso){ const d=isoToDate(iso); return toJalaali(d.getFullYear(),d.getMonth()+1,d.getDate()); }
+function jToIso(jy,jm,jd){ const g=toGregorian(jy,jm,jd); return g.gy+'-'+pad2(g.gm)+'-'+pad2(g.gd); }
+function faDate(iso){ if(!iso) return '—'; const j=isoToJ(iso); return faNum(j.jy+'/'+pad2(j.jm)+'/'+pad2(j.jd)); }
+function faDateLong(iso){ if(!iso) return '—'; const j=isoToJ(iso); return faNum(j.jd)+' '+J_MONTHS[j.jm-1]+' '+faNum(j.jy); }
+function faWeekday(iso){ return J_WEEKDAYS[(isoToDate(iso).getDay()+1)%7]; }
+function nowTimeHM(){ const d=new Date(); return pad2(d.getHours())+':'+pad2(d.getMinutes()); }
+function faNowLong(){ try{ return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(new Date()); }catch(e){ return faWeekday(todayIso())+' '+faDateLong(todayIso()); } }
+function faStamp(){ try{ return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date()); }catch(e){ return faDate(todayIso())+' — '+nowTimeHM(); } }
+function parseJDate(str){
+  if(!str) return null;
+  const s=enNum(String(str).trim()).replace(/[-.]/g,'/');
+  const m=s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if(!m) return null;
+  const jy=+m[1], jm=+m[2], jd=+m[3];
+  if(jy<1300||jy>1500||jm<1||jm>12) return null;
+  if(jd<1||jd>jalaaliMonthLength(jy,jm)) return null;
+  return {jy:jy,jm:jm,jd:jd};
+}
+function faMoney(n){ return faNum(Math.round(Number(n)||0).toLocaleString('en-US')); }
+function levelName(l){ return ['','سطح ۱ — مشاهده','سطح ۲ — ثبت','سطح ۳ — مدیریت و ارجاع','سطح ۴ — تصویب و تصمیم‌گیری'][l]||('سطح '+l); }
+
+/* ---------- Constants ---------- */
+const APP_NAME='سامانه جامع مدیریت مسجد صاحب‌الزمان';
+const ACCOUNTS=[
+ ['imam','Imam!1405A7','حاج مولوی صاحب‌الزمانی','امام جماعت',4],
+ ['secretary','Secretary!1405B2','مولوی نوری','دبیر مرکزی دبیرخانه',4],
+ ['board','Board!1405C3','استاد رحیمی','رئیس هیئت مدیره',4],
+ ['finance','Finance!1405D4','استاد کریمی','مسئول امور مالی',3],
+ ['culture','Culture!1405E5','استاد حسینی','مسئول فرهنگی',3],
+ ['support','Support!1405F6','استاد احمدی','مسئول پشتیبانی و نظرخواهی',3],
+ ['education','Education!1405G7','مولوی رضایی','مسئول آموزش',3],
+ ['sisters','Sisters!1405H8','ناحیده سادات','مسئول بخش خواهران',3],
+ ['basij_brothers','BasijB!1405J9','استاد مصطفوی','مسئول پایگاه بسیج برادران',3],
+ ['basij_sisters','BasijS!1405K1','ناحیده فاطمی','مسئول پایگاه بسیج خواهران',3],
+ ['heyat','Heyat!1405L2','استاد قاسمی','دبیر هیات',2],
+ ['charity','Charity!1405M3','استاد ربانی','مسئول کمیته خیریه',3],
+ ['trainer','Trainer!1405N4','استاد مرادی','مربی آموزشگاه',2],
+ ['member','Member!1405P5','آقای معاون','عضو عادی',1],
+ ['media_admin','Media!1405Q6','استاد بصیر','مدیر رسانه و محتوا',2]
+];
+const ROLES=ACCOUNTS.map(a=>a[3]);
+const HALLS=['سالن اصلی','سالن خواهران','کلاس درس ۱','کلاس درس ۲','کتابخانه','حیاط مرکزی'];
+const EVENT_TYPES=['جلسه','مراسم','کلاس','سخنرانی','ورزشی'];
+const LETTER_TYPES=['وارده','صادره','داخلی'];
+const LETTER_STATUSES=['ثبت‌شده','در بررسی','در انتظار توضیح','ارجاع‌شده','در حال اقدام','متوقف‌شده','نیاز به تصمیم‌گیری','تأیید نهایی','رد‌شده','تکمیل‌شده','بایگانی','بازگشت‌شده'];
+const DECISION_ONLY=['تأیید نهایی','رد‌شده'];
+const TX_CATEGORIES=['کمک‌های مردمی','نذورات','اجاره سالن','قبوض','حقوق کارکنان','نگهداری و تعمیرات','آموزش','متفرقه'];
+const STATUS_CLS={'ثبت‌شده':'b-neutral','در بررسی':'b-info','در انتظار توضیح':'b-warn','ارجاع‌شده':'b-gold','در حال اقدام':'b-info','متوقف‌شده':'b-neutral','نیاز به تصمیم‌گیری':'b-warn','تأیید نهایی':'b-success','رد‌شده':'b-danger','تکمیل‌شده':'b-success','بایگانی':'b-neutral','بازگشت‌شده':'b-danger'};
+function statusBadge(s){ return '<span class="badge '+(STATUS_CLS[s]||'b-neutral')+'">'+esc(s)+'</span>'; }
+function typeBadge(t){ const m={'وارده':'b-info','صادره':'b-gold','داخلی':'b-neutral'}; return '<span class="badge '+(m[t]||'b-neutral')+'">'+esc(t)+'</span>'; }
+function meetBadge(s){ const m={'برگزار شد':'b-success','برنامه‌ریزی‌شده':'b-info','لغو شد':'b-danger'}; return '<span class="badge '+(m[s]||'b-neutral')+'">'+esc(s)+'</span>'; }
+function dotCls(t){ const m={'جلسه':'d-primary','مراسم':'d-gold','کلاس':'d-info','سخنرانی':'d-warn','ورزشی':'d-success'}; return m[t]||'d-primary'; }
+
+/* ---------- Crypto (WebCrypto) ---------- */
+const PASSPHRASE='MSZ::SAHEBOLZAMAN::1405::ENCKEY-V1';
+const PASS_SALT='msz-sahibolzaman-fixed-salt::v1::';
+function b64(buf){ const u=new Uint8Array(buf); let s=''; for(let i=0;i<u.length;i++) s+=String.fromCharCode(u[i]); return btoa(s); }
+function ub64(str){ const s=atob(str); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
+async function deriveKey(saltBytes){
+  const enc=new TextEncoder();
+  const base=await crypto.subtle.importKey('raw',enc.encode(PASSPHRASE),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:saltBytes,iterations:150000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function sha256Hex(str){
+  const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function encryptBytes(bytes,key){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const c=await crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,bytes);
+  return {iv:b64(iv),cipher:b64(c)};
+}
+async function decryptPayload(p,key){
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:ub64(p.iv)},key,ub64(p.cipher));
+  return new Uint8Array(pt);
+}
+
+/* ---------- IndexedDB (msz_db / kv / db) ---------- */
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('msz_db',1);
+    r.onupgradeneeded=()=>{ try{ r.result.createObjectStore('kv'); }catch(e){} };
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error);
+  });
+}
+function idbGet(key){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction('kv','readonly');
+    const rq=tx.objectStore('kv').get(key);
+    rq.onsuccess=()=>res(rq.result);
+    rq.onerror=()=>rej(rq.error);
+  }));
+}
+function idbPut(key,val){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction('kv','readwrite');
+    tx.objectStore('kv').put(val,key);
+    tx.oncomplete=()=>res();
+    tx.onerror=()=>rej(tx.error);
+  }));
+}
+
+/* ---------- sql.js wrappers ---------- */
+let db=null, cryptoKey=null;
+function run(sql,params){ db.run(sql,params||[]); }
+function all(sql,params){
+  const st=db.prepare(sql); st.bind(params||[]);
+  const rows=[]; while(st.step()) rows.push(st.getAsObject());
+  st.free(); return rows;
+}
+function one(sql,params){ return all(sql,params)[0]; }
+function lastId(){ const r=db.exec('SELECT last_insert_rowid() AS id'); return r[0].values[0][0]; }
+
+/* ---------- Auto-save (debounce 8s + visibilitychange + beforeunload) ---------- */
+let saveTimer=null, dirty=false;
+function markDirty(){ dirty=true; clearTimeout(saveTimer); saveTimer=setTimeout(()=>saveNow(true),8000); }
+async function saveNow(silent){
+  if(!db||!cryptoKey) return;
+  try{
+    const bytes=db.export();
+    const payload=await encryptBytes(bytes,cryptoKey);
+    await idbPut('db',payload);
+    dirty=false;
+    const el=$('#saveFlash');
+    if(el){ el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1800); }
+  }catch(e){ console.error('save failed',e); if(!silent) toast('خطا در ذخیره‌سازی دیتابیس','error'); }
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&dirty) saveNow(true); });
+window.addEventListener('beforeunload',()=>{ if(dirty) saveNow(true); });
+
+/* ---------- Schema ---------- */
+const SCHEMA=`
+CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, pass_hash TEXT NOT NULL, display_name TEXT NOT NULL, role TEXT NOT NULL, level INTEGER NOT NULL, active INTEGER NOT NULL DEFAULT 1);
+CREATE TABLE IF NOT EXISTS letters(id INTEGER PRIMARY KEY AUTOINCREMENT, number TEXT UNIQUE, subject TEXT NOT NULL, sender TEXT DEFAULT '', type TEXT DEFAULT 'وارده', summary TEXT DEFAULT '', status TEXT DEFAULT 'ثبت‌شده', assigned_role TEXT DEFAULT '', file_name TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at TEXT, created_at_fa TEXT);
+CREATE TABLE IF NOT EXISTS letter_comments(id INTEGER PRIMARY KEY AUTOINCREMENT, letter_id INTEGER NOT NULL, author TEXT, role TEXT, body TEXT, created_at_fa TEXT);
+CREATE TABLE IF NOT EXISTS meetings(id INTEGER PRIMARY KEY AUTOINCREMENT, number TEXT UNIQUE, title TEXT NOT NULL, date_iso TEXT, date_fa TEXT, status TEXT DEFAULT 'برنامه‌ریزی‌شده', attendees TEXT DEFAULT '[]', created_by TEXT);
+CREATE TABLE IF NOT EXISTS decisions(id INTEGER PRIMARY KEY AUTOINCREMENT, meeting_id INTEGER, title TEXT, assignee TEXT, assignee_username TEXT, task_id INTEGER);
+CREATE TABLE IF NOT EXISTS tasks(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, assignee TEXT, assignee_username TEXT, deadline_iso TEXT, status TEXT DEFAULT 'در انتظار', meeting_id INTEGER, created_at_fa TEXT);
+CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, type TEXT, hall TEXT, date_iso TEXT, start_time TEXT, end_time TEXT, created_by TEXT, created_by_name TEXT);
+CREATE TABLE IF NOT EXISTS courses(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, teacher TEXT DEFAULT '', status TEXT DEFAULT 'فعال');
+CREATE TABLE IF NOT EXISTS students(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER, field TEXT DEFAULT '', course_id INTEGER, guardian_phone TEXT DEFAULT '', status TEXT DEFAULT 'فعال', is_minor INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS attendance(id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER, course_id INTEGER, date_iso TEXT, status TEXT);
+CREATE TABLE IF NOT EXISTS transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, description TEXT, amount INTEGER, date_iso TEXT, category TEXT, letter_number TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS announcements(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, body TEXT DEFAULT '', date_fa TEXT, created_by TEXT);
+CREATE TABLE IF NOT EXISTS gallery_notes(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, body TEXT, file_name TEXT DEFAULT '', date_fa TEXT);
+CREATE TABLE IF NOT EXISTS activity_log(id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT, role TEXT, action TEXT, detail TEXT DEFAULT '', created_at_fa TEXT);
+CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, title TEXT, body TEXT DEFAULT "", read INTEGER DEFAULT 0, created_at_fa TEXT);
+`;
+
+/* ---------- Seed (all relative to actual today; ~1405/08/13) ---------- */
+async function buildSeed(){
+  const d=new SQL.Database();
+  d.exec(SCHEMA);
+  const iso0=todayIso();
+  const iso=n=>addDaysIso(iso0,n);
+  const y=isoToJ(iso0).jy;
+  const lid=()=>{ const r=d.exec('SELECT last_insert_rowid() AS id'); return r[0].values[0][0]; };
+
+  for(const a of ACCOUNTS){
+    const h=await sha256Hex(PASS_SALT+a[1]);
+    d.run('INSERT INTO users (username,pass_hash,display_name,role,level,active) VALUES (?,?,?,?,?,1)',[a[0],h,a[2],a[3],a[4]]);
+  }
+
+  /* 8 letters 1405/دب/001..008 */
+  const letters=[
+   ['1405/دب/001','دعوت‌نامه همایش ائمه جماعت ولایت','ریاست ارشاد، حج و اوقاف','وارده','همایش سراسری ائمه جماعت روز پنجشنبه در سالن ولایت برگزار می‌شود.','تأیید نهایی','امام جماعت','davat-1405.pdf',-12],
+   ['1405/دب/002','درخواست کمک برای خانواده‌های نیازمند محل','هیئت خیریه محل','وارده','لیست اولیه شامل ۱۲ خانواده نیازمند جهت بررسی و کمک‌رسانی.','در حال اقدام','مسئول کمیته خیریه','',-9],
+   ['1405/دب/003','اعلام برنامه مراسم ماه صفر','دبیرخانه مسجد','صادره','برنامه مراسم ماه صفر به اهالی محل اعلام گردید.','بایگانی','','',-15],
+   ['1405/دب/004','تذکر نظافت و مرتب‌سازی سالن اصلی','دبیرخانه','داخلی','بر اساس بازدید انجام‌شده، نظافت سالن اصلی نیاز به پیگیری دارد.','در بررسی','مسئول پشتیبانی و نظرخواهی','',-4],
+   ['1405/دب/005','درخواست رزرو سالن برای مراسم خانوادگی','اهالی محل','وارده','به دلیل تداخل با برنامه‌های آموزشی، درخواست رد شد.','رد‌شده','رئیس هیئت مدیره','',-7],
+   ['1405/دب/006','معرفی شاگردان ممتاز برای آزمون حفظ','مسئول آموزش','صادره','فهرست ۵ شاگرد ممتاز برای شرکت در آزمون حفظ قرآن ارسال می‌گردد؛ منتظر تصمیم‌گیری هستیم.','نیاز به تصمیم‌گیری','رئیس هیئت مدیره','moarrefi-1405.pdf',-2],
+   ['1405/دب/007','گزارش مالی ماه مهر','مسئول امور مالی','وارده','گزارش تفصیلی درآمد و هزینه‌های ماه مهر ضمیمه است.','تکمیل‌شده','امام جماعت','report-mehr.xlsx',-18],
+   ['1405/دب/008','درخواست همکاری فرهنگی با مدرسه سیدالشهدا','مدرسه سیدالشهدا','وارده','درخواست برگزاری برنامه‌های مشترک فرهنگی برای دانش‌آموزان.','ثبت‌شده','','',-1]
+  ];
+  letters.forEach(L=>{
+    d.run('INSERT INTO letters (number,subject,sender,type,summary,status,assigned_role,file_name,created_by,created_at,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+      [L[0],L[1],L[2],L[3],L[4],L[5],L[6],L[7],'secretary',iso(L[8]),faDate(iso(L[8]))]);
+  });
+  d.run('INSERT INTO letter_comments (letter_id,author,role,body,created_at_fa) VALUES (?,?,?,?,?)',[2,'استاد ربانی','مسئول کمیته خیریه','لیست خانواده‌ها دریافت شد؛ بررسی میدانی آغاز می‌شود.',faStamp()]);
+  d.run('INSERT INTO letter_comments (letter_id,author,role,body,created_at_fa) VALUES (?,?,?,?,?)',[2,'حاج مولوی صاحب‌الزمانی','امام جماعت','موافقم. کمک‌های نقدی از صندوق خیریه پرداخت گردد.',faStamp()]);
+
+  /* 3 meetings 1405/جلس/001..003 */
+  const meetings=[
+   ['1405/جلس/001','جلسه هیئت مدیره — پایان ماه مهر',-19,'برگزار شد'],
+   ['1405/جلس/002','جلسه شورای فرهنگی و آموزش',-10,'برگزار شد'],
+   ['1405/جلس/003','جلسه هیئت مدیره — آبان',7,'برنامه‌ریزی‌شده']
+  ];
+  const mids=[];
+  meetings.forEach(m=>{
+    d.run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by) VALUES (?,?,?,?,?,?,?)',
+      [m[0],m[1],iso(m[2]),faDate(iso(m[2])),m[3],JSON.stringify(['امام جماعت','دبیر مرکزی دبیرخانه','رئیس هیئت مدیره','مسئول امور مالی']),'secretary']);
+    mids.push(lid());
+  });
+
+  /* 6 tasks: 2 overdue, 1 due within 3 days */
+  const tasks=[
+   ['تهیه گزارش مالی ماه مهر و ارائه به هیئت مدیره','استاد کریمی','finance',-12,'انجام‌شده',0],
+   ['پیگیری تعمیر سیستم گرمایشی سالن اصلی','استاد احمدی','support',-6,'در حال انجام',0],
+   ['هماهنگی با مدرسه سیدالشهدا برای برنامه فرهنگی مشترک','استاد حسینی','culture',-3,'در انتظار',1],
+   ['ارسال لیست شاگردان به اداره آموزش ولایت','مولوی رضایی','education',-8,'انجام‌شده',1],
+   ['تهیه و تدوین صورت‌جلسه هیئت مدیره آبان','مولوی نوری','secretary',2,'در انتظار',2],
+   ['برنامه‌ریزی مراسم هفته وحدت','استاد حسینی','culture',10,'در انتظار',2]
+  ];
+  const tids=[];
+  tasks.forEach(t=>{
+    d.run('INSERT INTO tasks (title,assignee,assignee_username,deadline_iso,status,meeting_id,created_at_fa) VALUES (?,?,?,?,?,?,?)',
+      [t[0],t[1],t[2],iso(t[3]),t[4],mids[t[5]],faStamp()]);
+    tids.push(lid());
+  });
+  const decisions=[
+   [0,'تصویب گزارش مالی ماه مهر','استاد کریمی','finance',0],
+   [0,'واگذاری تعمیرات گرمایشی سالن به پیمانکار','استاد رحیمی','board',1],
+   [1,'برنامه مشترک فرهنگی با مدرسه سیدالشهدا','استاد حسینی','culture',2],
+   [1,'به‌روزرسانی لیست شاگردان برای اداره آموزش','مولوی رضایی','education',3],
+   [2,'تدوین صورت‌جلسه و ابلاغ مصوبات','مولوی نوری','secretary',4],
+   [2,'تشکیل کمیته برنامه هفته وحدت','استاد حسینی','culture',5]
+  ];
+  decisions.forEach(x=>{
+    d.run('INSERT INTO decisions (meeting_id,title,assignee,assignee_username,task_id) VALUES (?,?,?,?,?)',[mids[x[0]],x[1],x[2],x[3],tids[x[4]]]);
+  });
+
+  /* 6 events in current jalaali month — no conflicts */
+  const events=[
+   ['سخنرانی هفتگی بعد از نماز مغرب','سخنرانی','سالن اصلی',1,'18:00','19:30'],
+   ['کلاس قرآن کریم بزرگسالان','کلاس','کلاس درس ۱',2,'16:00','17:30'],
+   ['کلاس صرف و نحو','کلاس','کلاس درس ۲',2,'18:00','19:30'],
+   ['مراسم یادبود شهدای محل','مراسم','سالن اصلی',5,'19:00','20:30'],
+   ['مسابقات ورزشی پایگاه بسیج','ورزشی','حیاط مرکزی',7,'15:00','17:00'],
+   ['جلسه هماهنگی بخش خواهران','جلسه','سالن خواهران',9,'10:00','11:30']
+  ];
+  events.forEach(ev=>{
+    d.run('INSERT INTO events (title,type,hall,date_iso,start_time,end_time,created_by,created_by_name) VALUES (?,?,?,?,?,?,?,?)',
+      [ev[0],ev[1],ev[2],iso(ev[3]),ev[4],ev[5],'secretary','مولوی نوری']);
+  });
+
+  /* courses + 10 students (3 minors with minimal fields) */
+  d.run('INSERT INTO courses (name,teacher) VALUES (?,?)',['قرآن کریم بزرگسالان','مولوی رضایی']);
+  const c1=lid();
+  d.run('INSERT INTO courses (name,teacher) VALUES (?,?)',['صرف و نحو','مولوی رضایی']);
+  const c2=lid();
+  const students=[
+   ['احمد نوری',32,'تلاوت',c1,'','فعال',0],
+   ['محمد رحیمی',28,'حفظ',c1,'','فعال',0],
+   ['لیلا مرادی',35,'تلاوت',c1,'','تکمیل‌شده',0],
+   ['عبدالله رحیمی',12,'',c1,'0790123456','فعال',1],
+   ['فاطمه سادات',14,'',c1,'0790223456','فعال',1],
+   ['حسین قاسمی',30,'صرف',c2,'','فعال',0],
+   ['مریم صادقی',26,'نحو',c2,'','فعال',0],
+   ['علی حسینی',22,'ادبیات',c2,'','فعال',0],
+   ['یعقوب احمدی',15,'',c2,'0790323456','فعال',1],
+   ['خدیجه فاطمی',19,'نحو',c2,'','فعال',0]
+  ];
+  const sids={};
+  students.forEach(s=>{
+    d.run('INSERT INTO students (name,age,field,course_id,guardian_phone,status,is_minor) VALUES (?,?,?,?,?,?,?)',s);
+    sids[s[0]]=lid();
+  });
+  const att1=[['احمد نوری','حاضر'],['محمد رحیمی','حاضر'],['عبدالله رحیمی','حاضر'],['فاطمه سادات','غایب']];
+  const att2=[['احمد نوری','حاضر'],['محمد رحیمی','حاضر'],['لیلا مرادی','حاضر'],['عبدالله رحیمی','حاضر'],['فاطمه سادات','حاضر']];
+  att1.forEach(a=>{ d.run('INSERT INTO attendance (student_id,course_id,date_iso,status) VALUES (?,?,?,?)',[sids[a[0]],c1,iso(-2),a[1]]); });
+  att2.forEach(a=>{ d.run('INSERT INTO attendance (student_id,course_id,date_iso,status) VALUES (?,?,?,?)',[sids[a[0]],c1,iso(-5),a[1]]); });
+
+  /* 10 finance rows across مهر / آبان 1405 */
+  const tx=[
+   ['درآمد','کمک‌های مردمی محل',45000,jToIso(y,7,12),'کمک‌های مردمی',''],
+   ['درآمد','نذورات نماز جماعت',18000,jToIso(y,7,20),'نذورات',''],
+   ['هزینه','قبوض برق و آب',6200,jToIso(y,7,25),'قبوض',''],
+   ['درآمد','کمک‌های مردمی برای خانواده‌های نیازمند',52000,jToIso(y,8,3),'کمک‌های مردمی','1405/دب/002'],
+   ['درآمد','اجاره سالن برای مراسم',12000,jToIso(y,8,5),'اجاره سالن',''],
+   ['هزینه','حقوق کارکنان و افراد وابسته',28000,jToIso(y,8,6),'حقوق کارکنان',''],
+   ['هزینه','نگهداری و تعمیرات سیستم گرمایشی',9500,jToIso(y,8,8),'نگهداری و تعمیرات',''],
+   ['درآمد','نذورات روز جمعه',21000,jToIso(y,8,10),'نذورات',''],
+   ['هزینه','مصارف کلاس‌های آموزشی',7500,jToIso(y,8,11),'آموزش',''],
+   ['هزینه','متفرقه (قرطاسیه و چاپ)',3200,jToIso(y,8,12),'متفرقه','']
+  ];
+  tx.forEach(t=>{ d.run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number) VALUES (?,?,?,?,?,?)',t); });
+
+  /* announcements + gallery */
+  d.run('INSERT INTO announcements (title,body,date_fa,created_by) VALUES (?,?,?,?)',
+    ['آغاز ثبت‌نام دوره‌های آموزشگاه قرآن','ثبت‌نام دوره‌های قرآن کریم بزرگسالان و صرف و نحو از روز شنبه در دبیرخانه مسجد آغاز می‌شود.',faDate(iso(-2)),'media_admin']);
+  d.run('INSERT INTO announcements (title,body,date_fa,created_by) VALUES (?,?,?,?)',
+    ['برنامه مراسم هفته وحدت','مراسم هفته وحدت با حضور علمای کرام و اهالی محترم محل در سالن اصلی مسجد برگزار می‌گردد؛ حضور همگان موجب افتخار است.',faDate(iso(-5)),'media_admin']);
+  d.run('INSERT INTO gallery_notes (title,body,file_name,date_fa) VALUES (?,?,?,?)',
+    ['نمایشگاه کتاب دینی','نمایشگاه کتاب با همکاری کتابخانه مسجد در حیاط مرکزی برپا شد.','namayeshgah-ketab.jpg',faDate(iso(-4))]);
+  d.run('INSERT INTO gallery_notes (title,body,file_name,date_fa) VALUES (?,?,?,?)',
+    ['کارگاه خوشنویسی','کارگاه خوشنویسی ویژه نوجوانان با حضور استادان دوره‌ای برگزار گردید.','kargah-khatt.png',faDate(iso(-6))]);
+
+  /* activity log */
+  const logs=[
+   ['مولوی نوری','دبیر مرکزی دبیرخانه','ثبت نامه جدید','نامه ۱۴۰۵/دب/۰۰۸ با موضوع «درخواست همکاری فرهنگی» ثبت شد.'],
+   ['استاد کریمی','مسئول امور مالی','ثبت تراکنش مالی','درآمد کمک‌های مردمی به مبلغ ۵۲,۰۰۰ افغانی ثبت شد.'],
+   ['استاد رحیمی','رئیس هیئت مدیره','تغییر وضعیت نامه','نامه ۱۴۰۵/دب/۰۰۶ در وضعیت «نیاز به تصمیم‌گیری» قرار گرفت.'],
+   ['مولوی نوری','دبیر مرکزی دبیرخانه','ایجاد جلسه','جلسه «جلسه هیئت مدیره — آبان» با شماره ۱۴۰۵/جلس/۰۰۳ ایجاد شد.']
+  ];
+  logs.forEach(l=>{ d.run('INSERT INTO activity_log (user,role,action,detail,created_at_fa) VALUES (?,?,?,?,?)',[l[0],l[1],l[2],l[3],faStamp()]); });
+
+  return d;
+}
+
+/* ============================================================
+   Icons / Toast / Confirm / Modal / Form helpers
+   ============================================================ */
+const ICONS={
+ home:'<path d="M3 9.5 12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22v-8h6v8"/>',
+ mail:'<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+ users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+ check:'<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+ calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+ book:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+ wallet:'<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
+ send:'<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+ shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+ chart:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+ settings:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+ search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+ bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+ logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+ menu:'<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+ x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+ eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+ eyeoff:'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>',
+ plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+ trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+ clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+ download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+ upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+ refresh:'<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+ printer:'<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+ alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+ file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+ inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+ chevR:'<polyline points="9 18 15 12 9 6"/>',
+ chevL:'<polyline points="15 18 9 12 15 6"/>',
+ save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>'
+};
+function icon(name,size){
+  const s=size||18;
+  return '<svg viewBox="0 0 24 24" width="'+s+'" height="'+s+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICONS[name]||ICONS.inbox)+'</svg>';
+}
+
+function toast(msg,type){
+  type=type||'success';
+  const wrap=$('#toastWrap');
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  t.innerHTML=icon(type==='success'?'check':(type==='error'?'alert':'bell'),16)+'<span>'+esc(msg)+'</span>';
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(),320); },3800);
+}
+function confirmDlg(title,msg,opts){
+  opts=opts||{};
+  return new Promise(res=>{
+    const ov=document.createElement('div');
+    ov.className='modal-ov';
+    ov.innerHTML='<div class="modal confirm"><div class="modal-body">'+
+      '<div class="ci">'+icon('alert',26)+'</div>'+
+      '<h3>'+esc(title)+'</h3><p>'+esc(msg)+'</p>'+
+      '<div class="cbtns"><button class="btn btn-ghost cancel">انصراف</button>'+
+      '<button class="btn '+(opts.danger?'btn-danger':'btn-primary')+' ok">'+esc(opts.okText||'تأیید')+'</button></div>'+
+      '</div></div>';
+    document.body.appendChild(ov);
+    ov.querySelector('.ok').onclick=()=>{ ov.remove(); res(true); };
+    ov.querySelector('.cancel').onclick=()=>{ ov.remove(); res(false); };
+    ov.addEventListener('click',e=>{ if(e.target===ov){ ov.remove(); res(false); } });
+  });
+}
+function openModal(title,html,opts){
+  opts=opts||{};
+  closeModal();
+  const ov=document.createElement('div');
+  ov.className='modal-ov'; ov.id='modalOv';
+  ov.innerHTML='<div class="modal" style="max-width:'+(opts.width||'560px')+'">'+
+    '<div class="modal-head"><h3>'+esc(title)+'</h3><button class="icon-btn" data-act="closeModal" aria-label="بستن">'+icon('x')+'</button></div>'+
+    '<div class="modal-body">'+html+'</div></div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click',e=>{ if(e.target===ov) closeModal(); });
+  return ov;
+}
+function closeModal(){ const ov=$('#modalOv'); if(ov) ov.remove(); }
+function fld(label,inner){ return '<div class="field"><label>'+label+'</label>'+inner+'<div class="ferr" data-err></div></div>'; }
+function setErr(input,msg){
+  const f=input.closest('.field'); if(!f) return;
+  const er=f.querySelector('[data-err]'); if(er) er.textContent=msg;
+  input.classList.add('bad');
+}
+function clearErrs(form){
+  form.querySelectorAll('.bad').forEach(i=>i.classList.remove('bad'));
+  form.querySelectorAll('[data-err]').forEach(e=>{ e.textContent=''; });
+}
+function emptyState(text,ic){
+  return '<div class="empty">'+icon(ic||'inbox',44)+'<p>'+esc(text)+'</p></div>';
+}
+function download(name,content,mime){
+  const blob=content instanceof Blob?content:new Blob([content],{type:mime||'application/octet-stream'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+/* ============================================================
+   Session / permissions
+   ============================================================ */
+let session=null, currentView='dashboard', calState=null, pendingDetail=null;
+const letterFilter={q:'',type:'',status:''};
+const taskFilter={status:''};
+function can(l){ return !!session && session.level>=l; }
+function canEdit(){ return can(2) && !session.isMedia; } /* ثبت محتوا — بدون مدیر رسانه */
+function logActivity(action,detail){
+  run('INSERT INTO activity_log (user,role,action,detail,created_at_fa) VALUES (?,?,?,?,?)',
+    [session.name,session.role,action,detail||'',faStamp()]);
+  markDirty();
+}
+
+/* ---------- notifications ---------- */
+function addNotif(username,title,body){
+  if(!username) return;
+  const ex=one('SELECT id FROM notifications WHERE username=? AND title=? AND body=?',[username,title,body||'']);
+  if(ex) return;
+  run('INSERT INTO notifications (username,title,body,read,created_at_fa) VALUES (?,?,?,0,?)',[username,title,body||'',faStamp()]);
+}
+function notifyLevel4(title,body,exceptUsername){
+  all('SELECT username FROM users WHERE level=4 AND active=1').forEach(u=>{
+    if(u.username!==exceptUsername) addNotif(u.username,title,body);
+  });
+}
+function notifyRole(role,title,body){
+  all('SELECT username FROM users WHERE role=? AND active=1',[role]).forEach(u=>addNotif(u.username,title,body));
+}
+function generateDueNotifications(){
+  const t=todayIso(), lim=addDaysIso(t,2);
+  all("SELECT * FROM tasks WHERE status!='انجام‌شده' AND deadline_iso IS NOT NULL").forEach(tk=>{
+    if(tk.assignee_username && tk.deadline_iso>=t && tk.deadline_iso<=lim){
+      addNotif(tk.assignee_username,'یادآوری ضرب‌الاجل وظیفه','وظیفه «'+tk.title+'» تا '+faDateLong(tk.deadline_iso)+' مهلت دارد.');
+    }
+  });
+  const decLet=all("SELECT * FROM letters WHERE status='نیاز به تصمیم‌گیری'");
+  if(decLet.length){
+    all('SELECT username FROM users WHERE level=4 AND active=1').forEach(u=>{
+      decLet.forEach(L=>addNotif(u.username,'نامه در انتظار تصمیم‌گیری','نامه '+L.number+' با موضوع «'+L.subject+'» در انتظار تصمیم‌گیری شماست.'));
+    });
+  }
+}
+function notifCount(){ return one('SELECT COUNT(*) AS c FROM notifications WHERE username=? AND "read"=0',[session.username]).c; }
+function renderNotifBadge(){
+  const c=notifCount(), b=$('#notifBadge');
+  b.textContent=faNum(c); b.hidden=(c===0);
+}
+function fillNotifPanel(){
+  const list=all('SELECT * FROM notifications WHERE username=? ORDER BY id DESC LIMIT 25',[session.username]);
+  $('#notifPanel').innerHTML=
+    '<div class="np-head"><span>اعلان‌ها</span><button class="btn btn-outline btn-sm" data-act="markAllRead">خواندن همه</button></div>'+
+    '<div class="np-list">'+(list.length?list.map(n=>
+      '<div class="notif-item '+(n.read?'':'unread')+'"><b>'+esc(n.title)+'</b><p>'+esc(n.body)+'</p><small>'+esc(n.created_at_fa)+'</small></div>'
+    ).join(''):'<div class="sr-empty">اعلانی وجود ندارد</div>')+'</div>';
+}
+function refreshTicker(){
+  const list=all('SELECT * FROM announcements ORDER BY id DESC LIMIT 5');
+  const tk=$('#ticker');
+  if(!list.length){ tk.hidden=true; return; }
+  tk.hidden=false;
+  const items=list.map(a=>'<span class="tk-item">'+icon('bell',14)+' '+esc(a.title)+' <em>('+esc(a.date_fa||'')+')</em></span>').join('');
+  $('#tickerTrack').innerHTML=items+items;
+}
+
+/* ============================================================
+   Auth + shell
+   ============================================================ */
+function showLogin(){
+  $('#appShell').classList.add('hidden');
+  $('#loginScreen').classList.remove('hidden');
+  const ta=$('#taList');
+  if(!ta.dataset.fill){
+    ta.innerHTML='<table><thead><tr><th>کاربری</th><th>رمز</th><th>نام</th><th>نقش</th></tr></thead><tbody>'+
+      ACCOUNTS.map(a=>'<tr><td><code>'+a[0]+'</code></td><td><code>'+a[1]+'</code></td><td>'+esc(a[2])+'</td><td>'+esc(a[3])+' (سطح '+faNum(a[4])+')</td></tr>').join('')+
+      '</tbody></table>';
+    ta.dataset.fill='1';
+  }
+  const pf=$('#loginForm');
+  if(!pf.dataset.bound){
+    pf.dataset.bound='1';
+    pf.addEventListener('submit',e=>{ e.preventDefault(); doLogin(); });
+    $('#pwToggle').addEventListener('click',()=>{
+      const p=$('#loginPass');
+      const show=p.type==='password';
+      p.type=show?'text':'password';
+      $('#pwToggle').innerHTML=icon(show?'eyeoff':'eye',18);
+    });
+  }
+  $('#pwToggle').innerHTML=icon('eye',18);
+}
+async function doLogin(){
+  const un=$('#loginUser').value.trim(), pw=$('#loginPass').value;
+  const f=$('#loginForm'); clearErrs(f);
+  let ok=true;
+  if(!un){ setErr($('#loginUser'),'نام کاربری الزامی است.'); ok=false; }
+  if(!pw){ setErr($('#loginPass'),'رمز عبور الزامی است.'); ok=false; }
+  if(!ok) return;
+  const btn=$('#loginBtn');
+  btn.disabled=true; btn.textContent='در حال ورود…';
+  try{
+    const u=one('SELECT * FROM users WHERE username=?',[un]);
+    const h=await sha256Hex(PASS_SALT+pw);
+    if(u && u.active===1 && u.pass_hash===h){
+      $('#loginErr').textContent='';
+      toast('خوش آمدید، '+u.display_name);
+      startApp(u);
+    }else if(u && u.active===0){
+      $('#loginErr').textContent='این حساب غیرفعال شده است؛ با مدیر سامانه تماس بگیرید.';
+      toast('حساب کاربری غیرفعال است','error');
+    }else{
+      $('#loginErr').textContent='نام کاربری یا رمز عبور نادرست است.';
+      toast('نام کاربری یا رمز عبور نادرست است','error');
+    }
+  }catch(e){ console.error(e); toast('خطا در ورود','error'); }
+  btn.disabled=false; btn.textContent='ورود به سامانه';
+}
+function startApp(u){
+  session={username:u.username,name:u.display_name,role:u.role,level:u.level,isMedia:u.username==='media_admin'};
+  sessionStorage.setItem('msz_session',session.username);
+  $('#loginScreen').classList.add('hidden');
+  $('#appShell').classList.remove('hidden');
+  $('#uName').textContent=session.name;
+  $('#uRole').textContent=session.role;
+  $('#uAv').textContent=session.name.trim().charAt(0);
+  $('#uMediaBadge').hidden=!session.isMedia;
+  $('#logoutBtn').innerHTML=icon('logout',16)+' خروج از حساب';
+  $('#hamburgerBtn').innerHTML=icon('menu',20);
+  $('#bellBtn').innerHTML=icon('bell',19);
+  buildSidebar();
+  generateDueNotifications();
+  refreshTicker();
+  renderNotifBadge();
+  nav('dashboard');
+}
+
+/* ---------- sidebar / router ---------- */
+const NAV=[
+ {id:'dashboard',label:'داشبورد',icon:'home',min:1},
+ {id:'letters',label:'دبیرخانه (نامه‌ها)',icon:'mail',min:1},
+ {id:'meetings',label:'جلسات و مصوبات',icon:'users',min:1},
+ {id:'tasks',label:'وظایف',icon:'check',min:1},
+ {id:'calendar',label:'تقویم',icon:'calendar',min:1},
+ {id:'education',label:'آموزش',icon:'book',min:1},
+ {id:'finance',label:'امور مالی',icon:'wallet',min:3},
+ {id:'media',label:'رسانه و اطلاعیه‌ها',icon:'send',min:1},
+ {id:'users',label:'کاربران و دسترسی‌ها',icon:'shield',min:4},
+ {id:'reports',label:'گزارش‌ها',icon:'chart',min:3},
+ {id:'settings',label:'تنظیمات و پشتیبان‌گیری',icon:'settings',min:3}
+];
+function buildSidebar(){
+  $('#sideNav').innerHTML=NAV.filter(n=>can(n.min)).map(n=>
+    '<button class="nav-item" data-act="nav" data-view="'+n.id+'">'+icon(n.icon)+'<span>'+n.label+'</span></button>'
+  ).join('');
+}
+function toggleSidebar(open){
+  $('#sidebar').classList.toggle('open',open);
+  $('#backdrop').classList.toggle('show',open);
+}
+function nav(view){
+  currentView=view;
+  $$('#sideNav .nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===view));
+  const item=NAV.find(n=>n.id===view);
+  $('#viewTitle').textContent=item?item.label:'';
+  renderView();
+  toggleSidebar(false);
+  window.scrollTo({top:0});
+}
+function renderView(){
+  const root=$('#viewRoot');
+  const fn=VIEWS[currentView]||VIEWS.dashboard;
+  fn(root);
+}
+const VIEWS={};
+
+/* ============================================================
+   Dashboard
+   ============================================================ */
+VIEWS.dashboard=function(root){
+  const t=todayIso(), tj=isoToJ(t);
+  const inFlow=one("SELECT COUNT(*) AS c FROM letters WHERE status NOT IN ('تأیید نهایی','رد‌شده','تکمیل‌شده','بایگانی')").c;
+  const upcoming=one("SELECT COUNT(*) AS c FROM meetings WHERE date_iso>=? AND status='برنامه‌ریزی‌شده'",[t]).c;
+  const myTasks=one("SELECT COUNT(*) AS c FROM tasks WHERE assignee_username=? AND status!='انجام‌شده'",[session.username]).c;
+  const lateMeet=one("SELECT COUNT(*) AS c FROM meetings WHERE date_iso<? AND status='برنامه‌ریزی‌شده'",[t]).c;
+  const activeStudents=one("SELECT COUNT(*) AS c FROM students WHERE status='فعال'").c;
+  const mStart=jToIso(tj.jy,tj.jm,1), mEnd=jToIso(tj.jy,tj.jm,jalaaliMonthLength(tj.jy,tj.jm));
+  let balCard='';
+  if(session.level>=3){
+    const inc=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='درآمد' AND date_iso BETWEEN ? AND ?",[mStart,mEnd]).s;
+    const exp=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='هزینه' AND date_iso BETWEEN ? AND ?",[mStart,mEnd]).s;
+    const bal=inc-exp;
+    balCard='<div class="stat-card accent-gold"><span class="stat-label">تراز مالی '+J_MONTHS[tj.jm-1]+'</span><b class="stat-num '+(bal>=0?'c-success':'c-danger')+'">'+faMoney(bal)+'</b><small class="muted">درآمد '+faMoney(inc)+' · هزینه '+faMoney(exp)+'</small></div>';
+  }
+  let remSql="SELECT * FROM tasks WHERE status!='انجام‌شده' AND deadline_iso IS NOT NULL";
+  const remParams=[];
+  if(session.level<3){ remSql+=' AND assignee_username=?'; remParams.push(session.username); }
+  const rems=all(remSql,remParams)
+    .filter(x=>x.deadline_iso<=addDaysIso(t,3))
+    .sort((a,b)=>a.deadline_iso<b.deadline_iso?-1:1);
+  const remHTML=rems.length?
+    '<div class="scroll-y"><ul class="rem-list">'+rems.map(x=>{
+      const ov=x.deadline_iso<t, days=diffDays(t,x.deadline_iso);
+      return '<li class="'+(ov?'rem-ov':'rem-soon')+'"><div><b>'+esc(x.title)+'</b><small>'+esc(x.assignee||'—')+' · مهلت: '+faDateLong(x.deadline_iso)+'</small></div>'+
+        '<span class="badge '+(ov?'b-danger':'b-warn')+'">'+(ov?'عقب‌افتاده':(days===0?'امروز':faNum(days)+' روز مانده'))+'</span></li>';
+    }).join('')+'</ul></div>'
+    :emptyState('ضرب‌الاجل نزدیکی وجود ندارد ✓','check');
+  const logs=all('SELECT * FROM activity_log ORDER BY id DESC LIMIT 5');
+  const logsHTML=logs.length?
+    '<ul class="log-list">'+logs.map(l=>
+      '<li><span class="badge b-neutral">'+esc(l.action)+'</span><div><b>'+esc(l.user)+'</b> — <span>'+esc(l.detail)+'</span><small>'+esc(l.created_at_fa)+'</small></div></li>'
+    ).join('')+'</ul>'
+    :emptyState('فعالیتی ثبت نشده است');
+  root.innerHTML=
+   '<div class="card pad" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">'+
+     '<div><h2 style="font-size:19px;color:var(--primary-dark)">سلام، '+esc(session.name)+'</h2>'+
+     '<p class="muted" style="font-size:12.5px">'+esc(session.role)+' · '+levelName(session.level)+' · امروز: '+faNowLong()+'</p>'+
+     (session.isMedia?'<span class="badge b-warn" style="margin-top:6px">دسترسی محدود رسانه (بدون اختیار سازمانی)</span>':'')+'</div>'+
+     '<div style="width:54px;height:54px;border-radius:16px;background:var(--primary);display:flex;align-items:center;justify-content:center;flex:none">'+
+       '<svg viewBox="0 0 64 64" width="32" height="32" fill="none"><path d="M32 8c1.6 2.9 2.7 4.8 2.7 6.7a2.7 2.7 0 1 1-5.4 0c0-1.9 1.1-3.8 2.7-6.7z" fill="#B49A60"/><path d="M15 36c0-9 8-14 17-19.4C41 22 49 27 49 36v2H15v-2z" fill="#fff"/><rect x="11" y="38" width="42" height="16" rx="2" fill="#fff"/></svg>'+
+     '</div>'+
+   '</div>'+
+   '<div class="grid-stats">'+
+     '<div class="stat-card"><span class="stat-label">نامه‌های در جریان</span><b class="stat-num">'+faNum(inFlow)+'</b></div>'+
+     '<div class="stat-card accent-info"><span class="stat-label">جلسات پیش‌رو</span><b class="stat-num">'+faNum(upcoming)+'</b></div>'+
+     '<div class="stat-card accent-success"><span class="stat-label">وظایف من</span><b class="stat-num">'+faNum(myTasks)+'</b></div>'+
+     '<div class="stat-card accent-danger"><span class="stat-label">جلسات عقب‌افتاده</span><b class="stat-num">'+faNum(lateMeet)+'</b></div>'+
+     '<div class="stat-card"><span class="stat-label">شاگردان فعال</span><b class="stat-num">'+faNum(activeStudents)+'</b></div>'+
+     balCard+
+   '</div>'+
+   '<div class="grid-2">'+
+     '<div class="card pad"><h3>'+icon('clock')+' یادآور ضرب‌الاجل‌ها</h3>'+remHTML+'</div>'+
+     '<div class="card pad"><h3>'+icon('refresh')+' آخرین فعالیت‌ها</h3>'+logsHTML+'</div>'+
+   '</div>';
+};
+
+/* ============================================================
+   Numbering
+   ============================================================ */
+function nextNumber(table,prefix){
+  const rows=all('SELECT number FROM '+table);
+  let mx=0;
+  rows.forEach(r=>{
+    if(r.number && String(r.number).startsWith(prefix)){
+      const n=parseInt(String(r.number).slice(prefix.length),10);
+      if(!isNaN(n)&&n>mx) mx=n;
+    }
+  });
+  return prefix+String(mx+1).padStart(3,'0');
+}
+
+/* ============================================================
+   Module 2: دبیرخانه (نامه‌ها)
+   ============================================================ */
+VIEWS.letters=function(root){
+  root.innerHTML=
+   '<div class="page-head"><div><h2>دبیرخانه — نامه‌ها</h2><p class="muted">ثبت، ارجاع و پیگیری نامه‌های وارده، صادره و داخلی</p></div>'+
+   (can(3)?'<button class="btn btn-primary no-print" data-act="letterNew">'+icon('plus')+' ثبت نامه جدید</button>':'')+'</div>'+
+   '<div class="card pad fbar no-print">'+
+     '<div class="field grow"><label>جست‌وجو</label><input id="lfQ" class="inp" placeholder="موضوع، فرستنده یا شماره نامه…" value="'+esc(letterFilter.q)+'"></div>'+
+     '<div class="field"><label>نوع</label><select id="lfType" class="inp"><option value="">همه</option>'+LETTER_TYPES.map(t=>'<option '+(letterFilter.type===t?'selected':'')+'>'+t+'</option>').join('')+'</select></div>'+
+     '<div class="field"><label>وضعیت</label><select id="lfStatus" class="inp"><option value="">همه</option>'+LETTER_STATUSES.map(s=>'<option '+(letterFilter.status===s?'selected':'')+'>'+s+'</option>').join('')+'</select></div>'+
+   '</div>'+
+   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>شماره نامه</th><th>موضوع</th><th>فرستنده</th><th>نوع</th><th>وضعیت</th><th>ارجاع به</th><th>تاریخ ثبت</th><th></th></tr></thead><tbody id="lettersBody"></tbody></table></div></div>';
+  function upd(){
+    const q=letterFilter.q.trim();
+    let rows=all('SELECT * FROM letters ORDER BY id DESC');
+    if(q) rows=rows.filter(r=>((r.subject||'')+' '+(r.sender||'')+' '+(r.number||'')).includes(q));
+    if(letterFilter.type) rows=rows.filter(r=>r.type===letterFilter.type);
+    if(letterFilter.status) rows=rows.filter(r=>r.status===letterFilter.status);
+    const tb=$('#lettersBody');
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="8">'+emptyState('نامه‌ای یافت نشد')+'</td></tr>'; return; }
+    tb.innerHTML=rows.map(r=>'<tr>'+
+      '<td><b class="ltr-num">'+esc(r.number)+'</b></td>'+
+      '<td>'+esc(r.subject)+'</td>'+
+      '<td>'+esc(r.sender||'—')+'</td>'+
+      '<td>'+typeBadge(r.type)+'</td>'+
+      '<td>'+statusBadge(r.status)+'</td>'+
+      '<td>'+esc(r.assigned_role||'—')+'</td>'+
+      '<td>'+esc(r.created_at_fa||faDate(r.created_at))+'</td>'+
+      '<td><button class="btn btn-outline btn-sm" data-act="letterView" data-id="'+r.id+'">مشاهده</button></td></tr>').join('');
+  }
+  $('#lfQ').addEventListener('input',e=>{ letterFilter.q=e.target.value; upd(); });
+  $('#lfType').addEventListener('change',e=>{ letterFilter.type=e.target.value; upd(); });
+  $('#lfStatus').addEventListener('change',e=>{ letterFilter.status=e.target.value; upd(); });
+  upd();
+  if(pendingDetail && pendingDetail.kind==='letter'){
+    const id=pendingDetail.id; pendingDetail=null; openLetterDetail(id);
+  }
+};
+
+function openLetterModal(){
+  const jy=isoToJ(todayIso()).jy;
+  const num=nextNumber('letters',jy+'/دب/');
+  const draftKey='msz_draft_letter_'+session.username;
+  let draft={}; try{ draft=JSON.parse(localStorage.getItem(draftKey)||'{}'); }catch(e){}
+  const ov=openModal('ثبت نامه جدید',
+   '<form id="ltrForm" novalidate>'+
+    '<div class="frow2">'+
+      fld('شماره نامه (خودکار)','<input class="inp" value="'+num+'" readonly>')+
+      fld('تاریخ ثبت (خودکار)','<input class="inp" value="'+faStamp()+'" readonly>')+
+    '</div>'+
+    fld('موضوع *','<input name="subject" class="inp" data-draft="subject" value="'+esc(draft.subject||'')+'" placeholder="موضوع نامه…">')+
+    fld('فرستنده *','<input name="sender" class="inp" data-draft="sender" value="'+esc(draft.sender||'')+'" placeholder="نام شخص یا اداره…">')+
+    '<div class="frow2">'+
+      fld('نوع نامه','<select name="type" class="inp" data-draft="type">'+LETTER_TYPES.map(t=>'<option '+(draft.type===t?'selected':'')+'>'+t+'</option>').join('')+'</select>')+
+      fld('فایل پیوست (شبیه‌سازی)','<div class="file-row"><input id="ltrFileTxt" class="inp" placeholder="فایلی انتخاب نشده…" readonly value="'+esc(draft.file||'')+'"><label class="btn btn-outline btn-sm">انتخاب<input type="file" id="ltrFile" hidden></label></div>')+
+    '</div>'+
+    fld('خلاصه نامه','<textarea name="summary" class="inp" rows="3" data-draft="summary" placeholder="خلاصه محتوا…">'+esc(draft.summary||'')+'</textarea>')+
+    '<div class="draft-hint" id="draftHint"></div>'+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت نامه در دبیرخانه</button>'+
+   '</form>',{width:'660px'});
+  const form=ov.querySelector('#ltrForm');
+  const hint=$('#draftHint');
+  function saveDraft(){
+    const d={};
+    form.querySelectorAll('[data-draft]').forEach(i=>{ d[i.dataset.draft]=i.value; });
+    d.file=$('#ltrFileTxt').value;
+    try{ localStorage.setItem(draftKey,JSON.stringify(d)); }catch(e){}
+    hint.textContent='پیش‌نویس ذخیره شد ✓';
+    setTimeout(()=>{ hint.textContent=''; },2500);
+  }
+  form.querySelectorAll('[data-draft]').forEach(i=>i.addEventListener('input',saveDraft));
+  ov.querySelector('#ltrFile').addEventListener('change',e=>{
+    if(e.target.files[0]){ $('#ltrFileTxt').value=e.target.files[0].name; saveDraft(); }
+  });
+  form.addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(form);
+    const subj=form.subject.value.trim(), snd=form.sender.value.trim();
+    let ok=true;
+    if(!subj){ setErr(form.subject,'موضوع نامه الزامی است.'); ok=false; }
+    if(!snd){ setErr(form.sender,'نام فرستنده الزامی است.'); ok=false; }
+    if(!ok) return;
+    run('INSERT INTO letters (number,subject,sender,type,summary,status,assigned_role,file_name,created_by,created_at,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+      [num,subj,snd,form.type.value,form.summary.value.trim(),'ثبت‌شده','',$('#ltrFileTxt').value,session.username,todayIso(),faStamp()]);
+    localStorage.removeItem(draftKey);
+    logActivity('ثبت نامه جدید','نامه '+num+' با موضوع «'+subj+'» ثبت شد.');
+    notifyLevel4('نامه جدید ثبت شد','نامه '+num+' با موضوع «'+subj+'» در دبیرخانه ثبت شد.',session.username);
+    markDirty(); saveNow(true);
+    closeModal();
+    toast('نامه با شماره '+faNum(num)+' ثبت شد ✓');
+    renderView();
+  });
+}
+
+function openLetterDetail(id){
+  const L=one('SELECT * FROM letters WHERE id=?',[id]); if(!L) return;
+  const comments=all('SELECT * FROM letter_comments WHERE letter_id=? ORDER BY id',[id]);
+  const canMgr=can(3), canDec=can(4);
+  const allowed=LETTER_STATUSES.filter(s=>canDec||!DECISION_ONLY.includes(s));
+  const html=
+   '<div class="detail-grid">'+
+    '<div><small>شماره نامه</small><b class="ltr-num">'+esc(L.number)+'</b></div>'+
+    '<div><small>نوع</small>'+typeBadge(L.type)+'</div>'+
+    '<div><small>وضعیت</small>'+statusBadge(L.status)+'</div>'+
+    '<div><small>تاریخ ثبت</small><b>'+esc(L.created_at_fa||'—')+'</b></div>'+
+    '<div><small>فرستنده</small><b>'+esc(L.sender||'—')+'</b></div>'+
+    '<div><small>ارجاع به</small><b>'+esc(L.assigned_role||'—')+'</b></div>'+
+    '<div class="span2"><small>موضوع</small><b>'+esc(L.subject)+'</b></div>'+
+    (L.summary?'<div class="span2"><small>خلاصه</small><p>'+esc(L.summary)+'</p></div>':'')+
+    (L.file_name?'<div class="span2"><small>فایل پیوست (شبیه‌سازی)</small><b style="display:flex;align-items:center;gap:6px">'+icon('file',15)+' '+esc(L.file_name)+'</b></div>':'')+
+   '</div>'+
+   (canMgr?
+   '<div class="divider"></div>'+
+   '<div class="act-row">'+
+     '<button class="btn btn-outline btn-sm" data-act="letterAssignToggle">'+icon('send',15)+' ارجاع به نقش</button>'+
+     '<button class="btn btn-outline btn-sm" data-act="letterStatusToggle">'+icon('refresh',15)+' تغییر وضعیت</button>'+
+   '</div>'+
+   '<div id="assignBox" class="inline-box" hidden>'+
+     fld('ارجاع به نقش','<select id="asRole" class="inp">'+ROLES.map(r=>'<option '+(L.assigned_role===r?'selected':'')+'>'+r+'</option>').join('')+'</select>')+
+     fld('یادداشت ارجاع','<textarea id="asNote" class="inp" rows="2" placeholder="توضیح کوتاه برای مرجع…"></textarea>')+
+     '<button class="btn btn-primary btn-sm" data-act="letterAssign" data-id="'+L.id+'">ثبت ارجاع</button>'+
+   '</div>'+
+   '<div id="statusBox" class="inline-box" hidden>'+
+     fld('وضعیت جدید','<select id="stNew" class="inp">'+allowed.map(s=>'<option '+(L.status===s?'selected':'')+'>'+s+'</option>').join('')+'</select>')+
+     (!canDec?'<p class="tiny muted" style="margin-bottom:8px">تغییر به «تأیید نهایی» و «رد‌شده» فقط برای سطح ۴ (تصویب و تصمیم‌گیری) فعال است.</p>':'')+
+     '<button class="btn btn-primary btn-sm" data-act="letterStatus" data-id="'+L.id+'">اعمال وضعیت</button>'+
+   '</div>':'')+
+   '<div class="divider"></div>'+
+   '<h4 style="font-size:13.5px;color:var(--primary-dark);margin-bottom:10px">یادداشت‌ها و پیگیری ('+faNum(comments.length)+')</h4>'+
+   '<div class="thread">'+(comments.length?comments.map(c=>
+     '<div class="comment"><div class="c-head"><b>'+esc(c.author)+'</b><span class="badge b-neutral">'+esc(c.role)+'</span><small>'+esc(c.created_at_fa)+'</small></div><p>'+esc(c.body)+'</p></div>'
+   ).join(''):'<p class="muted tiny">یادداشتی ثبت نشده است.</p>')+'</div>'+
+   '<div class="field"><textarea id="cmtBody" class="inp" rows="2" placeholder="یادداشت جدید…"></textarea><div class="ferr" data-err></div></div>'+
+   '<button class="btn btn-primary btn-sm" data-act="letterComment" data-id="'+L.id+'">افزودن یادداشت</button>';
+  openModal('نامه '+L.number,html,{width:'780px'});
+}
+
+/* ============================================================
+   Module 3: جلسات و مصوبات
+   ============================================================ */
+VIEWS.meetings=function(root){
+  const rows=all('SELECT m.*, (SELECT COUNT(*) FROM decisions dd WHERE dd.meeting_id=m.id) AS dcount FROM meetings m ORDER BY m.id DESC');
+  root.innerHTML=
+   '<div class="page-head"><div><h2>جلسات و مصوبات</h2><p class="muted">مدیریت جلسات، مصوبات و پیگیری وظایف ناشی از آنها</p></div>'+
+   (canEdit()?'<button class="btn btn-primary no-print" data-act="meetingNew">'+icon('plus')+' جلسه جدید</button>':'')+'</div>'+
+   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>شماره جلسه</th><th>عنوان</th><th>تاریخ</th><th>وضعیت</th><th>تعداد مصوبات</th><th></th></tr></thead><tbody>'+
+   (rows.length?rows.map(m=>'<tr>'+
+     '<td><b class="ltr-num">'+esc(m.number)+'</b></td>'+
+     '<td>'+esc(m.title)+'</td>'+
+     '<td>'+esc(m.date_fa||faDate(m.date_iso))+'</td>'+
+     '<td>'+meetBadge(m.status)+'</td>'+
+     '<td><b>'+faNum(m.dcount)+'</b></td>'+
+     '<td><button class="btn btn-outline btn-sm" data-act="meetingView" data-id="'+m.id+'">مشاهده</button></td></tr>').join('')
+   :'<tr><td colspan="6">'+emptyState('هنوز جلسه‌ای ثبت نشده است')+'</td></tr>')+
+   '</tbody></table></div></div>';
+  if(pendingDetail && pendingDetail.kind==='meeting'){
+    const id=pendingDetail.id; pendingDetail=null; openMeetingDetail(id);
+  }
+};
+
+function openMeetingModal(){
+  const jy=isoToJ(todayIso()).jy;
+  const num=nextNumber('meetings',jy+'/جلس/');
+  const ov=openModal('ایجاد جلسه جدید',
+   '<form id="mtForm" novalidate>'+
+    '<div class="frow2">'+
+      fld('شماره جلسه (خودکار)','<input class="inp" value="'+num+'" readonly>')+
+      fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۳">')+
+    '</div>'+
+    fld('عنوان جلسه *','<input name="title" class="inp" placeholder="مثال: جلسه هیئت مدیره — آبان">')+
+    fld('وضعیت','<select name="status" class="inp"><option>برنامه‌ریزی‌شده</option><option>برگزار شد</option><option>لغو شد</option></select>')+
+    '<button type="submit" class="btn btn-primary btn-block">ایجاد جلسه</button>'+
+   '</form>');
+  const form=ov.querySelector('#mtForm');
+  form.addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(form);
+    let ok=true;
+    if(!form.title.value.trim()){ setErr(form.title,'عنوان جلسه الزامی است.'); ok=false; }
+    const jd=parseJDate(form.date.value);
+    if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست (نمونه: ۱۴۰۵/۰۸/۱۳).'); ok=false; }
+    if(!ok) return;
+    const iso=jToIso(jd.jy,jd.jm,jd.jd);
+    run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by) VALUES (?,?,?,?,?,?,?)',
+      [num,form.title.value.trim(),iso,faDate(iso),form.status.value,'[]',session.username]);
+    logActivity('ایجاد جلسه','جلسه «'+form.title.value.trim()+'» با شماره '+num+' ایجاد شد.');
+    markDirty(); saveNow(true);
+    closeModal();
+    toast('جلسه با شماره '+faNum(num)+' ایجاد شد ✓');
+    renderView();
+  });
+}
+
+function openMeetingDetail(id){
+  const M=one('SELECT * FROM meetings WHERE id=?',[id]); if(!M) return;
+  const decs=all('SELECT d.*, t.status AS tstatus, t.deadline_iso AS tdead FROM decisions d LEFT JOIN tasks t ON t.id=d.task_id WHERE d.meeting_id=? ORDER BY d.id',[id]);
+  let att=[]; try{ att=JSON.parse(M.attendees||'[]'); }catch(e){}
+  const canAtt=canEdit();
+  const users=all('SELECT username,display_name FROM users WHERE active=1 ORDER BY display_name');
+  const html=
+   '<div class="detail-grid">'+
+    '<div><small>شماره جلسه</small><b class="ltr-num">'+esc(M.number)+'</b></div>'+
+    '<div><small>تاریخ</small><b>'+esc(M.date_fa||faDate(M.date_iso))+'</b></div>'+
+    '<div><small>وضعیت</small>'+meetBadge(M.status)+'</div>'+
+    '<div class="span2"><small>عنوان</small><b>'+esc(M.title)+'</b></div>'+
+   '</div>'+
+   '<div class="divider"></div>'+
+   '<h4 style="font-size:13.5px;color:var(--primary-dark);margin-bottom:8px">حاضرین (نقش‌ها)'+(canAtt?' <span class="tiny muted">— با تغییر، ذخیره می‌شود</span>':' <span class="tiny muted">— فقط نمایش</span>')+'</h4>'+
+   '<div class="att-grid">'+ROLES.map(r=>
+     '<label class="chk'+(canAtt?'':' dis')+'"><input type="checkbox" data-role="'+esc(r)+'" '+(att.includes(r)?'checked':'')+(canAtt?'':' disabled')+'> '+esc(r)+'</label>'
+   ).join('')+'</div>'+
+   '<div class="divider"></div>'+
+   '<h4 style="font-size:13.5px;color:var(--primary-dark);margin-bottom:10px">مصوبات جلسه ('+faNum(decs.length)+')</h4>'+
+   (decs.length?'<div class="table-wrap"><table class="tbl" style="min-width:560px"><thead><tr><th>مصوبه</th><th>مسئول</th><th>ضرب‌الاجل</th><th>وضعیت وظیفه</th></tr></thead><tbody>'+
+     decs.map(d=>{
+       const t=d.tid||d.task_id;
+       let st=d.tstatus||'—';
+       let ov=false;
+       if(d.tdead && st!=='انجام‌شده') ov=d.tdead<todayIso();
+       if(ov) st='عقب‌افتاده';
+       return '<tr'+(ov?' class="row-ov"':'')+'><td>'+esc(d.title)+'</td><td>'+esc(d.assignee)+'</td><td>'+faDate(d.tdead)+'</td>'+
+         '<td>'+(st==='—'?'<span class="muted">—</span>':'<span class="badge '+(st==='انجام‌شده'?'b-success':(ov?'b-danger':(st==='در حال انجام'?'b-info':'b-warn')))+'">'+esc(st)+'</span>')+'</td></tr>';
+     }).join('')+'</tbody></table></div>'
+   :'<p class="muted tiny">مصوبه‌ای ثبت نشده است.</p>')+
+   (can(3)?
+   '<div class="inline-box" style="margin-top:14px">'+
+     '<b style="font-size:12.5px;color:var(--primary-dark);display:block;margin-bottom:10px">افزودن مصوبه (وظیفه به‌صورت خودکار ایجاد می‌شود)</b>'+
+     '<form id="decForm" novalidate>'+
+       fld('عنوان مصوبه *','<input name="title" class="inp" placeholder="عنوان مصوبه…">')+
+       '<div class="frow2">'+
+         fld('مسئول *','<select name="assignee" class="inp">'+users.map(u=>'<option value="'+u.username+'">'+esc(u.display_name)+'</option>').join('')+'</select>')+
+         fld('ضرب‌الاجل (شمسی) *','<input name="deadline" class="inp" placeholder="۱۴۰۵/۰۸/۲۰">')+
+       '</div>'+
+       '<button type="submit" class="btn btn-primary btn-sm">ثبت مصوبه و ایجاد وظیفه</button>'+
+     '</form>'+
+   '</div>':'');
+  openModal('جلسه '+M.number,html,{width:'820px'});
+  const ov=$('#modalOv');
+  ov.querySelectorAll('input[data-role]').forEach(cb=>{
+    cb.addEventListener('change',()=>{
+      const roles=Array.from(ov.querySelectorAll('input[data-role]')).filter(x=>x.checked).map(x=>x.dataset.role);
+      run('UPDATE meetings SET attendees=? WHERE id=?',[JSON.stringify(roles),id]);
+      markDirty();
+    });
+  });
+  const df=ov.querySelector('#decForm');
+  if(df){
+    df.addEventListener('submit',e=>{
+      e.preventDefault(); clearErrs(df);
+      let ok=true;
+      if(!df.title.value.trim()){ setErr(df.title,'عنوان مصوبه الزامی است.'); ok=false; }
+      const jd=parseJDate(df.deadline.value);
+      if(!jd){ setErr(df.deadline,'تاریخ شمسی معتبر نیست (نمونه: ۱۴۰۵/۰۸/۲۰).'); ok=false; }
+      if(!ok) return;
+      const iso=jToIso(jd.jy,jd.jm,jd.jd);
+      const u=one('SELECT * FROM users WHERE username=?',[df.assignee.value]);
+      run('INSERT INTO tasks (title,assignee,assignee_username,deadline_iso,status,meeting_id,created_at_fa) VALUES (?,?,?,?,?,?,?)',
+        [df.title.value.trim(),u?u.display_name:'',df.assignee.value,iso,'در انتظار',id,faStamp()]);
+      const tid=lastId();
+      run('INSERT INTO decisions (meeting_id,title,assignee,assignee_username,task_id) VALUES (?,?,?,?,?)',
+        [id,df.title.value.trim(),u?u.display_name:'',df.assignee.value,tid]);
+      addNotif(df.assignee.value,'وظیفه جدید برای شما','وظیفه «'+df.title.value.trim()+'» از مصوبات جلسه '+M.number+' به شما واگذار شد (مهلت: '+faDateLong(iso)+').');
+      logActivity('ثبت مصوبه','مصوبه «'+df.title.value.trim()+'» در جلسه '+M.number+' ثبت شد.');
+      renderNotifBadge();
+      markDirty(); saveNow(true);
+      toast('مصوبه ثبت و وظیفه ایجاد شد ✓');
+      openMeetingDetail(id);
+    });
+  }
+}
+
+/* ============================================================
+   Module 4: وظایف
+   ============================================================ */
+function taskComputedStatus(t){
+  if(t.status==='انجام‌شده') return 'انجام‌شده';
+  if(t.deadline_iso && t.deadline_iso<todayIso()) return 'عقب‌افتاده';
+  return t.status;
+}
+VIEWS.tasks=function(root){
+  const isAll=can(3);
+  root.innerHTML=
+   '<div class="page-head"><div><h2>'+(isAll?'وظایف':'وظایف من')+'</h2><p class="muted">'+(isAll?'مشاهده و مدیریت همه وظایف سامانه':'وظایف واگذارشده به شما')+'</p></div></div>'+
+   '<div class="card pad fbar no-print"><div class="field" style="width:220px"><label>فیلتر وضعیت</label><select id="tkF" class="inp">'+
+     ['','در انتظار','در حال انجام','انجام‌شده','عقب‌افتاده'].map(s=>'<option value="'+s+'" '+(taskFilter.status===s?'selected':'')+'>'+(s||'همه')+'</option>').join('')+
+   '</select></div></div>'+
+   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>عنوان وظیفه</th><th>مسئول</th><th>جلسه مرتبط</th><th>ضرب‌الاجل</th><th>وضعیت</th><th></th></tr></thead><tbody id="tasksBody"></tbody></table></div></div>';
+  function upd(){
+    let rows=all('SELECT t.*, m.number AS mnum FROM tasks t LEFT JOIN meetings m ON m.id=t.meeting_id ORDER BY t.deadline_iso IS NULL, t.deadline_iso');
+    if(!isAll) rows=rows.filter(t=>t.assignee_username===session.username);
+    if(taskFilter.status) rows=rows.filter(t=>taskComputedStatus(t)===taskFilter.status);
+    const tb=$('#tasksBody');
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="6">'+emptyState('وظیفه‌ای یافت نشد')+'</td></tr>'; return; }
+    tb.innerHTML=rows.map(t=>{
+      const st=taskComputedStatus(t);
+      const mine=can(3)||t.assignee_username===session.username;
+      let btns='';
+      if(mine && !session.isMedia){
+        if(st==='در انتظار') btns+='<button class="btn btn-outline btn-sm" data-act="taskSet" data-id="'+t.id+'" data-st="در حال انجام">شروع</button>';
+        if(st!=='انجام‌شده') btns+='<button class="btn btn-primary btn-sm" data-act="taskSet" data-id="'+t.id+'" data-st="انجام‌شده">انجام شد</button>';
+        else btns+='<button class="btn btn-ghost btn-sm" data-act="taskSet" data-id="'+t.id+'" data-st="در انتظار">بازگشت به در انتظار</button>';
+      }
+      return '<tr'+(st==='عقب‌افتاده'?' class="row-ov"':'')+'>'+
+        '<td>'+esc(t.title)+'</td>'+
+        '<td>'+esc(t.assignee||'—')+'</td>'+
+        '<td>'+esc(t.mnum||'—')+'</td>'+
+        '<td>'+faDateLong(t.deadline_iso)+'</td>'+
+        '<td><span class="badge '+(st==='انجام‌شده'?'b-success':(st==='عقب‌افتاده'?'b-danger':(st==='در حال انجام'?'b-info':'b-warn')))+'">'+esc(st)+'</span></td>'+
+        '<td><div class="act-row">'+btns+'</div></td></tr>';
+    }).join('');
+  }
+  $('#tkF').addEventListener('change',e=>{ taskFilter.status=e.target.value; upd(); });
+  upd();
+};
+
+/* ============================================================
+   Module 5: تقویم
+   ============================================================ */
+function calIso(){ return jToIso(calState.jy,calState.jm,calState.jd); }
+VIEWS.calendar=function(root){
+  if(!calState){ const t=isoToJ(todayIso()); calState={mode:'month',jy:t.jy,jm:t.jm,jd:t.jd}; }
+  root.innerHTML=
+   '<div class="page-head"><div><h2>تقویم شمسی</h2><p class="muted">رویدادها و رزرو سالن‌های مسجد — تداخل زمانی به‌صورت خودکار کنترل می‌شود</p></div>'+
+   '<div class="cal-nav no-print">'+
+     '<div class="seg">'+
+       ['month','week','day'].map(m=>'<button class="seg-btn '+(calState.mode===m?'on':'')+'" data-act="calMode" data-mode="'+m+'">'+(m==='month'?'ماه':(m==='week'?'هفته':'روز'))+'</button>').join('')+
+     '</div>'+
+     '<button class="icon-btn" data-act="calPrev" aria-label="قبلی">'+icon('chevR')+'</button>'+
+     '<b id="calTitle">'+J_MONTHS[calState.jm-1]+' '+faNum(calState.jy)+'</b>'+
+     '<button class="icon-btn" data-act="calNext" aria-label="بعدی">'+icon('chevL')+'</button>'+
+     '<button class="btn btn-outline btn-sm" data-act="calToday">امروز</button>'+
+     (canEdit()?'<button class="btn btn-primary btn-sm" data-act="eventNew">'+icon('plus',15)+' رویداد جدید</button>':'')+
+   '</div></div>'+
+   '<div class="card pad" id="calBody"></div>';
+  renderCalBody();
+};
+function calShift(delta){
+  let jm=calState.jm+delta, jy=calState.jy;
+  if(jm>12){ jm=1; jy++; } if(jm<1){ jm=12; jy--; }
+  const maxD=jalaaliMonthLength(jy,jm);
+  if(calState.jd>maxD) calState.jd=maxD;
+  calState.jm=jm; calState.jy=jy;
+  renderView();
+}
+function renderCalBody(){
+  const el=$('#calBody'); if(!el) return;
+  const t=todayIso();
+  if(calState.mode==='month'){
+    const jy=calState.jy, jm=calState.jm;
+    const len=jalaaliMonthLength(jy,jm);
+    const firstIso=jToIso(jy,jm,1), lastIso=jToIso(jy,jm,len);
+    const firstIdx=(isoToDate(firstIso).getDay()+1)%7;
+    const evs=all('SELECT * FROM events WHERE date_iso BETWEEN ? AND ? ORDER BY start_time',[firstIso,lastIso]);
+    const byDay={}; evs.forEach(e=>{ (byDay[e.date_iso]=byDay[e.date_iso]||[]).push(e); });
+    let cells='';
+    for(let i=0;i<firstIdx;i++) cells+='<div class="cal-cell blank"></div>';
+    for(let d=1;d<=len;d++){
+      const iso=jToIso(jy,jm,d), list=byDay[iso]||[];
+      cells+='<div class="cal-cell '+(iso===t?'today':'')+'" data-act="calDay" data-iso="'+iso+'" role="button" tabindex="0" aria-label="'+faNum(d)+' '+J_MONTHS[jm-1]+'">'+
+        '<span class="cal-d">'+faNum(d)+'</span><div class="dots">'+
+        list.slice(0,3).map(e=>'<i class="dot '+dotCls(e.type)+'" title="'+esc(e.title)+'"></i>').join('')+
+        (list.length>3?'<i class="dot more" title="رویدادهای بیشتر"></i>':'')+'</div></div>';
+    }
+    el.innerHTML='<div class="cal-week-head">'+J_WEEKDAYS.map(w=>'<div>'+w+'</div>').join('')+'</div><div class="cal-grid">'+cells+'</div>';
+  }else if(calState.mode==='week'){
+    const base=calIso();
+    const sat=addDaysIso(base,-(isoToDate(base).getDay()+1)%7);
+    let cols='';
+    for(let i=0;i<7;i++){
+      const d=addDaysIso(sat,i);
+      const evs=all('SELECT * FROM events WHERE date_iso=? ORDER BY start_time',[d]);
+      cols+='<div class="week-col '+(d===t?'today':'')+'" data-act="calDay" data-iso="'+d+'">'+
+        '<div class="wh">'+J_WEEKDAYS[i]+'<small>'+faDate(d)+'</small></div>'+
+        (evs.length?evs.map(e=>'<div class="wk-ev"><b>'+esc(e.title)+'</b><small>'+faNum(e.start_time)+'–'+faNum(e.end_time)+' · '+esc(e.hall)+'</small></div>').join(''):'<span class="muted tiny">—</span>')+
+        '</div>';
+    }
+    el.innerHTML='<div class="week-grid">'+cols+'</div>';
+  }else{
+    const iso=calIso();
+    const evs=all('SELECT * FROM events WHERE date_iso=? ORDER BY start_time',[iso]);
+    el.innerHTML='<div class="cal-day-title">'+faWeekday(iso)+' — '+faDateLong(iso)+(iso===t?' (امروز)':'')+'</div>'+
+      (evs.length?'<div class="day-list">'+evs.map(e=>
+        '<div class="day-ev '+dotCls(e.type)+'"><div><b>'+esc(e.title)+'</b><small>'+esc(e.type)+' · '+esc(e.hall)+' · '+faNum(e.start_time)+' تا '+faNum(e.end_time)+'</small></div>'+
+        ((e.created_by===session.username||can(3))?'<button class="icon-btn danger" data-act="eventDelete" data-id="'+e.id+'" title="حذف رویداد">'+icon('trash',16)+'</button>':'')+
+        '</div>').join('')+'</div>'
+      :emptyState('رویدادی برای این روز ثبت نشده است'));
+  }
+}
+function openEventModal(prefIso){
+  const dIso=prefIso||calIso();
+  const ov=openModal('رویداد جدید در تقویم',
+   '<form id="evForm" novalidate>'+
+    fld('عنوان رویداد *','<input name="title" class="inp" placeholder="عنوان رویداد…">')+
+    '<div class="frow2">'+
+      fld('نوع','<select name="type" class="inp">'+EVENT_TYPES.map(t=>'<option>'+t+'</option>').join('')+'</select>')+
+      fld('سالن *','<select name="hall" class="inp">'+HALLS.map(t=>'<option>'+t+'</option>').join('')+'</select>')+
+    '</div>'+
+    '<div class="frow2">'+
+      fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(dIso)+'" placeholder="۱۴۰۵/۰۸/۱۳">')+
+      '<div></div>'+
+    '</div>'+
+    '<div class="frow2">'+
+      fld('ساعت شروع *','<input name="st" type="time" class="inp">')+
+      fld('ساعت پایان *','<input name="et" type="time" class="inp">')+
+    '</div>'+
+    '<button type="submit" class="btn btn-primary btn-block">ذخیره رویداد</button>'+
+   '</form>');
+  const form=ov.querySelector('#evForm');
+  form.addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(form);
+    let ok=true;
+    if(!form.title.value.trim()){ setErr(form.title,'عنوان رویداد الزامی است.'); ok=false; }
+    const jd=parseJDate(form.date.value);
+    if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست (نمونه: ۱۴۰۵/۰۸/۱۳).'); ok=false; }
+    const st=form.st.value, et=form.et.value;
+    if(!st){ setErr(form.st,'ساعت شروع الزامی است.'); ok=false; }
+    if(!et){ setErr(form.et,'ساعت پایان الزامی است.'); ok=false; }
+    if(st&&et&&st>=et){ setErr(form.et,'ساعت پایان باید بعد از ساعت شروع باشد.'); ok=false; }
+    if(!ok) return;
+    const iso=jToIso(jd.jy,jd.jm,jd.jd);
+    const clash=one('SELECT * FROM events WHERE date_iso=? AND hall=? AND start_time<? AND end_time>?',[iso,form.hall.value,et,st]);
+    if(clash){
+      toast('تداخل زمانی: این سالن در این بازه رزرو است («'+clash.title+'» '+faNum(clash.start_time)+'–'+faNum(clash.end_time)+')','error');
+      return;
+    }
+    run('INSERT INTO events (title,type,hall,date_iso,start_time,end_time,created_by,created_by_name) VALUES (?,?,?,?,?,?,?,?)',
+      [form.title.value.trim(),form.type.value,form.hall.value,iso,st,et,session.username,session.name]);
+    logActivity('ثبت رویداد','رویداد «'+form.title.value.trim()+'» در '+form.hall.value+' برای '+faDateLong(iso)+' ثبت شد.');
+    markDirty(); saveNow(true);
+    closeModal();
+    toast('رویداد ثبت شد ✓');
+    renderCalBody();
+  });
+}
+
+/* ============================================================
+   Module 6: آموزش
+   ============================================================ */
+VIEWS.education=function(root){
+  const courses=all('SELECT c.*, (SELECT COUNT(*) FROM students s WHERE s.course_id=c.id) AS scount FROM courses c ORDER BY c.id');
+  const students=all('SELECT s.*, c.name AS cname FROM students s LEFT JOIN courses c ON c.id=s.course_id ORDER BY s.id');
+  root.innerHTML=
+   '<div class="page-head"><div><h2>آموزش</h2><p class="muted">مدیریت دوره‌ها، شاگردان و حضور و غیاب</p></div>'+
+   (canEdit()?'<div class="act-row"><button class="btn btn-outline" data-act="courseNew">'+icon('plus',15)+' دوره جدید</button><button class="btn btn-primary" data-act="studentNew">'+icon('plus',15)+' ثبت شاگرد</button></div>':'')+'</div>'+
+   '<div class="chips">'+(courses.length?courses.map(c=>
+     '<div class="chip"><b>'+esc(c.name)+'</b><small>مربی: '+esc(c.teacher||'—')+' · '+faNum(c.scount)+' شاگرد</small></div>'
+   ).join(''):emptyState('دوره‌ای ثبت نشده است'))+'</div>'+
+   '<div class="grid-2">'+
+    '<div class="card"><div style="padding:14px 18px 4px"><h3>'+icon('users')+' شاگردان ('+faNum(students.length)+')</h3></div><div class="table-wrap"><table class="tbl" style="min-width:560px"><thead><tr><th>نام</th><th>سن</th><th>رشته</th><th>دوره</th><th>وضعیت</th><th></th></tr></thead><tbody>'+
+      (students.length?students.map(s=>
+        '<tr><td>'+esc(s.name)+(s.is_minor?' <span class="badge b-info" style="font-size:9px">صغیر</span>':'')+'</td>'+
+        '<td>'+faNum(s.age)+'</td>'+
+        '<td>'+(s.is_minor?'<span class="muted tiny">ذخیره نشده (حداقل داده)</span>':esc(s.field||'—'))+'</td>'+
+        '<td>'+esc(s.cname||'—')+'</td>'+
+        '<td>'+(s.status==='فعال'?'<span class="badge b-success">فعال</span>':'<span class="badge b-gold">تکمیل‌شده</span>')+'</td>'+
+        '<td>'+(canEdit()&&s.status==='فعال'?'<button class="btn btn-gold btn-sm" data-act="certIssue" data-id="'+s.id+'">صدور گواهی</button>':'')+'</td></tr>'
+      ).join(''):'<tr><td colspan="6">'+emptyState('شاگردی ثبت نشده است')+'</td></tr>')+
+    '</tbody></table></div></div>'+
+    '<div class="card pad"><h3>'+icon('check')+' حضور و غیاب</h3>'+
+      '<div class="frow2">'+
+        '<div class="field"><label>دوره</label><select id="attCourse" class="inp">'+courses.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('')+'</select><div class="ferr" data-err></div></div>'+
+        '<div class="field"><label>تاریخ جلسه (شمسی)</label><input id="attDate" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۳"><div class="ferr" data-err></div></div>'+
+      '</div>'+
+      '<button class="btn btn-outline btn-sm" data-act="attLoad">نمایش لیست</button>'+
+      '<div id="attBody" style="margin-top:12px">'+emptyState('دوره و تاریخ را انتخاب و «نمایش لیست» را بزنید')+'</div>'+
+    '</div>'+
+   '</div>';
+};
+function attLoadList(){
+  clearErrs($('#viewRoot'));
+  const cid=+($('#attCourse').value||0);
+  const jd=parseJDate($('#attDate').value);
+  const dField=$('#attDate');
+  if(!cid){
+    const cf=$('#attCourse').closest('.field');
+    if(cf) cf.querySelector('[data-err]').textContent='دوره را انتخاب کنید.';
+    return;
+  }
+  if(!jd){ dField.classList.add('bad'); const er=dField.closest('.field').querySelector('[data-err]'); if(er) er.textContent='تاریخ شمسی معتبر نیست.'; return; }
+  const iso=jToIso(jd.jy,jd.jm,jd.jd);
+  const list=all('SELECT * FROM students WHERE course_id=? ORDER BY id',[cid]);
+  const existing=all('SELECT * FROM attendance WHERE course_id=? AND date_iso=?',[cid,iso]);
+  const state={};
+  existing.forEach(x=>{ state[x.student_id]=x.status; });
+  window._attState={cid:cid,iso:iso,state:state};
+  const body=$('#attBody');
+  if(!list.length){ body.innerHTML=emptyState('شاگردی در این دوره ثبت نشده است'); return; }
+  body.innerHTML=list.map(s=>{
+    const v=state[s.id]||'';
+    return '<div class="att-row"><b>'+esc(s.name)+'</b><div class="att-btns">'+
+      '<button class="att-btn '+(v==='حاضر'?'on-p':'')+'" data-sid="'+s.id+'" data-v="حاضر">حاضر</button>'+
+      '<button class="att-btn '+(v==='غایب'?'on-a':'')+'" data-sid="'+s.id+'" data-v="غایب">غایب</button>'+
+      '</div></div>';
+  }).join('')+
+  '<div style="display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap">'+
+    (canEdit()?'<button class="btn btn-primary btn-sm" data-act="attSave">ذخیره حضور و غیاب</button>':'<span class="badge b-warn">دسترسی ثبت ندارید</span>')+
+    '<span id="attSummary" class="tiny muted"></span></div>';
+  body.querySelectorAll('.att-btn').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const st=window._attState, sid=+b.dataset.sid;
+      st.state[sid]=b.dataset.v;
+      body.querySelectorAll('.att-btn[data-sid="'+sid+'"]').forEach(x=>x.classList.remove('on-p','on-a'));
+      b.classList.add(b.dataset.v==='حاضر'?'on-p':'on-a');
+      attSummaryText(list);
+    });
+  });
+  attSummaryText(list);
+}
+function attSummaryText(list){
+  const st=window._attState; if(!st) return;
+  const marked=Object.keys(st.state).length;
+  const present=Object.values(st.state).filter(v=>v==='حاضر').length;
+  const el=$('#attSummary');
+  if(el) el.textContent=marked?('نشانه‌گذاری: '+faNum(present)+' حاضر از '+faNum(marked)+' نفر'):'';
+}
+function attSave(){
+  const st=window._attState; if(!st) return;
+  run('DELETE FROM attendance WHERE course_id=? AND date_iso=?',[st.cid,st.iso]);
+  Object.keys(st.state).forEach(sid=>{
+    run('INSERT INTO attendance (student_id,course_id,date_iso,status) VALUES (?,?,?,?)',[+sid,st.cid,st.iso,st.state[sid]]);
+  });
+  const tot=one('SELECT COUNT(*) AS c FROM attendance WHERE course_id=?',[st.cid]).c;
+  const pr=one("SELECT COUNT(*) AS c FROM attendance WHERE course_id=? AND status='حاضر'",[st.cid]).c;
+  const pct=tot?Math.round(pr*100/tot):0;
+  logActivity('ثبت حضور و غیاب','حضور و غیاب دوره برای '+faDateLong(st.iso)+' ذخیره شد.');
+  markDirty(); saveNow(true);
+  toast('حضور و غیاب ذخیره شد ✓ درصد حضور کل دوره: '+faNum(pct)+'٪');
+}
+function openStudentModal(){
+  const courses=all('SELECT id,name FROM courses ORDER BY id');
+  if(!courses.length){ toast('ابتدا یک دوره ایجاد کنید','error'); return; }
+  const ov=openModal('ثبت شاگرد جدید',
+   '<form id="stuForm" novalidate>'+
+    fld('نام و تخلص *','<input name="name" class="inp" placeholder="نام کامل شاگرد…">')+
+    '<div class="frow2">'+
+      fld('سن *','<input name="age" type="number" min="1" max="99" class="inp" placeholder="مثال: ۲۵">')+
+      fld('دوره *','<select name="course" class="inp">'+courses.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('')+'</select>')+
+    '</div>'+
+    '<div id="fieldRow">'+fld('رشته / گرایش','<input name="field" class="inp" placeholder="مثال: تلاوت، حفظ…">')+'</div>'+
+    '<div id="fieldNote" class="badge b-info" style="margin-bottom:12px">برای افراد زیر ۱۸ سال فقط حداقل داده لازم ذخیره می‌شود</div>'+
+    fld('شماره تماس ولی (برای کمتر از ۱۸ سال)','<input name="guardian" class="inp" dir="ltr" style="text-align:right" placeholder="0790123456">')+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت شاگرد</button>'+
+   '</form>');
+  const form=ov.querySelector('#stuForm');
+  const ageInp=form.age, fieldRow=ov.querySelector('#fieldRow');
+  function syncMinor(){
+    const a=+ageInp.value||0;
+    const minor=a>0&&a<18;
+    fieldRow.style.display=minor?'none':'block';
+  }
+  ageInp.addEventListener('input',syncMinor); syncMinor();
+  form.addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(form);
+    let ok=true;
+    if(!form.name.value.trim()){ setErr(form.name,'نام شاگرد الزامی است.'); ok=false; }
+    const age=+form.age.value||0;
+    if(!age){ setErr(form.age,'سن الزامی است.'); ok=false; }
+    const minor=age>0&&age<18;
+    if(minor){
+      const g=form.guardian.value.replace(/[^0-9]/g,'');
+      if(g.length<9){ setErr(form.guardian,'برای افراد زیر ۱۸ سال، شماره تماس ولی الزامی است.'); ok=false; }
+    }
+    if(!ok) return;
+    run('INSERT INTO students (name,age,field,course_id,guardian_phone,status,is_minor) VALUES (?,?,?,?,?,?,?)',
+      [form.name.value.trim(),age,minor?'':form.field.value.trim(),+form.course.value,minor?form.guardian.value.trim():'','فعال',minor?1:0]);
+    logActivity('ثبت شاگرد','شاگرد «'+form.name.value.trim()+'» در دوره ثبت شد.');
+    markDirty(); saveNow(true);
+    closeModal();
+    toast('شاگرد ثبت شد ✓'+(minor?' (حداقل داده برای صغیر)':''));
+    renderView();
+  });
+}
+function openCourseModal(){
+  const ov=openModal('دوره جدید',
+   '<form id="crsForm" novalidate>'+
+    fld('نام دوره *','<input name="name" class="inp" placeholder="مثال: تجوید و قرائت">')+
+    fld('مربی','<input name="teacher" class="inp" placeholder="نام مربی…">')+
+    '<button type="submit" class="btn btn-primary btn-block">ایجاد دوره</button>'+
+   '</form>');
+  const form=ov.querySelector('#crsForm');
+  form.addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(form);
+    if(!form.name.value.trim()){ setErr(form.name,'نام دوره الزامی است.'); return; }
+    run('INSERT INTO courses (name,teacher) VALUES (?,?)',[form.name.value.trim(),form.teacher.value.trim()]);
+    logActivity('ایجاد دوره','دوره «'+form.name.value.trim()+'» ایجاد شد.');
+    markDirty(); saveNow(true);
+    closeModal();
+    toast('دوره ایجاد شد ✓');
+    renderView();
+  });
+}
+
+/* ============================================================
+   Module 7: امور مالی
+   ============================================================ */
+VIEWS.finance=function(root){
+  const tj=isoToJ(todayIso());
+  const mStart=jToIso(tj.jy,tj.jm,1), mEnd=jToIso(tj.jy,tj.jm,jalaaliMonthLength(tj.jy,tj.jm));
+  const inc=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='درآمد' AND date_iso BETWEEN ? AND ?",[mStart,mEnd]).s;
+  const exp=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='هزینه' AND date_iso BETWEEN ? AND ?",[mStart,mEnd]).s;
+  const bal=inc-exp;
+  const rows=all('SELECT * FROM transactions ORDER BY date_iso DESC, id DESC');
+  /* per-category chart (current jalaali year) */
+  const yStart=jToIso(tj.jy,1,1), yEnd=jToIso(tj.jy,12,jalaaliMonthLength(tj.jy,12));
+  const cats=all('SELECT category, kind, SUM(amount) AS s FROM transactions WHERE date_iso BETWEEN ? AND ? GROUP BY category, kind',[yStart,yEnd])
+    .filter(c=>c.category);
+  const maxCat=Math.max.apply(null,cats.map(c=>c.s).concat([1]));
+  root.innerHTML=
+   '<div class="page-head"><div><h2>امور مالی</h2><p class="muted">ثبت و پیگیری درآمد و هزینه‌های مسجد (افغانی)</p></div>'+
+   (can(3)&&!session.isMedia?'<button class="btn btn-primary no-print" data-act="txNew">'+icon('plus')+' ثبت تراکنش</button>':'')+'</div>'+
+   '<div class="grid-stats">'+
+     '<div class="stat-card accent-success"><span class="stat-label">درآمد '+J_MONTHS[tj.jm-1]+'</span><b class="stat-num c-success">'+faMoney(inc)+'</b></div>'+
+     '<div class="stat-card accent-danger"><span class="stat-label">هزینه '+J_MONTHS[tj.jm-1]+'</span><b class="stat-num c-danger">'+faMoney(exp)+'</b></div>'+
+     '<div class="stat-card accent-gold"><span class="stat-label">تراز '+J_MONTHS[tj.jm-1]+'</span><b class="stat-num '+(bal>=0?'c-success':'c-danger')+'">'+faMoney(bal)+'</b></div>'+
+   '</div>'+
+   '<div class="grid-2">'+
+    '<div class="card"><div style="padding:14px 18px 4px"><h3>'+icon('wallet')+' تراکنش‌ها</h3></div><div class="table-wrap"><table class="tbl" style="min-width:600px"><thead><tr><th>نوع</th><th>شرح</th><th>مبلغ (افغانی)</th><th>تاریخ</th><th>دسته</th><th>نامه مرتبط</th></tr></thead><tbody>'+
+      (rows.length?rows.map(r=>
+        '<tr><td>'+(r.kind==='درآمد'?'<span class="badge b-success">درآمد</span>':'<span class="badge b-danger">هزینه</span>')+'</td>'+
+        '<td>'+esc(r.description)+'</td>'+
+        '<td><b>'+faMoney(r.amount)+'</b></td>'+
+        '<td>'+faDate(r.date_iso)+'</td>'+
+        '<td>'+esc(r.category)+'</td>'+
+        '<td>'+esc(r.letter_number||'—')+'</td></tr>'
+      ).join(''):'<tr><td colspan="6">'+emptyState('تراکنشی ثبت نشده است')+'</td></tr>')+
+    '</tbody></table></div></div>'+
+    '<div class="card pad"><h3>'+icon('chart')+' نمودار دسته‌ها (سال '+faNum(tj.jy)+')</h3>'+
+      '<div class="legend"><span><i style="background:var(--primary)"></i>درآمد</span><span><i style="background:var(--danger)"></i>هزینه</span></div>'+
+      (cats.length?cats.sort((a,b)=>b.s-a.s).map(c=>
+        '<div class="bar-row"><span class="bl">'+esc(c.category)+'</span><div class="bar-track"><div class="bar-fill '+(c.kind==='هزینه'?'red':'')+'" style="width:'+Math.max(3,Math.round(c.s*100/maxCat))+'%"></div></div><span class="bv">'+faMoney(c.s)+'</span></div>'
+      ).join(''):emptyState('داده‌ای برای نمودار وجود ندارد'))+
+    '</div>'+
+   '</div>';
+};
+function openTxModal(){
+  const ov=openModal('ثبت تراکنش مالی',
+   '<form id="txForm" novalidate>'+
+    '<div class="frow2">'+
+      fld('نوع *','<select name="kind" class="inp"><option>درآمد</option><option>هزینه</option></select>')+
+      fld('مبلغ (افغانی) *','<input name="amount" type="number" min="1" class="inp" placeholder="مثال: 15000">')+
+    '</div>'+
+    fld('شرح *','<input name="desc" class="inp" placeholder="شرح تراکنش…">')+
+    '<div class="frow2">'+
+      fld('دسته','<select name="cat" class="inp">'+TX_CATEGORIES.map(c=>'<option>'+c+'</option>').join('')+'</select>')+
+      fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۳">')+
+    '</div>'+
+    fld('شماره نامه مرتبط (اختیاری)','<input name="letter" class="inp" dir="ltr" style="text-align:right" placeholder="1405/دب/002">')+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت تراکنش</button>'+
+   '</form>');
+  const form=ov.querySelector('#txForm');
+  form.addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(form);
+    let ok=true;
+    if(!form.desc.value.trim()){ setErr(form.desc,'شرح تراکنش الزامی است.'); ok=false; }
+    const amt=+form.amount.value||0;
+    if(amt<=0){ setErr(form.amount,'مبلغ معتبر وارد کنید.'); ok=false; }
+    const jd=parseJDate(form.date.value);
+    if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست.'); ok=false; }
+    if(!ok) return;
+    const iso=jToIso(jd.jy,jd.jm,jd.jd);
+    run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number) VALUES (?,?,?,?,?,?)',
+      [form.kind.value,form.desc.value.trim(),amt,iso,form.cat.value,form.letter.value.trim()]);
+    logActivity('ثبت تراکنش مالی',(form.kind.value)+' «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' افغانی ثبت شد.');
+    markDirty(); saveNow(true);
+    closeModal();
+    toast('تراکنش ثبت شد ✓');
+    renderView();
+  });
+}
+
+/* ============================================================
+   Module 8: رسانه و اطلاعیه‌ها
+   ============================================================ */
+VIEWS.media=function(root){
+  const mgmt=session.isMedia;
+  const anns=all('SELECT * FROM announcements ORDER BY id DESC');
+  const gal=all('SELECT * FROM gallery_notes ORDER BY id DESC');
+  root.innerHTML=
+   '<div class="page-head"><div><h2>رسانه و اطلاعیه‌ها</h2><p class="muted">'+
+     (mgmt?'مدیریت اطلاعیه‌ها و یادداشت‌های رسانه‌ای مسجد':'اطلاعیه‌ها و یادداشت‌های رسانه‌ای مسجد (فقط مشاهده)')+'</p></div>'+
+   (mgmt?'<button class="btn btn-primary no-print" data-act="annNew">'+icon('plus')+' اطلاعیه جدید</button>':'')+'</div>'+
+   (mgmt?'<div class="card pad" style="border-right:4px solid var(--warning)"><b style="font-size:12.5px;color:var(--warning)">دسترسی محدود رسانه (بدون اختیار سازمانی)</b><p class="tiny muted">شما فقط به ثبت محتوا (اطلاعیه‌ها و یادداشت‌های رسانه) دسترسی دارید؛ ارجاع، تأیید و تصمیم‌گیری سازمانی برای حساب شما فعال نیست.</p></div>':'')+
+   '<div class="card pad"><h3>'+icon('bell')+' اطلاعیه‌ها ('+faNum(anns.length)+')</h3>'+
+     (anns.length?anns.map(a=>
+      '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b style="font-size:13.5px">'+esc(a.title)+'</b><span class="badge b-gold">'+esc(a.date_fa)+'</span>'+
+      (mgmt?'<span style="margin-right:auto;display:flex;gap:6px"><button class="btn btn-outline btn-sm" data-act="annEdit" data-id="'+a.id+'">ویرایش</button><button class="icon-btn danger" style="width:34px;height:34px" data-act="annDel" data-id="'+a.id+'">'+icon('trash',14)+'</button></span>':'')+
+      '</div><p>'+esc(a.body)+'</p></div>'
+     ).join(''):emptyState('اطلاعیه‌ای ثبت نشده است'))+
+   '</div>'+
+   '<div class="card pad"><h3>'+icon('file')+' یادداشت‌های گالری (بارگذاری شبیه‌سازی‌شده)</h3>'+
+     (mgmt?'<button class="btn btn-outline btn-sm" data-act="galNew" style="margin-bottom:12px">'+icon('plus',15)+' یادداشت جدید</button>':'')+
+     (gal.length?'<div class="thread">'+gal.map(g=>
+       '<div class="comment"><div class="c-head"><b>'+esc(g.title)+'</b>'+(g.file_name?'<span class="badge b-neutral">'+icon('file',12)+' '+esc(g.file_name)+'</span>':'')+'<small>'+esc(g.date_fa)+'</small></div><p>'+esc(g.body)+'</p></div>'
+     ).join('')+'</div>':emptyState('یادداشتی ثبت نشده است'))+
+   '</div>';
+};
+function openAnnModal(id){
+  const a=id?one('SELECT * FROM announcements WHERE id=?',[id]):null;
+  const ov=openModal(a?'ویرایش اطلاعیه':'اطلاعیه جدید',
+   '<form id="annForm" novalidate>'+
+    fld('عنوان *','<input name="title" class="inp" value="'+esc(a?a.title:'')+'" placeholder="عنوان اطلاعیه…">')+
+    fld('متن اطلاعیه','<textarea name="body" class="inp" rows="4" placeholder="متن اطلاعیه…">'+esc(a?a.body:'')+'</textarea>')+
+    '<button type="submit" class="btn btn-primary btn-block">'+(a?'ذخیره تغییرات':'انتشار اطلاعیه')+'</button>'+
+   '</form>');
+  const form=ov.querySelector('#annForm');
+  form.addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(form);
+    if(!form.title.value.trim()){ setErr(form.title,'عنوان اطلاعیه الزامی است.'); return; }
+    if(a){
+      run('UPDATE announcements SET title=?, body=? WHERE id=?',[form.title.value.trim(),form.body.value.trim(),a.id]);
+      logActivity('ویرایش اطلاعیه','اطلاعیه «'+form.title.value.trim()+'» ویرایش شد.');
+      toast('اطلاعیه ویرایش شد ✓');
+    }else{
+      run('INSERT INTO announcements (title,body,date_fa,created_by) VALUES (?,?,?,?)',
+        [form.title.value.trim(),form.body.value.trim(),faDate(todayIso()),session.username]);
+      logActivity('ثبت اطلاعیه','اطلاعیه «'+form.title.value.trim()+'» منتشر شد.');
+      toast('اطلاعیه منتشر شد ✓');
+    }
+    markDirty(); saveNow(true);
+    refreshTicker(); closeModal(); renderView();
+  });
+}
+function openGalleryModal(){
+  const ov=openModal('یادداشت رسانه‌ای جدید',
+   '<form id="galForm" novalidate>'+
+    fld('عنوان *','<input name="title" class="inp" placeholder="عنوان…">')+
+    fld('شرح','<textarea name="body" class="inp" rows="3" placeholder="شرح…"></textarea>')+
+    fld('فایل (بارگذاری شبیه‌سازی‌شده)','<div class="file-row"><input id="galFileTxt" class="inp" placeholder="فایلی انتخاب نشده…" readonly><label class="btn btn-outline btn-sm">انتخاب فایل<input type="file" id="galFile" hidden></label></div>')+
+    '<button type="submit" class="btn btn-primary btn-block" style="margin-top:6px">ثبت یادداشت</button>'+
+   '</form>');
+  const form=ov.querySelector('#galForm');
+  ov.querySelector('#galFile').addEventListener('change',e=>{
+    if(e.target.files[0]) $('#galFileTxt').value=e.target.files[0].name;
+  });
+  form.addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(form);
+    if(!form.title.value.trim()){ setErr(form.title,'عنوان الزامی است.'); return; }
+    run('INSERT INTO gallery_notes (title,body,file_name,date_fa) VALUES (?,?,?,?)',
+      [form.title.value.trim(),form.body.value.trim(),$('#galFileTxt').value,faDate(todayIso())]);
+    logActivity('ثبت یادداشت رسانه‌ای','یادداشت «'+form.title.value.trim()+'» ثبت شد.');
+    markDirty(); saveNow(true);
+    closeModal(); toast('یادداشت ثبت شد ✓'); renderView();
+  });
+}
+
+/* ============================================================
+   Module 9: کاربران و دسترسی‌ها (سطح ۴)
+   ============================================================ */
+VIEWS.users=function(root){
+  const us=all('SELECT * FROM users ORDER BY level DESC, id');
+  root.innerHTML=
+   '<div class="page-head"><div><h2>کاربران و دسترسی‌ها</h2><p class="muted">مدیریت حساب‌ها و سطوح دسترسی سامانه</p></div></div>'+
+   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>سطح دسترسی</th><th>فعال</th></tr></thead><tbody>'+
+    us.map(u=>'<tr><td><b>'+esc(u.display_name)+'</b>'+(u.username==='media_admin'?'<span class="u-med">دسترسی محدود رسانه (بدون اختیار سازمانی)</span>':'')+'</td>'+
+      '<td><code style="font-size:11px;background:var(--soft);padding:2px 7px;border-radius:6px;direction:ltr;display:inline-block">'+esc(u.username)+'</code></td>'+
+      '<td>'+esc(u.role)+'</td>'+
+      '<td><span class="badge '+(u.level>=4?'b-gold':(u.level===3?'b-info':(u.level===2?'b-warn':'b-neutral')))+'">'+levelName(u.level)+'</span></td>'+
+      '<td><label class="switch"><input type="checkbox" data-user="'+esc(u.username)+'" '+(u.active?'checked':'')+'><i></i></label></td></tr>'
+    ).join('')+'</tbody></table></div></div>'+
+   '<div class="card pad"><h3>'+icon('shield')+' ماتریس سطوح دسترسی (فقط نمایش)</h3>'+
+    [['۱','مشاهده','فقط مشاهده اطلاعات و گزارش‌ها؛ بدون هیچ امکان ثبت یا تغییر.'],
+     ['۲','ثبت','امکان ثبت محتوا: جلسه، رویداد، شاگرد، حضور و غیاب و… بدون ارجاع و تصمیم‌گیری.'],
+     ['۳','مدیریت و ارجاع','ثبت نامه، ارجاع نامه به نقش‌ها، تغییر وضعیت جریان کاری و مدیریت وظایف.'],
+     ['۴','تصویب و تصمیم‌گیری','تصمیم‌گیری نهایی: تأیید/رد نامه، نیاز به تصمیم‌گیری و دسترسی کامل مدیریتی.']]
+     .map(l=>'<div class="lvl-row"><div class="ln">سطح '+l[0]+'</div><div><b>'+l[1]+'</b><p>'+l[2]+'</p></div></div>').join('')+
+   '</div>';
+  root.querySelectorAll('input[data-user]').forEach(sw=>{
+    sw.addEventListener('change',()=>{
+      const un=sw.dataset.user;
+      if(un===session.username && !sw.checked){
+        sw.checked=true;
+        toast('غیرفعال‌سازی حساب خودتان امکان‌پذیر نیست','error');
+        return;
+      }
+      run('UPDATE users SET active=? WHERE username=?',[sw.checked?1:0,un]);
+      logActivity('تغییر وضعیت کاربر','حساب «'+un+'» '+(sw.checked?'فعال':'غیرفعال')+' شد.');
+      markDirty(); saveNow(true);
+      toast('وضعیت حساب «'+un+'» ذخیره شد ✓');
+    });
+  });
+};
+
+/* ============================================================
+   Module 10: گزارش‌ها
+   ============================================================ */
+VIEWS.reports=function(root){
+  const maxOf=arr=>Math.max.apply(null,arr.concat([1]));
+  const letterStats=LETTER_STATUSES.map(s=>({s:s,c:one('SELECT COUNT(*) AS c FROM letters WHERE status=?',[s]).c})).filter(x=>x.c>0);
+  const maxL=maxOf(letterStats.map(x=>x.c));
+  const t=todayIso();
+  const taskStats=[
+    {s:'عقب‌افتاده',c:all("SELECT * FROM tasks WHERE status!='انجام‌شده' AND deadline_iso IS NOT NULL").filter(x=>x.deadline_iso<t).length},
+    {s:'در انتظار',c:one("SELECT COUNT(*) AS c FROM tasks WHERE status='در انتظار'").c},
+    {s:'در حال انجام',c:one("SELECT COUNT(*) AS c FROM tasks WHERE status='در حال انجام'").c},
+    {s:'انجام‌شده',c:one("SELECT COUNT(*) AS c FROM tasks WHERE status='انجام‌شده'").c}
+  ];
+  const maxT=maxOf(taskStats.map(x=>x.c));
+  const tj=isoToJ(t);
+  const months=[];
+  for(let i=5;i>=0;i--){
+    let jm=tj.jm-i, jy=tj.jy;
+    while(jm<1){ jm+=12; jy--; }
+    months.push({jy:jy,jm:jm,
+      inc:one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='درآمد' AND date_iso BETWEEN ? AND ?",[jToIso(jy,jm,1),jToIso(jy,jm,jalaaliMonthLength(jy,jm))]).s,
+      exp:one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='هزینه' AND date_iso BETWEEN ? AND ?",[jToIso(jy,jm,1),jToIso(jy,jm,jalaaliMonthLength(jy,jm))]).s});
+  }
+  const maxM=maxOf(months.map(m=>Math.max(m.inc,m.exp)));
+  const courseStats=all('SELECT c.name AS n, (SELECT COUNT(*) FROM students s WHERE s.course_id=c.id) AS c FROM courses c ORDER BY c.id');
+  const maxC=maxOf(courseStats.map(x=>x.c));
+  root.innerHTML=
+   '<div class="page-head"><div><h2>گزارش‌ها</h2><p class="muted">خلاصه وضعیت نامه‌ها، وظایف، مالی و آموزش</p></div>'+
+   '<button class="btn btn-outline no-print" data-act="printReport">'+icon('printer',16)+' چاپ گزارش‌ها</button></div>'+
+   '<div class="grid-2">'+
+    '<div class="card pad"><h3>'+icon('mail')+' نامه‌ها به تفکیک وضعیت</h3>'+
+     (letterStats.length?letterStats.map(x=>
+       '<div class="bar-row"><span class="bl">'+esc(x.s)+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.max(3,Math.round(x.c*100/maxL))+'%"></div></div><span class="bv">'+faNum(x.c)+'</span></div>'
+     ).join(''):emptyState('نامه‌ای ثبت نشده است'))+
+    '</div>'+
+    '<div class="card pad"><h3>'+icon('check')+' وضعیت وظایف</h3>'+
+     taskStats.map(x=>
+       '<div class="bar-row"><span class="bl">'+esc(x.s)+'</span><div class="bar-track"><div class="bar-fill '+(x.s==='عقب‌افتاده'?'red':(x.s==='انجام‌شده'?'':'gold'))+'" style="width:'+Math.max(3,Math.round(x.c*100/maxT))+'%"></div></div><span class="bv">'+faNum(x.c)+'</span></div>'
+     ).join('')+
+    '</div>'+
+    '<div class="card pad"><h3>'+icon('wallet')+' مالی ۶ ماه اخیر (افغانی)</h3>'+
+     '<div class="legend"><span><i style="background:var(--success)"></i>درآمد</span><span><i style="background:var(--danger)"></i>هزینه</span></div>'+
+     '<div class="month-chart">'+months.map(m=>
+       '<div class="mcol"><div class="mbars">'+
+         '<i class="mb inc" style="height:'+Math.max(3,Math.round(m.inc*140/maxM))+'px" title="درآمد: '+faMoney(m.inc)+'"></i>'+
+         '<i class="mb exp" style="height:'+Math.max(3,Math.round(m.exp*140/maxM))+'px" title="هزینه: '+faMoney(m.exp)+'"></i>'+
+       '</div><small>'+J_MONTHS[m.jm-1]+'</small></div>'
+     ).join('')+'</div>'+
+    '</div>'+
+    '<div class="card pad"><h3>'+icon('book')+' شاگردان به تفکیک دوره</h3>'+
+     (courseStats.length?courseStats.map(x=>
+       '<div class="bar-row"><span class="bl">'+esc(x.n)+'</span><div class="bar-track"><div class="bar-fill info" style="width:'+Math.max(3,Math.round(x.c*100/maxC))+'%"></div></div><span class="bv">'+faNum(x.c)+'</span></div>'
+     ).join(''):emptyState('دوره‌ای ثبت نشده است'))+
+    '</div>'+
+   '</div>';
+};
+
+/* ============================================================
+   Module 11: تنظیمات و پشتیبان‌گیری
+   ============================================================ */
+VIEWS.settings=function(root){
+  root.innerHTML=
+   '<div class="page-head"><div><h2>تنظیمات و پشتیبان‌گیری</h2><p class="muted">مدیریت داده‌های محلی مرورگر، پشتیبان‌گیری و بازیابی</p></div></div>'+
+   '<div class="grid-2">'+
+    '<div class="card pad"><h3>'+icon('download')+' پشتیبان‌گیری</h3>'+
+     '<p class="tiny muted" style="margin-bottom:12px">دیتابیس شما به‌صورت رمزنگاری‌شده (AES-GCM) در همین مرورگر ذخیره می‌شود. برای انتقال به دستگاه دیگر از پشتیبان رمزنگاری‌شده استفاده کنید (قابل بازیابی با همان رمز سامانه).</p>'+
+     '<div class="act-row">'+
+       '<button class="btn btn-primary" data-act="backupEnc">'+icon('download',16)+' پشتیبان رمزنگاری‌شده (.mszbak)</button>'+
+       '<button class="btn btn-outline" data-act="backupSql">'+icon('download',16)+' خروجی SQL خالص (.sql)</button>'+
+     '</div>'+
+    '</div>'+
+    '<div class="card pad"><h3>'+icon('upload')+' بازیابی</h3>'+
+     '<p class="tiny muted" style="margin-bottom:12px">فایل پشتیبان (.mszbak) یا خروجی SQL (.sql) را انتخاب کنید. داده‌های فعلی جایگزین می‌شوند.</p>'+
+     '<button class="btn btn-outline" data-act="importBtn">'+icon('upload',16)+' انتخاب فایل پشتیبان…</button>'+
+    '</div>'+
+    '<div class="card pad"><h3>'+icon('refresh')+' آخرین تازه‌سازی خودکار سیستم</h3>'+
+     '<p class="tiny muted" style="margin-bottom:8px">زمان آخرین به‌روزرسانی خودکار مخزن استقرار (در صورت در دسترس بودن فایل وضعیت):</p>'+
+     '<b id="lastRefresh" style="font-size:14px;color:var(--primary-dark)">در حال بررسی…</b>'+
+    '</div>'+
+    '<div class="card pad" style="border:1.5px solid #EFC2C2"><h3 style="color:var(--danger)">'+icon('alert')+' بازنشانی</h3>'+
+     '<p class="tiny muted" style="margin-bottom:12px">پاک‌سازی کامل داده‌های فعلی و بازگرداندن داده‌های آزمایشی اولیه. این عمل بازگشت‌پذیر نیست.</p>'+
+     '<button class="btn btn-danger" data-act="resetData">'+icon('trash',16)+' بازنشانی کامل داده‌های آزمایشی</button>'+
+    '</div>'+
+    '<div class="card pad"><h3>'+icon('save')+' ذخیره‌سازی خودکار</h3>'+
+     '<p class="tiny muted">تغییرات به‌صورت خودکار (حداکثر ۸ ثانیه پس از هر تغییر، و هنگام بستن برگه) رمزنگاری و ذخیره می‌شوند.</p>'+
+     '<button class="btn btn-outline btn-sm" style="margin-top:10px" data-act="saveNowBtn">ذخیره فوری همین حالا</button>'+
+    '</div>'+
+   '</div>';
+  loadLastRefresh();
+};
+async function loadLastRefresh(){
+  const el=$('#lastRefresh');
+  try{
+    const r=await fetch('last-refresh.json',{cache:'no-store'});
+    if(!r.ok) throw new Error('http '+r.status);
+    const j=await r.json();
+    const d=j.timestamp?new Date(j.timestamp):null;
+    el.textContent=d?new Intl.DateTimeFormat('fa-IR-u-ca-persian',{dateStyle:'full',timeStyle:'short'}).format(d):'در دسترس نیست';
+  }catch(e){
+    el.textContent='در دسترس نیست (فایل وضعیت یافت نشد)';
+  }
+}
+async function backupEnc(){
+  try{
+    const bytes=db.export();
+    const payload=await encryptBytes(bytes,cryptoKey);
+    const salt=localStorage.getItem('msz_salt')||'';
+    const j=isoToJ(todayIso());
+    const name='mosque-backup-'+j.jy+'-'+pad2(j.jm)+'-'+pad2(j.jd)+'.mszbak';
+    download(name,JSON.stringify({app:'msz',version:1,exported_at:new Date().toISOString(),salt:salt,iv:payload.iv,cipher:payload.cipher},null,1),'application/json');
+    toast('پشتیبان رمزنگاری‌شده دانلود شد ✓');
+  }catch(e){ console.error(e); toast('خطا در ساخت پشتیبان','error'); }
+}
+function dumpSql(){
+  const tables=['users','letters','letter_comments','meetings','decisions','tasks','events','courses','students','attendance','transactions','announcements','gallery_notes','activity_log','notifications'];
+  let out='-- پشتیبان SQL سامانه جامع مدیریت مسجد صاحب‌الزمان — '+todayIso()+'\nBEGIN TRANSACTION;\n'+SCHEMA+'\n';
+  tables.forEach(t=>{
+    let res;
+    try{ res=db.exec('SELECT * FROM '+t); }catch(e){ return; }
+    if(!res.length) return;
+    const cols=res[0].columns;
+    res[0].values.forEach(vals=>{
+      const vs=vals.map(v=> v===null?'NULL' : (typeof v==='number'? String(v) : "'"+String(v).replace(/'/g,"''")+"'"));
+      out+='INSERT INTO '+t+' ('+cols.join(',')+') VALUES ('+vs.join(',')+');\n';
+    });
+  });
+  out+='COMMIT;\n';
+  return out;
+}
+function backupSql(){
+  const j=isoToJ(todayIso());
+  download('mosque-backup-'+j.jy+'-'+pad2(j.jm)+'-'+pad2(j.jd)+'.sql',dumpSql(),'application/sql');
+  toast('خروجی SQL دانلود شد ✓');
+}
+async function resetData(){
+  if(!await confirmDlg('بازنشانی کامل داده‌های آزمایشی','تمام داده‌های فعلی پاک شده و داده‌های آزمایشی اولیه بازسازی می‌شود. ادامه می‌دهید؟',{danger:true,okText:'ادامه'})) return;
+  if(!await confirmDlg('تأیید نهایی','این عمل بازگشت‌پذیر نیست! تمام نامه‌ها، جلسات، وظایف، مالی و آموزش پاک می‌شوند.',{danger:true,okText:'بله، بازنشانی کن'})) return;
+  try{
+    setLoading(true,'در حال بازنشانی داده‌ها…');
+    db.close();
+    db=await buildSeed();
+    await saveNow(true);
+    setLoading(false);
+    toast('داده‌های آزمایشی بازسازی شد ✓');
+    refreshTicker(); renderNotifBadge();
+    nav('dashboard');
+  }catch(e){ console.error(e); setLoading(false); toast('خطا در بازنشانی','error'); }
+}
+function bindImport(){
+  $('#importFile').addEventListener('change',e=>{
+    const f=e.target.files[0];
+    if(!f) return;
+    const rd=new FileReader();
+    rd.onload=async ()=>{
+      try{
+        const text=String(rd.result);
+        if(f.name.endsWith('.mszbak')||text.trim().startsWith('{')){
+          const data=JSON.parse(text);
+          if(!data.salt||!data.iv||!data.cipher) throw new Error('bad file');
+          const key=await deriveKey(ub64(data.salt));
+          const bytes=await decryptPayload(data,key);
+          localStorage.setItem('msz_salt',data.salt);
+          cryptoKey=key;
+          const nd=new SQL.Database(bytes);
+          db.close(); db=nd;
+          await saveNow(true);
+          toast('پشتیبان رمزنگاری‌شده با موفقیت بازیابی شد ✓');
+        }else{
+          const nd=new SQL.Database();
+          nd.run(text);
+          db.close(); db=nd;
+          await saveNow(true);
+          toast('فایل SQL با موفقیت بازیابی شد ✓');
+        }
+        refreshTicker(); renderNotifBadge(); nav('dashboard');
+      }catch(err){
+        console.error(err);
+        toast('بازیابی ناموفق بود: فایل نامعتبر یا ناهمسان است','error');
+      }
+      e.target.value='';
+    };
+    rd.readAsText(f);
+  });
+}
+
+/* ============================================================
+   جست‌وجوی فراگیر
+   ============================================================ */
+let searchTimer=null;
+function doGlobalSearch(q){
+  const box=$('#searchDrop');
+  q=q.trim();
+  if(!q){ box.hidden=true; return; }
+  const like='%'+q+'%';
+  const letters=all('SELECT id,number,subject,status FROM letters WHERE subject LIKE ? OR sender LIKE ? OR number LIKE ? LIMIT 5',[like,like,like]);
+  const meetings=all('SELECT id,number,title FROM meetings WHERE title LIKE ? OR number LIKE ? LIMIT 5',[like,like]);
+  const tasks=all('SELECT id,title,assignee FROM tasks WHERE title LIKE ? OR assignee LIKE ? LIMIT 5',[like,like]);
+  const students=all('SELECT id,name FROM students WHERE name LIKE ? LIMIT 5',[like]);
+  const events=all('SELECT id,title,date_iso FROM events WHERE title LIKE ? LIMIT 5',[like]);
+  let html='';
+  function grp(title,items,kind,mk){
+    if(!items.length) return;
+    html+='<div class="sr-group">'+title+'</div>'+items.map(it=>
+      '<button class="sr-item" data-act="gotoSearch" data-kind="'+kind+'" data-id="'+it.id+'">'+mk(it)+'</button>').join('');
+  }
+  grp('نامه‌ها',letters,'letter',x=>'<b>'+esc(x.number)+'</b> — '+esc(x.subject)+' <small>'+esc(x.status)+'</small>');
+  grp('جلسات',meetings,'meeting',x=>'<b>'+esc(x.number)+'</b> — '+esc(x.title));
+  grp('وظایف',tasks,'task',x=>esc(x.title)+' <small>مسئول: '+esc(x.assignee||'—')+'</small>');
+  grp('شاگردان',students,'student',x=>esc(x.name));
+  grp('رویدادها',events,'event',x=>esc(x.title)+' <small>'+faDateLong(x.date_iso)+'</small>');
+  box.innerHTML=html||'<div class="sr-empty">نتیجه‌ای برای «'+esc(q)+'» یافت نشد</div>';
+  box.hidden=false;
+}
+function hideSearchDrop(){ const b=$('#searchDrop'); if(b) b.hidden=true; }
+function gotoSearchResult(d){
+  hideSearchDrop();
+  $('#gSearch').value='';
+  const id=+d.id;
+  if(d.kind==='letter'){ pendingDetail={kind:'letter',id:id}; nav('letters'); }
+  else if(d.kind==='meeting'){ pendingDetail={kind:'meeting',id:id}; nav('meetings'); }
+  else if(d.kind==='task'){ nav('tasks'); }
+  else if(d.kind==='student'){ nav('education'); }
+  else if(d.kind==='event'){
+    const ev=one('SELECT * FROM events WHERE id=?',[id]);
+    if(ev){ const j=isoToJ(ev.date_iso); calState={mode:'day',jy:j.jy,jm:j.jm,jd:j.jd}; nav('calendar'); }
+  }
+}
+
+/* ============================================================
+   Actions registry (delegation)
+   ============================================================ */
+const ACTIONS={
+  nav:d=>nav(d.view),
+  toggleSidebar:()=>toggleSidebar(!$('#sidebar').classList.contains('open')),
+  closeSidebar:()=>toggleSidebar(false),
+  closeModal:()=>closeModal(),
+  logout:()=>{ sessionStorage.removeItem('msz_session'); saveNow(true); location.reload(); },
+  toggleNotif:()=>{
+    const p=$('#notifPanel');
+    if(p.hidden){ fillNotifPanel(); p.hidden=false; } else p.hidden=true;
+  },
+  markAllRead:()=>{
+    run('UPDATE notifications SET "read"=1 WHERE username=?',[session.username]);
+    markDirty();
+    renderNotifBadge(); fillNotifPanel();
+    toast('همه اعلان‌ها خوانده شد ✓');
+  },
+  /* letters */
+  letterNew:()=>openLetterModal(),
+  letterView:d=>openLetterDetail(+d.id),
+  letterAssignToggle:()=>{ $('#assignBox').hidden=!$('#assignBox').hidden; $('#statusBox').hidden=true; },
+  letterStatusToggle:()=>{ $('#statusBox').hidden=!$('#statusBox').hidden; $('#assignBox').hidden=true; },
+  letterAssign:d=>{
+    const role=$('#asRole').value, note=$('#asNote').value.trim();
+    run('UPDATE letters SET assigned_role=?, status=? WHERE id=?',[role,'ارجاع‌شده',+d.id]);
+    if(note) run('INSERT INTO letter_comments (letter_id,author,role,body,created_at_fa) VALUES (?,?,?,?,?)',[+d.id,session.name,session.role,'(ارجاع به '+role+') '+note,faStamp()]);
+    notifyRole(role,'ارجاع نامه','نامه با موضوع ارجاعی به نقش شما ارجاع شد؛ لطفاً بررسی کنید.');
+    logActivity('ارجاع نامه','نامه به نقش «'+role+'» ارجاع شد.'+(note?' یادداشت: '+note:''));
+    renderNotifBadge(); markDirty(); saveNow(true);
+    toast('نامه به نقش «'+role+'» ارجاع شد ✓');
+    openLetterDetail(+d.id); renderView();
+  },
+  letterStatus:d=>{
+    const ns=$('#stNew').value;
+    if(DECISION_ONLY.includes(ns)&&!can(4)){ toast('این وضعیت فقط برای سطح ۴ (تصویب و تصمیم‌گیری) مجاز است','error'); return; }
+    run('UPDATE letters SET status=? WHERE id=?',[ns,+d.id]);
+    if(ns==='نیاز به تصمیم‌گیری'){
+      const L=one('SELECT * FROM letters WHERE id=?',[+d.id]);
+      notifyLevel4('نامه در انتظار تصمیم‌گیری','نامه '+L.number+' با موضوع «'+L.subject+'» در انتظار تصمیم‌گیری شماست.');
+    }
+    logActivity('تغییر وضعیت نامه','وضعیت نامه به «'+ns+'» تغییر کرد.');
+    renderNotifBadge(); markDirty(); saveNow(true);
+    toast('وضعیت نامه به «'+ns+'» تغییر کرد ✓');
+    openLetterDetail(+d.id); renderView();
+  },
+  letterComment:d=>{
+    const body=$('#cmtBody').value.trim();
+    if(!body){ toast('متن یادداشت را وارد کنید','error'); return; }
+    run('INSERT INTO letter_comments (letter_id,author,role,body,created_at_fa) VALUES (?,?,?,?,?)',[+d.id,session.name,session.role,body,faStamp()]);
+    logActivity('یادداشت نامه','یادداشتی روی نامه ثبت شد.');
+    markDirty(); saveNow(true);
+    toast('یادداشت افزوده شد ✓');
+    openLetterDetail(+d.id);
+  },
+  /* meetings */
+  meetingNew:()=>openMeetingModal(),
+  meetingView:d=>openMeetingDetail(+d.id),
+  /* tasks */
+  taskSet:d=>{
+    const st=d.st;
+    run('UPDATE tasks SET status=? WHERE id=?',[st,+d.id]);
+    logActivity('تغییر وضعیت وظیفه','وضعیت وظیفه به «'+st+'» تغییر کرد.');
+    markDirty(); saveNow(true);
+    toast('وضعیت وظیفه به «'+st+'» تغییر کرد ✓');
+    renderView();
+  },
+  /* calendar */
+  calMode:d=>{ calState.mode=d.mode; renderView(); },
+  calPrev:()=>calShift(-1),
+  calNext:()=>calShift(1),
+  calToday:()=>{ const j=isoToJ(todayIso()); calState={mode:calState.mode,jy:j.jy,jm:j.jm,jd:j.jd}; renderView(); },
+  calDay:d=>{ const j=isoToJ(d.iso); calState={mode:'day',jy:j.jy,jm:j.jm,jd:j.jd}; renderView(); },
+  eventNew:()=>openEventModal(),
+  eventDelete:async d=>{
+    const ev=one('SELECT * FROM events WHERE id=?',[+d.id]);
+    if(!ev) return;
+    if(!(ev.created_by===session.username||can(3))){ toast('اجازه حذف این رویداد را ندارید','error'); return; }
+    if(!await confirmDlg('حذف رویداد','رویداد «'+ev.title+'» حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM events WHERE id=?',[+d.id]);
+    logActivity('حذف رویداد','رویداد «'+ev.title+'» حذف شد.');
+    markDirty(); saveNow(true);
+    toast('رویداد حذف شد ✓');
+    renderView();
+  },
+  /* education */
+  courseNew:()=>openCourseModal(),
+  studentNew:()=>openStudentModal(),
+  attLoad:()=>attLoadList(),
+  attSave:()=>attSave(),
+  certIssue:async d=>{
+    const s=one('SELECT * FROM students WHERE id=?',[+d.id]);
+    if(!s) return;
+    run("UPDATE students SET status='تکمیل‌شده' WHERE id=?",[+d.id]);
+    logActivity('صدور گواهی','گواهی دوره برای شاگرد «'+s.name+'» صادر شد.');
+    markDirty(); saveNow(true);
+    toast('گواهی برای «'+s.name+'» صادر شد ✓');
+    renderView();
+  },
+  /* finance */
+  txNew:()=>openTxModal(),
+  /* media */
+  annNew:()=>openAnnModal(null),
+  annEdit:d=>openAnnModal(+d.id),
+  annDel:async d=>{
+    const a=one('SELECT * FROM announcements WHERE id=?',[+d.id]);
+    if(!a) return;
+    if(!await confirmDlg('حذف اطلاعیه','اطلاعیه «'+a.title+'» حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM announcements WHERE id=?',[+d.id]);
+    logActivity('حذف اطلاعیه','اطلاعیه «'+a.title+'» حذف شد.');
+    markDirty(); saveNow(true);
+    refreshTicker(); toast('اطلاعیه حذف شد ✓'); renderView();
+  },
+  galNew:()=>openGalleryModal(),
+  /* reports / settings */
+  printReport:()=>window.print(),
+  backupEnc:()=>backupEnc(),
+  backupSql:()=>backupSql(),
+  importBtn:()=>$('#importFile').click(),
+  resetData:()=>resetData(),
+  saveNowBtn:()=>{ saveNow(false); toast('داده‌ها ذخیره شد ✓'); },
+  /* search */
+  gotoSearch:d=>gotoSearchResult(d)
+};
+
+/* ============================================================
+   Boot
+   ============================================================ */
+function setLoading(show,text){
+  const ov=$('#loadingOverlay');
+  if(text) $('#loadText').textContent=text;
+  ov.hidden=!show;
+  if(show) ov.classList.remove('hidden'); else ov.classList.add('hidden');
+}
+async function boot(){
+  try{
+    if(typeof initSqlJs==='undefined') throw new Error('sql.js بارگذاری نشد (اتصال اینترنت را بررسی کنید).');
+    setLoading(true,'در حال بازیابی رمز دیتابیس…');
+    const SQL=await initSqlJs({locateFile:f=>'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/'+f});
+    window.SQL=SQL;
+    setLoading(true,'در حال آماده‌سازی کلید رمزنگاری…');
+    let saltB64=localStorage.getItem('msz_salt');
+    if(!saltB64){
+      const s=crypto.getRandomValues(new Uint8Array(16));
+      saltB64=b64(s);
+      localStorage.setItem('msz_salt',saltB64);
+    }
+    cryptoKey=await deriveKey(ub64(saltB64));
+    setLoading(true,'در حال خواندن دیتابیس…');
+    let stored=null;
+    try{ stored=await idbGet('db'); }catch(e){ console.warn('idb read failed',e); }
+    if(stored && stored.cipher){
+      const bytes=await decryptPayload(stored,cryptoKey);
+      db=new SQL.Database(bytes);
+    }else{
+      setLoading(true,'در حال ایجاد داده‌های آزمایشی…');
+      db=await buildSeed();
+      await saveNow(true);
+    }
+    setLoading(true,'در حال بارگذاری سامانه…');
+    bindImport();
+    const sess=sessionStorage.getItem('msz_session');
+    if(sess){
+      const u=one('SELECT * FROM users WHERE username=? AND active=1',[sess]);
+      if(u){ startApp(u); setLoading(false); return; }
+      sessionStorage.removeItem('msz_session');
+    }
+    showLogin();
+    setLoading(false);
+  }catch(err){
+    console.error(err);
+    setLoading(false);
+    const ov=$('#loadingOverlay'); if(ov) ov.classList.add('hidden');
+    const be=$('#bootError');
+    be.hidden=false;
+    $('#bootErrorMsg').textContent='جزئیات: '+(err&&err.message?err.message:err)+' — این سامانه به Web Crypto و اتصال اینترنت (برای بارگذاری sql.js) نیاز دارد.';
+  }
+}
+
+/* ---------- global delegation ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');
+  if(t && ACTIONS[t.dataset.act]){
+    e.preventDefault();
+    ACTIONS[t.dataset.act](t.dataset,t,e);
+  }
+  if(!e.target.closest('.search-wrap')) hideSearchDrop();
+  if(!e.target.closest('.notif-wrap')){ const p=$('#notifPanel'); if(p&&!p.hidden) p.hidden=true; }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ closeModal(); hideSearchDrop(); const p=$('#notifPanel'); if(p&&!p.hidden) p.hidden=true; }
+});
+const gs=$('#gSearch');
+if(gs) gs.addEventListener('input',e=>{
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(()=>doGlobalSearch(e.target.value),180);
+});
+
+boot();
+</script>
+</body>
+</html>
