@@ -1689,6 +1689,7 @@ function ensureSchema(){
     addCol('transactions','created_by',"TEXT DEFAULT ''");
     addCol('transactions','tx_status',"TEXT DEFAULT 'تأییدشده'");
     addCol('transactions','review_note',"TEXT DEFAULT ''");
+    addCol('transactions','unit',"TEXT DEFAULT 'center'");
     addCol('students','coach',"TEXT DEFAULT ''");
     newTables.forEach(q=>{ try{ run(q); }catch(e){} });
     run("UPDATE letters SET org='center' WHERE org IS NULL OR org=''");
@@ -1698,6 +1699,7 @@ function ensureSchema(){
     run("UPDATE events SET status='تأییدشده' WHERE status IS NULL OR status=''");
     run("UPDATE transactions SET tx_status='تأییدشده' WHERE tx_status IS NULL OR tx_status=''");
     Object.keys(ORG_BY_UN).forEach(un=>{ try{ run("UPDATE users SET org=? WHERE username=? AND (org IS NULL OR org='')",[ORG_BY_UN[un],un]); }catch(e){} });
+    Object.keys(UNIT_BY_UN).forEach(un=>{ try{ run("UPDATE transactions SET unit=? WHERE created_by=? AND (unit IS NULL OR unit='')",[UNIT_BY_UN[un],un]); }catch(e){} });
     /* v2.3.1 — اصلاح یک‌بارهٔ حساب‌ها در پایگاه دادهٔ محلی موجود (هش رمز، عنوان مسئولیت، سطح و سازمان مطابق جدول ۳ سند) */
     try{
       run('CREATE TABLE IF NOT EXISTS sys_flags(name TEXT PRIMARY KEY, value TEXT)');
@@ -1840,24 +1842,28 @@ function startApp(u){
 }
 
 /* ---------- sidebar / router ---------- */
+/* v2.4 — معماری دوپنل: پنل عمومی (امکانات مشترک) + پنل اختصاصی (سند مأموریت §۳) */
 const NAV=[
  {id:'dashboard',label:'داشبورد',icon:'home',min:1,group:'اصلی',desc:'نمای کلی سامانه'},
- {id:'letters',label:'دبیرخانه (نامه‌ها)',icon:'mail',min:1,group:'عملیاتی',desc:'ثبت، ارجاع و پیگیری نامه‌ها'},
- {id:'meetings',label:'جلسات و مصوبات',icon:'users',min:1,group:'عملیاتی',desc:'صورت‌جلسه‌ها و مصوبات'},
- {id:'tasks',label:'وظایف',icon:'check',min:1,group:'عملیاتی',desc:'پیگیری وظایف و مهلت‌ها'},
- {id:'calendar',label:'تقویم و رویدادها',icon:'calendar',min:1,group:'عملیاتی',desc:'تقویم شمسی و رزرو سالن‌ها'},
- {id:'education',label:'آموزش',icon:'book',min:1,group:'عملیاتی',desc:'دوره‌ها، شاگردان و حضور و غیاب'},
- {id:'panel',label:'پنل اختصاصی',icon:'inbox',roles:['culture','support','heyat','imam'],group:'عملیاتی',desc:'بخش‌های تخصصی واحد شما'},
- {id:'media',label:'رسانه و اطلاعیه‌ها',icon:'send',min:1,group:'عملیاتی',desc:'اطلاعیه‌ها و یادداشت‌های رسانه'},
- {id:'myexp',label:'هزینه‌های من',icon:'wallet',min:1,group:'عملیاتی',desc:'ثبت هزینه با رسید و پیگیری وضعیت آن'},
- {id:'finance',label:'امور مالی',icon:'wallet',min:1,group:'مدیریت',desc:'درآمد، هزینه و تراز مالی'},
- {id:'reports',label:'گزارش‌ها',icon:'chart',min:1,group:'مدیریت',desc:'نمودارها و گزارش‌های کلی'},
- {id:'users',label:'کاربران و دسترسی‌ها',icon:'shield',roles:['imam'],group:'مدیریت',desc:'حساب‌ها و اختیارات جزئی'},
- {id:'settings',label:'تنظیمات و پشتیبان‌گیری',icon:'settings',min:1,group:'مدیریت',desc:'پشتیبان، بازیابی و همگام‌سازی'}
+ {id:'letters',label:'مکاتبات',icon:'mail',min:1,group:'پنل عمومی — امکانات مشترک',desc:'مکاتبات با فرستنده و گیرنده، تأیید دبیر و بازگشت پاسخ به مبدا'},
+ {id:'missions',label:'مأموریت‌ها (مصوبات)',icon:'check',min:1,group:'پنل عمومی — امکانات مشترک',desc:'مصوبات جلسات تعیین‌شده برای واحد شما'},
+ {id:'calendar',label:'تقویم اجرایی',icon:'calendar',min:1,group:'پنل عمومی — امکانات مشترک',desc:'درخواست برنامه (تاریخ، ساعت، نوع) و تأیید دبیر هیئت امنا'},
+ {id:'orgfin',label:'گزارش مالی واحد',icon:'wallet',roles:['culture','support','education','sisters','basij_brothers','basij_sisters','heyat','charity'],group:'پنل عمومی — امکانات مشترک',desc:'ثبت و پیگیری هزینه‌های واحد خود؛ فقط معاونت مالی کل را می‌بیند'},
+ {id:'anns',label:'اعلان‌ها',icon:'bell',min:1,group:'پنل عمومی — امکانات مشترک',desc:'تابلوی اعلان‌ها و پیام‌های دریافتی — انتشار فقط رسانه و امام'},
+ {id:'panel',label:'پنل اختصاصی',icon:'inbox',roles:['culture','support','heyat','imam'],group:'پنل اختصاصی',desc:'بخش‌های تخصصی واحد شما'},
+ {id:'meetings',label:'جلسات و مصوبات',icon:'users',min:1,group:'بخش‌های تخصصی و مدیریت',desc:'صورت‌جلسه‌ها و مصوبات'},
+ {id:'tasks',label:'وظایف',icon:'check',min:1,group:'بخش‌های تخصصی و مدیریت',desc:'پیگیری وظایف و مهلت‌ها'},
+ {id:'education',label:'آموزش',icon:'book',min:1,group:'بخش‌های تخصصی و مدیریت',desc:'دوره‌ها، شاگردان و حضور و غیاب'},
+ {id:'media',label:'رسانه و اطلاعیه‌ها',icon:'send',min:1,group:'بخش‌های تخصصی و مدیریت',desc:'مدیریت محتوای رسانه'},
+ {id:'myexp',label:'هزینه‌های من',icon:'wallet',roles:['secretary','board','trainer','member','media_admin'],group:'بخش‌های تخصصی و مدیریت',desc:'ثبت هزینه شخصی با رسید و پیگیری وضعیت آن'},
+ {id:'finance',label:'امور مالی',icon:'wallet',min:1,group:'بخش‌های تخصصی و مدیریت',desc:'درآمد، هزینه و تراز مالی (پنل اختصاصی معاونت مالی)'},
+ {id:'reports',label:'گزارش‌ها',icon:'chart',min:1,group:'بخش‌های تخصصی و مدیریت',desc:'نمودارها و گزارش‌های کلی'},
+ {id:'users',label:'کاربران و دسترسی‌ها',icon:'shield',roles:['imam'],group:'بخش‌های تخصصی و مدیریت',desc:'حساب‌ها و اختیارات جزئی'},
+ {id:'settings',label:'تنظیمات و پشتیبان‌گیری',icon:'settings',min:1,group:'بخش‌های تخصصی و مدیریت',desc:'پشتیبان، بازیابی و همگام‌سازی'}
 ];
 function navAllowed(n){ return !!n && (n.roles ? n.roles.includes(session.username) : pm(n.id,n.min)); }
 function buildSidebar(){
-  const order=['اصلی','عملیاتی','مدیریت'];
+  const order=['اصلی','پنل عمومی — امکانات مشترک','پنل اختصاصی','بخش‌های تخصصی و مدیریت'];
   const items=NAV.filter(n=>navAllowed(n));
   let html='';
   order.forEach(g=>{
@@ -2039,6 +2045,7 @@ function openLetterModal(){
     '</div>'+
     fld('موضوع *','<input name="subject" class="inp" data-draft="subject" value="'+esc(draft.subject||'')+'" placeholder="موضوع نامه…">')+
     fld('فرستنده *','<input name="sender" class="inp" data-draft="sender" value="'+esc(draft.sender||'')+'" placeholder="نام شخص یا اداره…">')+
+    fld('گیرنده (واحد مقصد)','<select name="recv" class="inp" data-draft="recv"><option value="">— دبیرخانه مرکزی (بررسی اداری) —</option>'+ROLES.map(r=>'<option '+(draft.recv===r?'selected':'')+'>'+r+'</option>').join('')+'</select>')+
     '<div class="frow2">'+
       fld('نوع نامه','<select name="type" class="inp" data-draft="type">'+LETTER_TYPES.map(t=>'<option '+(draft.type===t?'selected':'')+'>'+t+'</option>').join('')+'</select>')+
       fld('فایل پیوست (شبیه‌سازی)','<div class="file-row"><input id="ltrFileTxt" class="inp" placeholder="فایلی انتخاب نشده…" readonly value="'+esc(draft.file||'')+'"><label class="btn btn-outline btn-sm">انتخاب<input type="file" id="ltrFile" hidden></label></div>')+
@@ -2070,7 +2077,7 @@ function openLetterModal(){
     if(!ok) return;
     const org=isHeyat?'heyat':'center';
     run('INSERT INTO letters (number,subject,sender,type,summary,status,assigned_role,file_name,created_by,created_at,created_at_fa,org) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
-      [num,subj,snd,form.type.value,form.summary.value.trim(),'ثبت‌شده','',$('#ltrFileTxt').value,session.username,todayIso(),faStamp(),org]);
+      [num,subj,snd,form.type.value,form.summary.value.trim(),'ثبت‌شده',form.recv.value,$('#ltrFileTxt').value,session.username,todayIso(),faStamp(),org]);
     if(org==='center'&&myOrg()!=='center'){
       addNotif('secretary','نامه جدید در صف بررسی دبیرخانه','نامه «'+subj+'» از '+ (ORG_LABELS[myOrg()]||'واحد شما')+' ثبت شد و در انتظار بررسی اداری است.');
     }
@@ -2110,6 +2117,12 @@ function openLetterDetail(id){
    '<div class="act-row">'+
      '<button class="btn btn-outline btn-sm" data-act="letterAssignToggle">'+icon('send',15)+' ارجاع به نقش</button>'+
      '<button class="btn btn-outline btn-sm" data-act="letterStatusToggle">'+icon('refresh',15)+' تغییر وضعیت</button>'+
+     '<button class="btn btn-primary btn-sm" data-act="letterReplyBox">'+icon('mail',15)+' ثبت پاسخ مقصد (بازگشت به مبدا)</button>'+
+   '</div>'+
+   '<div id="replyBox" class="inline-box" hidden>'+
+     fld('متن پاسخ واحدهای گیرنده','<textarea id="replyBody" class="inp" rows="3" placeholder="پاسخ این نامه به فرستنده…"></textarea>')+
+     '<button class="btn btn-primary btn-sm" data-act="letterReply" data-id="'+L.id+'">ارسال پاسخ به مبدا</button>'+
+     '<p class="tiny muted" style="margin-top:8px">با ثبت پاسخ، نامه به وضعیت «در حال اقدام» (مبدا) بازمی‌گردد و به ثبت‌کننده اعلان ارسال می‌شود.</p>'+
    '</div>'+
    '<div id="assignBox" class="inline-box" hidden>'+
      fld('ارجاع به نقش','<select id="asRole" class="inp">'+ROLES.map(r=>'<option '+(L.assigned_role===r?'selected':'')+'>'+r+'</option>').join('')+'</select>')+
@@ -2789,7 +2802,8 @@ function openTxReviewModal(id){
    Module 8: رسانه و اطلاعیه‌ها
    ============================================================ */
 VIEWS.media=function(root){
-  const mgmt=pm('media',2);
+  /* v2.4 سند مأموریت: انتشار اطلاعیه فقط امام جماعت و معاونت رسانه — سایر واحدها فقط دریافت‌کننده‌اند */
+  const mgmt=ANN_POST.includes(session.username);
   const anns=all('SELECT * FROM announcements ORDER BY id DESC');
   const gal=all('SELECT * FROM gallery_notes ORDER BY id DESC');
   root.innerHTML=
@@ -3421,6 +3435,23 @@ const ACTIONS={
     toast('یادداشت افزوده شد ✓');
     openLetterDetail(+d.id);
   },
+  letterReplyBox:()=>{
+    const b=$('#replyBox'); if(b) b.hidden=!b.hidden;
+  },
+  letterReply:d=>{
+    const L=one('SELECT * FROM letters WHERE id=?',[+d.id]); if(!L) return;
+    if(!pm('letters',3)){ toast('اجازه ثبت پاسخ ندارید','error'); return; }
+    const body=$('#replyBody').value.trim();
+    if(!body){ toast('متن پاسخ را وارد کنید','error'); return; }
+    run('INSERT INTO letter_comments (letter_id,author,role,body,created_at_fa) VALUES (?,?,?,?,?)',[L.id,session.name,session.role,'پاسخ مقصد: '+body,faStamp()]);
+    run('UPDATE letters SET status=? WHERE id=?',['در حال اقدام',L.id]);
+    if(L.created_by) addNotif(L.created_by,'پاسخ نامه شما رسید','پاسخ نامه «'+L.subject+'» ثبت شد و نامه به مبدا (وضعیت «در حال اقدام») بازگشت.');
+    logActivity('پاسخ نامه','پاسخ نامه «'+L.subject+'» ثبت و به مبدا بازگشت.');
+    renderNotifBadge(); markDirty(); saveNow(true);
+    toast('پاسخ ثبت و به مبدا بازگشت ✓');
+    openLetterDetail(L.id); renderView();
+  },
+  orgNew:()=>openOrgExpModal(),
   /* meetings */
   meetingNew:()=>openMeetingModal(),
   meetingView:d=>openMeetingDetail(+d.id),
@@ -3686,8 +3717,8 @@ function openMyExpModal(){
     if(!ok) return;
     const iso=jToIso(jd.jy,jd.jm,jd.jd);
     const receipt=$('#mxFileTxt').value;
-    run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status) VALUES (?,?,?,?,?,?,?,?)',
-      ['هزینه',form.desc.value.trim(),amt,iso,form.cat.value,receipt,session.username,'در انتظار بررسی']);
+    run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status,unit) VALUES (?,?,?,?,?,?,?,?,?)',
+      ['هزینه',form.desc.value.trim(),amt,iso,form.cat.value,receipt,session.username,'در انتظار بررسی',myUnit()]);
     addNotif('finance','هزینه جدید در انتظار بررسی','هزینه «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' افغانی از '+session.name+' ثبت شد و در انتظار بررسی فاکتور است.');
     logActivity('ثبت هزینه شخصی','هزینه «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' افغانی برای بررسی ارسال شد.');
     renderNotifBadge(); markDirty(); saveNow(true);
@@ -3696,6 +3727,137 @@ function openMyExpModal(){
     renderView();
   });
 }
+
+
+/* ============================================================
+   v2.4 — پنل عمومی (امکانات مشترک) سند مأموریت §۳
+   واحدها، مأموریت‌ها، گزارش مالی واحد، تابلوی اعلان‌ها
+   ============================================================ */
+const UNIT_BY_UN={culture:'culture',support:'support',education:'education',sisters:'sisters',basij_brothers:'basij_b',basij_sisters:'basij_s',heyat:'heyat',charity:'charity',finance:'ALL',imam:'ALL',secretary:'center',board:'center',trainer:'center',member:'center',media_admin:'center'};
+const UNIT_LABELS={culture:'معاونت فرهنگی',support:'معاونت عمران و پشتیبانی',education:'معاونت تعلیم و تربیت',sisters:'معاونت امور خواهران',basij_b:'پایگاه بسیج برادران',basij_s:'پایگاه بسیج خواهران',heyat:'هیئت فداییان حضرت زینب (س)',charity:'خیریه و نیکوکاری',center:'ستاد مسجد'};
+const ANN_POST=['imam','media_admin']; /* انتشار اطلاعیه فقط رسانه و امام جماعت */
+function myUnit(){ if(!session) return 'center'; return UNIT_BY_UN[session.username]||'center'; }
+
+/* ---------- مأموریت‌ها: مصوبات جلسات برای هر معاونت (§۳ عمومی) ---------- */
+function missionCanSee(x){
+  const un=session.username;
+  if(un==='imam'||un==='secretary') return true;
+  if(x.d_assignee_username===un||x.d_assignee===session.role) return true;
+  return meetingCanSee({kind:x.m_kind,org:x.m_org,unit:x.m_unit});
+}
+VIEWS.missions=function(root){
+  const rows=all("SELECT d.id AS d_id, d.title AS d_title, d.assignee AS d_assignee, d.assignee_username AS d_assignee_username, m.id AS m_id, m.number AS m_number, m.title AS m_title, m.date_iso AS m_date, m.kind AS m_kind, m.org AS m_org, m.unit AS m_unit, t.status AS t_status, t.deadline_iso AS t_deadline FROM decisions d LEFT JOIN meetings m ON m.id=d.meeting_id LEFT JOIN tasks t ON t.id=d.task_id ORDER BY COALESCE(m.date_iso,'') DESC, d.id DESC").filter(missionCanSee);
+  const mine=rows.filter(x=>x.d_assignee_username===session.username||x.d_assignee===session.role);
+  const related=rows.filter(x=>!mine.includes(x));
+  const stBadge=x=>{ if(x.t_status==='انجام‌شده') return '<span class="badge b-success">انجام‌شده</span>'; if(x.t_status) return '<span class="badge b-info">در جریان</span>'; return '<span class="badge b-neutral">در انتظار اقدام</span>'; };
+  const card=x=>
+    '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b>'+esc(x.d_title||'بدون عنوان')+'</b>'+stBadge(x)+(x.m_date?'<span class="badge b-gold">'+faDate(x.m_date)+'</span>':'')+'</div>'+
+    '<p class="tiny muted">منبع: جلسه '+(x.m_number?esc(x.m_number):'—')+' — '+esc(x.m_title||'')+' <span class="badge b-neutral">'+meetingKindLabel({kind:x.m_kind,org:x.m_org,unit:x.m_unit})+'</span></p>'+
+    '<p class="tiny">مسئول اجرا: <b>'+esc(x.d_assignee||'—')+'</b>'+(x.t_deadline?' · مهلت: <b>'+faDate(x.t_deadline)+'</b>':'')+'</p></div>';
+  const grp=(title,list,note)=>
+    '<div class="card pad" style="margin-bottom:14px"><h3 style="font-size:14px;color:var(--primary-dark)">'+icon('check',17)+' '+title+' ('+faNum(list.length)+')</h3>'+
+    (note?'<p class="tiny muted" style="margin:6px 0 10px">'+note+'</p>':'')+
+    (list.length?list.map(card).join(''):'<p class="muted tiny">موردی ثبت نشده است.</p>')+'</div>';
+  root.innerHTML=
+   '<div class="page-head"><div><h2>مأموریت‌ها (مصوبات)</h2><p class="muted">مصوبات جلسات هیئت امنا و واحدها — برای هر معاونت فقط مأموریت‌های مرتبط با مسئولیت خودش نمایش داده می‌شود</p></div></div>'+
+   (pm('meetings',1)?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><p class="tiny muted"><b>گردش کار:</b> مصوبات در بخش «جلسات و مصوبات» ثبت می‌شوند و به‌صورت مأموریت برای واحد مسئول در همین تابلو مشخص می‌شوند؛ وضعیت اجرا از وظیفهٔ متصل پیگیری می‌شود.</p></div>':'')+
+   grp('مأموریت‌های شما و واحد شما',mine,'مصوباتی که مسئول اجرای آن‌ها شما یا واحد شما هستید.')+
+   (['imam','secretary','board'].includes(session.username)||myOrg()!=='center'?
+     grp('سایر مصوبات مرتبط',related,''):grp('سایر مصوبات مرتبط',related,'مصوبات جلساتِ مجاز شما (بدون جزئیات جلسات هیئت امنا).'));
+};
+
+/* ---------- گزارش مالی واحد: هزینه‌های فقط همان واحد (§۳-۵) ---------- */
+const TXST_MAP={'تأییدشده':'b-success','در انتظار بررسی':'b-warn','ردشده':'b-danger','بازگشت برای اصلاح':'b-danger'};
+VIEWS.orgfin=function(root){
+  if(FINANCE_FULL.includes(session.username)){ VIEWS.finance(root); return; }
+  const u=myUnit();
+  const rows=all("SELECT * FROM transactions WHERE kind='هزینه' AND unit=? ORDER BY date_iso DESC, id DESC",[u]);
+  const stC=k=>rows.filter(t=>(t.tx_status||'تأییدشده')===k).length;
+  const stS=k=>rows.filter(t=>(t.tx_status||'تأییدشده')===k).reduce((a,t)=>a+(t.amount||0),0);
+  root.innerHTML=
+   '<div class="page-head"><div><h2>گزارش مالی واحد</h2><p class="muted">ثبت و پیگیری هزینه‌های '+esc(UNIT_LABELS[u]||'واحد شما')+' — فقط هزینه‌های واحد خودتان قابل مشاهده است</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="orgNew">'+icon('plus')+' ثبت هزینه واحد</button></div>'+
+   '<div class="grid-stats">'+
+    '<div class="stat-card"><span class="stat-label">در انتظار بررسی</span><b class="stat-num">'+faNum(stC('در انتظار بررسی'))+'</b><small class="muted">'+faMoney(stS('در انتظار بررسی'))+' افغانی</small></div>'+
+    '<div class="stat-card accent-success"><span class="stat-label">تأییدشده</span><b class="stat-num c-success">'+faNum(stC('تأییدشده'))+'</b><small class="muted">'+faMoney(stS('تأییدشده'))+' افغانی</small></div>'+
+    '<div class="stat-card accent-danger"><span class="stat-label">ردشده / بازگشتی</span><b class="stat-num c-danger">'+faNum(stC('ردشده')+stC('بازگشت برای اصلاح'))+'</b><small class="muted">با یادداشت معاونت مالی</small></div>'+
+   '</div>'+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>محرمانگی (§۳-۵):</b> هر معاونت فقط هزینه‌های واحد خود را می‌بیند؛ هزینه‌های سایر معاونت‌ها و کل مسجد فقط در پنل اختصاصی معاونت امور مالی (و برای امام جماعت) قابل مشاهده است. گردش: ثبت ← صف بررسی معاونت مالی ← تأیید/رد/اصلاح ← اعلام نتیجه همین‌جا.</p></div>'+
+   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>شرح</th><th>مبلغ (افغانی)</th><th>تاریخ</th><th>دسته</th><th>رسید</th><th>ثبت‌کننده</th><th>وضعیت</th><th>یادداشت بررسی</th></tr></thead><tbody>'+
+    (rows.length?rows.map(t=>
+      '<tr><td>'+esc(t.description)+'</td>'+
+      '<td><b>'+faMoney(t.amount)+'</b></td>'+
+      '<td>'+faDate(t.date_iso)+'</td>'+
+      '<td>'+esc(t.category)+'</td>'+
+      '<td>'+(t.letter_number?'<span class="badge b-neutral">'+icon('file',12)+' '+esc(t.letter_number)+'</span>':'<span class="muted tiny">—</span>')+'</td>'+
+      '<td class="tiny">'+esc(t.created_by||'—')+'</td>'+
+      '<td><span class="badge '+(TXST_MAP[t.tx_status]||'b-success')+'">'+esc(t.tx_status||'تأییدشده')+'</span></td>'+
+      '<td class="tiny muted">'+esc(t.review_note||'—')+'</td></tr>'
+    ).join(''):'<tr><td colspan="8">'+emptyState('هنوز هزینه‌ای برای این واحد ثبت نشده است')+'</td></tr>')+
+   '</tbody></table></div></div>';
+};
+function openOrgExpModal(){
+  const u=myUnit();
+  const ov=openModal('ثبت هزینه '+esc(UNIT_LABELS[u]||'واحد')+' (ارسال به بررسی معاونت مالی)',
+   '<form id="ogForm" novalidate>'+
+    '<div class="frow2">'+
+      fld('مبلغ (افغانی) *','<input name="amount" type="number" min="1" class="inp" placeholder="مثال: 2500">')+
+      fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۳">')+
+    '</div>'+
+    fld('شرح هزینه *','<input name="desc" class="inp" placeholder="مثال: خرید ملزومات برنامه فرهنگی واحد…">')+
+    '<div class="frow2">'+
+      fld('دسته هزینه','<select name="cat" class="inp">'+EXPENSE_CATEGORIES.map(c=>'<option>'+c+'</option>').join('')+'</select>')+
+      fld('رسید / فاکتور (نام فایل — شبیه‌سازی)','<div class="file-row"><input id="ogFileTxt" class="inp" placeholder="فایلی انتخاب نشده…" readonly><label class="btn btn-outline btn-sm">انتخاب رسید<input type="file" id="ogFile" hidden></label></div>')+
+    '</div>'+
+    '<div class="badge b-warn" style="margin-bottom:12px">پس از ثبت، هزینه در صف بررسی معاونت امور مالی قرار می‌گیرد؛ نتیجه فقط در «گزارش مالی واحد» همین واحد اعلام می‌شود</div>'+
+    '<button type="submit" class="btn btn-primary btn-block">ارسال برای بررسی</button>'+
+   '</form>');
+  const form=ov.querySelector('#ogForm');
+  ov.querySelector('#ogFile').addEventListener('change',e=>{ if(e.target.files[0]) $('#ogFileTxt').value=e.target.files[0].name; });
+  form.addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(form);
+    let ok=true;
+    if(!form.desc.value.trim()){ setErr(form.desc,'شرح هزینه الزامی است.'); ok=false; }
+    const amt=+form.amount.value||0;
+    if(amt<=0){ setErr(form.amount,'مبلغ معتبر وارد کنید.'); ok=false; }
+    const jd=parseJDate(form.date.value);
+    if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست.'); ok=false; }
+    if(!ok) return;
+    const iso=jToIso(jd.jy,jd.jm,jd.jd);
+    const receipt=$('#ogFileTxt').value;
+    run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status,unit) VALUES (?,?,?,?,?,?,?,?,?)',
+      ['هزینه',form.desc.value.trim(),amt,iso,form.cat.value,receipt,session.username,'در انتظار بررسی',u]);
+    addNotif('finance','هزینه جدید از '+ (UNIT_LABELS[u]||'واحد'),'هزینه «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' افغانی از '+session.name+' ثبت شد و در انتظار بررسی فاکتور است.');
+    logActivity('ثبت هزینه واحد','هزینه «'+form.desc.value.trim()+'» برای بررسی ارسال شد.');
+    renderNotifBadge(); markDirty(); saveNow(true);
+    closeModal();
+    toast('هزینه واحد ثبت و به معاونت مالی ارسال شد ✓');
+    renderView();
+  });
+}
+
+/* ---------- تابلوی اعلان‌ها: دریافت برای همه، انتشار فقط رسانه و امام (§۳ عمومی) ---------- */
+VIEWS.anns=function(root){
+  const canPost=ANN_POST.includes(session.username);
+  const anns=all('SELECT * FROM announcements ORDER BY id DESC');
+  const nots=all('SELECT * FROM notifications WHERE username=? ORDER BY id DESC LIMIT 12',[session.username]);
+  root.innerHTML=
+   '<div class="page-head"><div><h2>اعلان‌ها</h2><p class="muted">تابلوی اعلان‌های رسمی مسجد — انتشار اطلاعیه فقط توسط امام جماعت و معاونت رسانه؛ سایر واحدها دریافت‌کننده‌اند</p></div>'+
+   (canPost?'<button class="btn btn-primary no-print" data-act="annNew">'+icon('plus')+' اطلاعیه جدید</button>':'')+'</div>'+
+   (!canPost?'<div class="card pad" style="border-right:4px solid var(--info,var(--primary));margin-bottom:12px"><p class="tiny muted"><b>دسترسی مشاهده:</b> اطلاعیه‌های رسانه و پیام‌های دبیرخانه و واحدها را در همین تابلو می‌بینید؛ اما حق ارسال اطلاعیه ندارید (§ عمومی≠دسترسی آزاد).</p></div>':'')+
+   '<div class="card pad"><h3>'+icon('bell')+' اطلاعیه‌های رسمی ('+faNum(anns.length)+')</h3>'+
+     (anns.length?anns.map(a=>
+      '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b style="font-size:13.5px">'+esc(a.title)+'</b><span class="badge b-gold">'+esc(a.date_fa||'')+'</span>'+
+      (canPost?'<span style="margin-right:auto;display:flex;gap:6px"><button class="btn btn-outline btn-sm" data-act="annEdit" data-id="'+a.id+'">ویرایش</button><button class="icon-btn danger" style="width:34px;height:34px" data-act="annDel" data-id="'+a.id+'">'+icon('trash',14)+'</button></span>':'')+
+      '</div><p>'+esc(a.body||'')+'</p></div>'
+     ).join(''):emptyState('اطلاعیه‌ای منتشر نشده است'))+
+   '</div>'+
+   '<div class="card pad"><h3>'+icon('mail')+' پیام‌های دریافتی از دبیرخانه و واحدها</h3>'+
+     (nots.length?'<div class="thread">'+nots.map(n=>
+      '<div class="comment"><div class="c-head"><b>'+esc(n.title)+'</b><span class="badge b-neutral">'+esc(n.created_at_fa||'')+'</span></div><p class="tiny">'+esc(n.body||'')+'</p></div>'
+     ).join('')+'</div>':emptyState('پیامی دریافت نشده است'))+
+   '</div>';
+};
 
 /* ---------- پرونده تربیتی اعضا — محرمانه (§۳-۴) ---------- */
 const GROWTH_LEVELS=['نیازمند توجه و تقویت','در حال رشد','مطلوب','توانمند و پیشرو'];
