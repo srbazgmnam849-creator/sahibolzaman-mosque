@@ -1036,22 +1036,23 @@ function levelName(l){ return ['','سطح ۱ — مشاهده','سطح ۲ — ث
 const APP_NAME='سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج)';
 const ACCOUNTS=[
 /* گذرواژه‌ها فقط به‌صورت SHA-256 (با نمک ثابت سامانه) — هیچ رمز خامی در کد نگه‌داری نمی‌شود (قاعده قطعی سند مأموریت §۵)
-   ستون ششم: سازمان (org) طبق جدول ۳ سند — ALL=دسترسی کل */
+   ستون ششم: سازمان (org) طبق جدول ۳ سند — ALL=دسترسی کل
+   v2.3.1: هش همه حساب‌ها مطابق رمزهای اولیه تعیین‌شده توسط کارفرما بازسازی شد (۱۱ حساب قبلاً هش نادرست داشتند) */
  ['imam','a09744f1381cb0365458bde146bb2a60861dd3b240536fc38b10e6a80bb59e0e','حاج مولوی صاحب‌الزمانی','امام جماعت',4,'ALL'],
- ['secretary','6d70ea0b07cbc7d9afed3f108095de8ce89a33224fc418926b7edeb39954c14e','مولوی نوری','دبیر مرکزی دبیرخانه',4,'center'],
+ ['secretary','e7b27a19a08b2146c2ffb53906ab25ea2f627b39ee84837be64cd85da3620175','مولوی نوری','دبیر هیئت امنا',4,'center'],
  ['board','ed9fa7ea23caec5d02367670711549892b35c997ee09c0a442cbe7f2e2e58b73','استاد رحیمی','رئیس هیئت مدیره',4,'center'],
- ['finance','8de4d114577f9c9dd53ddb5d1810f029e485cb5983731364b7cd5deaf23960eb','استاد کریمی','مسئول امور مالی',3,'center'],
- ['culture','202d6aa86d8a23da0712303df7b08cd0dbc6ba374d3780a436248091452ccdae','استاد حسینی','مسئول فرهنگی',3,'center'],
- ['support','86ffd7a021311c1f93354c40a2589a1be8038255a8ff281ee9daf8c13d05e26a','استاد احمدی','مسئول پشتیبانی و نظرخواهی',3,'center'],
- ['education','ee3948f8d0ca17895dfcfdef73a4265c18d8d9f31ab9a655eb1db558a8577ffb','مولوی رضایی','مسئول آموزش',3,'center'],
- ['sisters','94596f4581acb311d05eddd3a6b49a54b107407617258250b010bc6b8ba60fd7','ناحیده سادات','مسئول بخش خواهران',3,'center'],
- ['basij_brothers','d45b773575ad536e5a6a879b2bc98f005a7025409113033adde904427cd11c31','استاد مصطفوی','مسئول پایگاه بسیج برادران',3,'basij_b'],
- ['basij_sisters','7689c24fb485c32eb66b6368320662b9b36d9f9a417d6f873908a0f18b986817','ناحیده فاطمی','مسئول پایگاه بسیج خواهران',3,'basij_s'],
- ['heyat','738794d80e255539768a82a5c42e254c98b9afb95e34efc405af4595115e647f','استاد قاسمی','دبیر هیات',2,'heyat'],
- ['charity','5c011abff48b4119f0758ccb394e730831a65bdc563ea84ba10c6ce1c96adcc0','استاد ربانی','مسئول کمیته خیریه',3,'charity'],
+ ['finance','c7d42760cdb53e86bfbedca84895e4c40e95e345eacd7841739920c5b9c7631d','استاد کریمی','معاون امور مالی',3,'center'],
+ ['culture','90cdfecd02a4cb2588b96ffb2d3aed3407b9f56f7594a27290d377036b4f2828','استاد حسینی','معاونت فرهنگی',3,'center'],
+ ['support','fcc06f98d0aef35b8c11a80b62f4ce7370a0fc2431ec584e7116f651ccde553d','استاد احمدی','معاون عمران و پشتیبانی',3,'center'],
+ ['education','dd3e860f68b0e7069f212651cacb6944cedbc5b6a19f7162e6823f2b66fa4101','مولوی رضایی','معاون تعلیم و تربیت',3,'center'],
+ ['sisters','0ad850cc126a64871572abe2aef4accc1dc5cc7603f2708aa0bf51ab4563408a','ناحیده سادات','معاون امور خواهران',3,'center'],
+ ['basij_brothers','fcbb4f3a4e265d0652036dc99910fa4a012f9e5fa927dcb25c24e6cda6f4ab30','استاد مصطفوی','مسئول بسیج برادران',3,'basij_b'],
+ ['basij_sisters','22881fe291a96067ed140e179e5b55880c874b82126b0d48cfb1277c30997af4','ناحیده فاطمی','مسئول بسیج خواهران',3,'basij_s'],
+ ['heyat','1bae1c94142836f80c0502149a76c808886dab761743e710610edabae57e9a31','استاد قاسمی','مسئول هیئت فداییان حضرت زینب (س)',3,'heyat'],
+ ['charity','61bebac7e064e55a5ef4dc01c9e7b15a718fd01476ee548358414fb194619518','استاد ربانی','مسئول خیریه نیکوکاری',3,'charity'],
  ['trainer','8ed897f6770cf09c66dbc7e54855c96ce6b4ccba4cd035f87c32625a54bf76bc','استاد مرادی','مربی آموزشگاه',2,'center'],
  ['member','511e32e318a34d2c37a4df975c1b99b108fce78bf858858a2f0a0d75de9298bc','آقای معاون','عضو عادی',1,'center'],
- ['media_admin','ba8ebbf1700e7c39a546c8717d8bb783eb8fe6385a7051dcee4a36e4fd608666','استاد بصیر','مدیر رسانه و محتوا',2,'center']
+ ['media_admin','a39a1517787ae51c92d84b7652141a1fd623a65811aa14492ccba67d10d504e9','استاد بصیر','مدیر فنی و معاونت رسانه',2,'center']
 ];
 const ROLES=ACCOUNTS.map(a=>a[3]);
 const HALLS=['سالن اصلی','سالن خواهران','کلاس درس ۱','کلاس درس ۲','کتابخانه','حیاط مرکزی'];
@@ -1349,7 +1350,7 @@ async function buildSeed(){
   const lid=()=>{ const r=d.exec('SELECT last_insert_rowid() AS id'); return r[0].values[0][0]; };
 
   for(const a of ACCOUNTS){
-    /* a[1] هم‌اکنون هش SHA-256 است؛ مقدار هش با نسخه قبلی کاملاً یکسان است تا ورود همه حساب‌ها بدون تغییر کار کند */
+    /* a[1] هش SHA-256 رمز اولیهٔ تعیین‌شدهٔ کارفرماست؛ v2.3.1 هش‌های نادرست ۱۱ حساب اصلاح شد */
     d.run('INSERT INTO users (username,pass_hash,display_name,role,level,org,active) VALUES (?,?,?,?,?,?,1)',[a[0],a[1],a[2],a[3],a[4],a[5]||'center']);
   }
 
@@ -1697,6 +1698,19 @@ function ensureSchema(){
     run("UPDATE events SET status='تأییدشده' WHERE status IS NULL OR status=''");
     run("UPDATE transactions SET tx_status='تأییدشده' WHERE tx_status IS NULL OR tx_status=''");
     Object.keys(ORG_BY_UN).forEach(un=>{ try{ run("UPDATE users SET org=? WHERE username=? AND (org IS NULL OR org='')",[ORG_BY_UN[un],un]); }catch(e){} });
+    /* v2.3.1 — اصلاح یک‌بارهٔ حساب‌ها در پایگاه دادهٔ محلی موجود (هش رمز، عنوان مسئولیت، سطح و سازمان مطابق جدول ۳ سند) */
+    try{
+      run('CREATE TABLE IF NOT EXISTS sys_flags(name TEXT PRIMARY KEY, value TEXT)');
+      const flag=one('SELECT value FROM sys_flags WHERE name=?',['pwfix_1405_v1']);
+      if(!flag){
+        const FIXED=['imam','secretary','finance','culture','support','education','sisters','basij_brothers','basij_sisters','heyat','charity','media_admin'];
+        ACCOUNTS.filter(a=>FIXED.includes(a[0])).forEach(a=>{
+          run('UPDATE users SET pass_hash=?,display_name=?,role=?,level=?,org=?,active=1 WHERE username=?',[a[1],a[2],a[3],a[4],a[5]||'center',a[0]]);
+        });
+        run('INSERT OR REPLACE INTO sys_flags(name,value) VALUES (?,?)',['pwfix_1405_v1',faStamp()]);
+        markDirty();
+      }
+    }catch(e){ console.warn('pwfix migrate',e); }
   }catch(e){ console.warn('ensureSchema migrate',e); }
   try{ run("CREATE TABLE IF NOT EXISTS user_perms(username TEXT NOT NULL, module TEXT NOT NULL, lvl INTEGER NOT NULL, updated_at_fa TEXT DEFAULT '', PRIMARY KEY(username,module))"); }catch(e){}
   try{
