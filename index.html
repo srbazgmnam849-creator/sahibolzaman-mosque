@@ -682,7 +682,7 @@ tr.row-ov td{color:#8E2020}
     </form>
     <a class="apk-link" href="app/app.apk" download>📥 دانلود اپلیکیشن اندروید (APK)</a>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۶</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۷</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -734,7 +734,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۶ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۷ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -1354,138 +1354,7 @@ async function buildSeed(){
     d.run('INSERT INTO users (username,pass_hash,display_name,role,level,org,active) VALUES (?,?,?,?,?,?,1)',[a[0],a[1],a[2],a[3],a[4],a[5]||'center']);
   }
 
-  /* 8 letters 1405/دب/001..008 */
-  const letters=[
-   ['1405/دب/001','دعوت‌نامه همایش ائمه جماعت ولایت','ریاست ارشاد، حج و اوقاف','وارده','همایش سراسری ائمه جماعت روز پنجشنبه در سالن ولایت برگزار می‌شود.','تأیید نهایی','امام جماعت','davat-1405.pdf',-12],
-   ['1405/دب/002','درخواست کمک برای خانواده‌های نیازمند محل','هیئت خیریه محل','وارده','لیست اولیه شامل ۱۲ خانواده نیازمند جهت بررسی و کمک‌رسانی.','در حال اقدام','مسئول کمیته خیریه','',-9],
-   ['1405/دب/003','اعلام برنامه مراسم ماه صفر','دبیرخانه مسجد','صادره','برنامه مراسم ماه صفر به اهالی محل اعلام گردید.','بایگانی','','',-15],
-   ['1405/دب/004','تذکر نظافت و مرتب‌سازی سالن اصلی','دبیرخانه','داخلی','بر اساس بازدید انجام‌شده، نظافت سالن اصلی نیاز به پیگیری دارد.','در بررسی','مسئول پشتیبانی و نظرخواهی','',-4],
-   ['1405/دب/005','درخواست رزرو سالن برای مراسم خانوادگی','اهالی محل','وارده','به دلیل تداخل با برنامه‌های آموزشی، درخواست رد شد.','رد‌شده','رئیس هیئت مدیره','',-7],
-   ['1405/دب/006','معرفی شاگردان ممتاز برای آزمون حفظ','مسئول آموزش','صادره','فهرست ۵ شاگرد ممتاز برای شرکت در آزمون حفظ قرآن ارسال می‌گردد؛ منتظر تصمیم‌گیری هستیم.','نیاز به تصمیم‌گیری','رئیس هیئت مدیره','moarrefi-1405.pdf',-2],
-   ['1405/دب/007','گزارش مالی ماه مهر','مسئول امور مالی','وارده','گزارش تفصیلی درآمد و هزینه‌های ماه مهر ضمیمه است.','تکمیل‌شده','امام جماعت','report-mehr.xlsx',-18],
-   ['1405/دب/008','درخواست همکاری فرهنگی با مدرسه سیدالشهدا','مدرسه سیدالشهدا','وارده','درخواست برگزاری برنامه‌های مشترک فرهنگی برای دانش‌آموزان.','ثبت‌شده','','',-1]
-  ];
-  letters.forEach(L=>{
-    d.run('INSERT INTO letters (number,subject,sender,type,summary,status,assigned_role,file_name,created_by,created_at,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-      [L[0],L[1],L[2],L[3],L[4],L[5],L[6],L[7],'secretary',iso(L[8]),faDate(iso(L[8]))]);
-  });
-  d.run('INSERT INTO letter_comments (letter_id,author,role,body,created_at_fa) VALUES (?,?,?,?,?)',[2,'استاد ربانی','مسئول کمیته خیریه','لیست خانواده‌ها دریافت شد؛ بررسی میدانی آغاز می‌شود.',faStamp()]);
-  d.run('INSERT INTO letter_comments (letter_id,author,role,body,created_at_fa) VALUES (?,?,?,?,?)',[2,'حاج مولوی صاحب‌الزمانی','امام جماعت','موافقم. کمک‌های نقدی از صندوق خیریه پرداخت گردد.',faStamp()]);
-
-  /* 3 meetings 1405/جلس/001..003 */
-  const meetings=[
-   ['1405/جلس/001','جلسه هیئت مدیره — پایان ماه مهر',-19,'برگزار شد'],
-   ['1405/جلس/002','جلسه شورای فرهنگی و آموزش',-10,'برگزار شد'],
-   ['1405/جلس/003','جلسه هیئت مدیره — آبان',7,'برنامه‌ریزی‌شده']
-  ];
-  const mids=[];
-  meetings.forEach(m=>{
-    d.run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by) VALUES (?,?,?,?,?,?,?)',
-      [m[0],m[1],iso(m[2]),faDate(iso(m[2])),m[3],JSON.stringify(['امام جماعت','دبیر مرکزی دبیرخانه','رئیس هیئت مدیره','مسئول امور مالی']),'secretary']);
-    mids.push(lid());
-  });
-
-  /* 6 tasks: 2 overdue, 1 due within 3 days */
-  const tasks=[
-   ['تهیه گزارش مالی ماه مهر و ارائه به هیئت مدیره','استاد کریمی','finance',-12,'انجام‌شده',0],
-   ['پیگیری تعمیر سیستم گرمایشی سالن اصلی','استاد احمدی','support',-6,'در حال انجام',0],
-   ['هماهنگی با مدرسه سیدالشهدا برای برنامه فرهنگی مشترک','استاد حسینی','culture',-3,'در انتظار',1],
-   ['ارسال لیست شاگردان به اداره آموزش ولایت','مولوی رضایی','education',-8,'انجام‌شده',1],
-   ['تهیه و تدوین صورت‌جلسه هیئت مدیره آبان','مولوی نوری','secretary',2,'در انتظار',2],
-   ['برنامه‌ریزی مراسم هفته وحدت','استاد حسینی','culture',10,'در انتظار',2]
-  ];
-  const tids=[];
-  tasks.forEach(t=>{
-    d.run('INSERT INTO tasks (title,assignee,assignee_username,deadline_iso,status,meeting_id,created_at_fa) VALUES (?,?,?,?,?,?,?)',
-      [t[0],t[1],t[2],iso(t[3]),t[4],mids[t[5]],faStamp()]);
-    tids.push(lid());
-  });
-  const decisions=[
-   [0,'تصویب گزارش مالی ماه مهر','استاد کریمی','finance',0],
-   [0,'واگذاری تعمیرات گرمایشی سالن به پیمانکار','استاد رحیمی','board',1],
-   [1,'برنامه مشترک فرهنگی با مدرسه سیدالشهدا','استاد حسینی','culture',2],
-   [1,'به‌روزرسانی لیست شاگردان برای اداره آموزش','مولوی رضایی','education',3],
-   [2,'تدوین صورت‌جلسه و ابلاغ مصوبات','مولوی نوری','secretary',4],
-   [2,'تشکیل کمیته برنامه هفته وحدت','استاد حسینی','culture',5]
-  ];
-  decisions.forEach(x=>{
-    d.run('INSERT INTO decisions (meeting_id,title,assignee,assignee_username,task_id) VALUES (?,?,?,?,?)',[mids[x[0]],x[1],x[2],x[3],tids[x[4]]]);
-  });
-
-  /* 6 events in current jalaali month — no conflicts */
-  const events=[
-   ['سخنرانی هفتگی بعد از نماز مغرب','سخنرانی','سالن اصلی',1,'18:00','19:30'],
-   ['کلاس قرآن کریم بزرگسالان','کلاس','کلاس درس ۱',2,'16:00','17:30'],
-   ['کلاس صرف و نحو','کلاس','کلاس درس ۲',2,'18:00','19:30'],
-   ['مراسم یادبود شهدای محل','مراسم','سالن اصلی',5,'19:00','20:30'],
-   ['مسابقات ورزشی پایگاه بسیج','ورزشی','حیاط مرکزی',7,'15:00','17:00'],
-   ['جلسه هماهنگی بخش خواهران','جلسه','سالن خواهران',9,'10:00','11:30']
-  ];
-  events.forEach(ev=>{
-    d.run('INSERT INTO events (title,type,hall,date_iso,start_time,end_time,created_by,created_by_name) VALUES (?,?,?,?,?,?,?,?)',
-      [ev[0],ev[1],ev[2],iso(ev[3]),ev[4],ev[5],'secretary','مولوی نوری']);
-  });
-
-  /* courses + 10 students (3 minors with minimal fields) */
-  d.run('INSERT INTO courses (name,teacher) VALUES (?,?)',['قرآن کریم بزرگسالان','مولوی رضایی']);
-  const c1=lid();
-  d.run('INSERT INTO courses (name,teacher) VALUES (?,?)',['صرف و نحو','مولوی رضایی']);
-  const c2=lid();
-  const students=[
-   ['احمد نوری',32,'تلاوت',c1,'','فعال',0],
-   ['محمد رحیمی',28,'حفظ',c1,'','فعال',0],
-   ['لیلا مرادی',35,'تلاوت',c1,'','تکمیل‌شده',0],
-   ['عبدالله رحیمی',12,'',c1,'0790123456','فعال',1],
-   ['فاطمه سادات',14,'',c1,'0790223456','فعال',1],
-   ['حسین قاسمی',30,'صرف',c2,'','فعال',0],
-   ['مریم صادقی',26,'نحو',c2,'','فعال',0],
-   ['علی حسینی',22,'ادبیات',c2,'','فعال',0],
-   ['یعقوب احمدی',15,'',c2,'0790323456','فعال',1],
-   ['خدیجه فاطمی',19,'نحو',c2,'','فعال',0]
-  ];
-  const sids={};
-  students.forEach(s=>{
-    d.run('INSERT INTO students (name,age,field,course_id,guardian_phone,status,is_minor) VALUES (?,?,?,?,?,?,?)',s);
-    sids[s[0]]=lid();
-  });
-  const att1=[['احمد نوری','حاضر'],['محمد رحیمی','حاضر'],['عبدالله رحیمی','حاضر'],['فاطمه سادات','غایب']];
-  const att2=[['احمد نوری','حاضر'],['محمد رحیمی','حاضر'],['لیلا مرادی','حاضر'],['عبدالله رحیمی','حاضر'],['فاطمه سادات','حاضر']];
-  att1.forEach(a=>{ d.run('INSERT INTO attendance (student_id,course_id,date_iso,status) VALUES (?,?,?,?)',[sids[a[0]],c1,iso(-2),a[1]]); });
-  att2.forEach(a=>{ d.run('INSERT INTO attendance (student_id,course_id,date_iso,status) VALUES (?,?,?,?)',[sids[a[0]],c1,iso(-5),a[1]]); });
-
-  /* 10 finance rows across مهر / آبان 1405 */
-  const tx=[
-   ['درآمد','کمک‌های مردمی محل',45000,jToIso(y,7,12),'کمک‌های مردمی',''],
-   ['درآمد','نذورات نماز جماعت',18000,jToIso(y,7,20),'نذورات',''],
-   ['هزینه','قبوض برق و آب',6200,jToIso(y,7,25),'قبوض',''],
-   ['درآمد','کمک‌های مردمی برای خانواده‌های نیازمند',52000,jToIso(y,8,3),'کمک‌های مردمی','1405/دب/002'],
-   ['درآمد','اجاره سالن برای مراسم',12000,jToIso(y,8,5),'اجاره سالن',''],
-   ['هزینه','حقوق کارکنان و افراد وابسته',28000,jToIso(y,8,6),'حقوق کارکنان',''],
-   ['هزینه','نگهداری و تعمیرات سیستم گرمایشی',9500,jToIso(y,8,8),'نگهداری و تعمیرات',''],
-   ['درآمد','نذورات روز جمعه',21000,jToIso(y,8,10),'نذورات',''],
-   ['هزینه','مصارف کلاس‌های آموزشی',7500,jToIso(y,8,11),'آموزش',''],
-   ['هزینه','متفرقه (قرطاسیه و چاپ)',3200,jToIso(y,8,12),'متفرقه','']
-  ];
-  tx.forEach(t=>{ d.run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number) VALUES (?,?,?,?,?,?)',t); });
-
-  /* announcements + gallery */
-  d.run('INSERT INTO announcements (title,body,date_fa,created_by) VALUES (?,?,?,?)',
-    ['آغاز ثبت‌نام دوره‌های آموزشگاه قرآن','ثبت‌نام دوره‌های قرآن کریم بزرگسالان و صرف و نحو از روز شنبه در دبیرخانه مسجد آغاز می‌شود.',faDate(iso(-2)),'media_admin']);
-  d.run('INSERT INTO announcements (title,body,date_fa,created_by) VALUES (?,?,?,?)',
-    ['برنامه مراسم هفته وحدت','مراسم هفته وحدت با حضور علمای کرام و اهالی محترم محل در سالن اصلی مسجد برگزار می‌گردد؛ حضور همگان موجب افتخار است.',faDate(iso(-5)),'media_admin']);
-  d.run('INSERT INTO gallery_notes (title,body,file_name,date_fa) VALUES (?,?,?,?)',
-    ['نمایشگاه کتاب دینی','نمایشگاه کتاب با همکاری کتابخانه مسجد در حیاط مرکزی برپا شد.','namayeshgah-ketab.jpg',faDate(iso(-4))]);
-  d.run('INSERT INTO gallery_notes (title,body,file_name,date_fa) VALUES (?,?,?,?)',
-    ['کارگاه خوشنویسی','کارگاه خوشنویسی ویژه نوجوانان با حضور استادان دوره‌ای برگزار گردید.','kargah-khatt.png',faDate(iso(-6))]);
-
-  /* activity log */
-  const logs=[
-   ['مولوی نوری','دبیر مرکزی دبیرخانه','ثبت نامه جدید','نامه ۱۴۰۵/دب/۰۰۸ با موضوع «درخواست همکاری فرهنگی» ثبت شد.'],
-   ['استاد کریمی','مسئول امور مالی','ثبت تراکنش مالی','درآمد کمک‌های مردمی به مبلغ ۵۲,۰۰۰ افغانی ثبت شد.'],
-   ['استاد رحیمی','رئیس هیئت مدیره','تغییر وضعیت نامه','نامه ۱۴۰۵/دب/۰۰۶ در وضعیت «نیاز به تصمیم‌گیری» قرار گرفت.'],
-   ['مولوی نوری','دبیر مرکزی دبیرخانه','ایجاد جلسه','جلسه «جلسه هیئت مدیره — آبان» با شماره ۱۴۰۵/جلس/۰۰۳ ایجاد شد.']
-  ];
-  logs.forEach(l=>{ d.run('INSERT INTO activity_log (user,role,action,detail,created_at_fa) VALUES (?,?,?,?,?)',[l[0],l[1],l[2],l[3],faStamp()]); });
+  /* v2.7 — تمام داده‌های نمونه/پیش‌فرض به درخواست کارفرما حذف شد؛ بانک اطلاعاتی فقط با حساب‌های کاربری آماده می‌شود. */
 
   return d;
 }
@@ -1677,7 +1546,8 @@ function ensureSchema(){
     "CREATE TABLE IF NOT EXISTS growth_eval(id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, belief INTEGER DEFAULT 2, worship INTEGER DEFAULT 2, ethics INTEGER DEFAULT 2, social INTEGER DEFAULT 2, talent INTEGER DEFAULT 2, overall INTEGER DEFAULT 2, strengths TEXT DEFAULT '', improve TEXT DEFAULT '', plan TEXT DEFAULT '', evaluator TEXT DEFAULT '', date_fa TEXT)",
     "CREATE TABLE IF NOT EXISTS contacts(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, org TEXT DEFAULT '', phone TEXT DEFAULT '', email TEXT DEFAULT '', address TEXT DEFAULT '', note TEXT DEFAULT '')",
     "CREATE TABLE IF NOT EXISTS ext_letters(id INTEGER PRIMARY KEY AUTOINCREMENT, number TEXT UNIQUE, recipient TEXT NOT NULL, subject TEXT NOT NULL, body TEXT DEFAULT '', date_fa TEXT DEFAULT '', status TEXT DEFAULT 'پیش‌نویس', signed_imam INTEGER DEFAULT 0, tracking_no TEXT DEFAULT '', reply_note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
-    "CREATE TABLE IF NOT EXISTS obstacles(id INTEGER PRIMARY KEY AUTOINCREMENT, subject TEXT NOT NULL, descr TEXT DEFAULT '', ref_txt TEXT DEFAULT '', resolved INTEGER DEFAULT 0, created_by TEXT DEFAULT '', created_at_fa TEXT)"
+    "CREATE TABLE IF NOT EXISTS obstacles(id INTEGER PRIMARY KEY AUTOINCREMENT, subject TEXT NOT NULL, descr TEXT DEFAULT '', ref_txt TEXT DEFAULT '', resolved INTEGER DEFAULT 0, created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS cult_occasions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, kind TEXT DEFAULT 'مذهبی', date_iso TEXT DEFAULT '', note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)"
   ];
   try{
     const cols=t=>{ try{ return all("SELECT name FROM pragma_table_info('"+t+"')").map(x=>x.name); }catch(e){ return []; } };
@@ -1723,12 +1593,39 @@ function ensureSchema(){
         markDirty();
       }
     }catch(e){ console.warn('pwfix migrate',e); }
+    /* v2.7 — پاکسازی یک‌بارهٔ داده‌های نمونهٔ اولیه از پایگاه‌های دادهٔ موجود (فقط ردیف‌های نمونهٔ دقیق حذف می‌شود؛ داده‌های ثبت‌شدهٔ کارفرما محفوظ است) */
+    try{
+      const dflag=one('SELECT value FROM sys_flags WHERE name=?',['demopurge_1405_v1']);
+      if(!dflag){
+        ['دعوت‌نامه همایش ائمه جماعت ولایت','درخواست کمک برای خانواده‌های نیازمند محل','اعلام برنامه مراسم ماه صفر','تذکر نظافت و مرتب‌سازی سالن اصلی','درخواست رزرو سالن برای مراسم خانوادگی','معرفی شاگردان ممتاز برای آزمون حفظ','گزارش مالی ماه مهر','درخواست همکاری فرهنگی با مدرسه سیدالشهدا'].forEach(s=>{ try{ run('DELETE FROM letters WHERE subject=?',[s]); }catch(e){} });
+        try{ run('DELETE FROM letter_comments WHERE letter_id NOT IN (SELECT id FROM letters)'); }catch(e){}
+        ['جلسه هیئت مدیره — پایان ماه مهر','جلسه شورای فرهنگی و آموزش','جلسه هیئت مدیره — آبان'].forEach(s=>{ try{ run('DELETE FROM meetings WHERE title=?',[s]); }catch(e){} });
+        try{ run('DELETE FROM decisions WHERE meeting_id IS NOT NULL AND meeting_id NOT IN (SELECT id FROM meetings)'); }catch(e){}
+        try{ run('DELETE FROM tasks WHERE meeting_id IS NOT NULL AND meeting_id NOT IN (SELECT id FROM meetings)'); }catch(e){}
+        ['تهیه گزارش مالی ماه مهر و ارائه به هیئت مدیره','پیگیری تعمیر سیستم گرمایشی سالن اصلی','هماهنگی با مدرسه سیدالشهدا برای برنامه فرهنگی مشترک','ارسال لیست شاگردان به اداره آموزش ولایت','تهیه و تدوین صورت‌جلسه هیئت مدیره آبان','برنامه‌ریزی مراسم هفته وحدت'].forEach(s=>{ try{ run("DELETE FROM tasks WHERE title=? AND (meeting_id IS NULL OR meeting_id NOT IN (SELECT id FROM meetings))",[s]); }catch(e){} });
+        ['سخنرانی هفتگی بعد از نماز مغرب','کلاس قرآن کریم بزرگسالان','کلاس صرف و نحو','مراسم یادبود شهدای محل','مسابقات ورزشی پایگاه بسیج','جلسه هماهنگی بخش خواهران'].forEach(s=>{ try{ run("DELETE FROM events WHERE title=? AND (created_by='secretary' OR created_by IS NULL OR created_by='')",[s]); }catch(e){} });
+        ['کمک‌های مردمی محل','نذورات نماز جماعت','قبوض برق و آب','کمک‌های مردمی برای خانواده‌های نیازمند','اجاره سالن برای مراسم','حقوق کارکنان و افراد وابسته','نگهداری و تعمیرات سیستم گرمایشی','نذورات روز جمعه','مصارف کلاس‌های آموزشی','متفرقه (قرطاسیه و چاپ)'].forEach(s=>{ try{ run("DELETE FROM transactions WHERE description=? AND (created_by IS NULL OR created_by='')",[s]); }catch(e){} });
+        try{ run("DELETE FROM announcements WHERE title IN ('آغاز ثبت‌نام دوره‌های آموزشگاه قرآن','برنامه مراسم هفته وحدت')"); }catch(e){}
+        try{ run("DELETE FROM gallery_notes WHERE title IN ('نمایشگاه کتاب دینی','کارگاه خوشنویسی')"); }catch(e){}
+        try{ run("DELETE FROM activity_log WHERE (username IS NULL OR username='') AND user IN ('مولوی نوری','استاد کریمی','استاد رحیمی')"); }catch(e){}
+        try{ run("DELETE FROM courses WHERE name IN ('قرآن کریم بزرگسالان','صرف و نحو')"); }catch(e){}
+        try{ run('DELETE FROM attendance WHERE course_id NOT IN (SELECT id FROM courses)'); }catch(e){}
+        try{ run('DELETE FROM students WHERE course_id NOT IN (SELECT id FROM courses)'); }catch(e){}
+        run('INSERT OR REPLACE INTO sys_flags(name,value) VALUES (?,?)',['demopurge_1405_v1',faStamp()]);
+        markDirty();
+      }
+    }catch(e){ console.warn('demopurge',e); }
     /* v2.6 — امضای امام جماعت (app_kv) و ستون‌های قالب رسمی نامه برون‌سازمانی */
     try{ run("CREATE TABLE IF NOT EXISTS app_kv(k TEXT PRIMARY KEY, v TEXT)"); }catch(e){}
     try{ addCol('ext_letters','attach',"TEXT DEFAULT ''"); }catch(e){}
     try{ addCol('ext_letters','cc',"TEXT DEFAULT ''"); }catch(e){}
     try{ addCol('ext_letters','signer_name',"TEXT DEFAULT ''"); }catch(e){}
     try{ addCol('ext_letters','signer_title',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('culture_programs','place',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('culture_programs','participants','INTEGER DEFAULT 0'); }catch(e){}
+    try{ addCol('culture_programs','docs',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('culture_programs','problems',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('culture_programs','official',"TEXT DEFAULT 'خیر'"); }catch(e){}
   }catch(e){ console.warn('ensureSchema migrate',e); }
   try{ run("CREATE TABLE IF NOT EXISTS user_perms(username TEXT NOT NULL, module TEXT NOT NULL, lvl INTEGER NOT NULL, updated_at_fa TEXT DEFAULT '', PRIMARY KEY(username,module))"); }catch(e){}
   try{
@@ -2044,7 +1941,8 @@ VIEWS.letters=function(root){
   }
 };
 
-function openLetterModal(){
+function openLetterModal(preset){
+  preset=preset||{};
   const isHeyat=session.username==='heyat';
   const num=nextNumber('letters',letterPrefix());
   const draftKey='msz_draft_letter_'+session.username;
@@ -2055,14 +1953,14 @@ function openLetterModal(){
       fld('شماره نامه (خودکار)','<input class="inp" value="'+num+'" readonly>')+
       fld('تاریخ ثبت (خودکار)','<input class="inp" value="'+faStamp()+'" readonly>')+
     '</div>'+
-    fld('موضوع *','<input name="subject" class="inp" data-draft="subject" value="'+esc(draft.subject||'')+'" placeholder="موضوع نامه…">')+
-    fld('فرستنده *','<input name="sender" class="inp" data-draft="sender" value="'+esc(draft.sender||'')+'" placeholder="نام شخص یا اداره…">')+
-    fld('گیرنده (واحد مقصد)','<select name="recv" class="inp" data-draft="recv"><option value="">— دبیرخانه مرکزی (بررسی اداری) —</option>'+ROLES.map(r=>'<option '+(draft.recv===r?'selected':'')+'>'+r+'</option>').join('')+'</select>')+
+    fld('موضوع *','<input name="subject" class="inp" data-draft="subject" value="'+esc(preset.subject||draft.subject||'')+'" placeholder="موضوع نامه…">')+
+    fld('فرستنده *','<input name="sender" class="inp" data-draft="sender" value="'+esc(preset.sender||draft.sender||'')+'" placeholder="نام شخص یا اداره…">')+
+    fld('گیرنده (واحد مقصد)','<select name="recv" class="inp" data-draft="recv"><option value="">— دبیرخانه مرکزی (بررسی اداری) —</option>'+ROLES.map(r=>'<option '+((preset.recv||draft.recv)===r?'selected':'')+'>'+r+'</option>').join('')+'</select>')+
     '<div class="frow2">'+
-      fld('نوع نامه','<select name="type" class="inp" data-draft="type">'+LETTER_TYPES.map(t=>'<option '+(draft.type===t?'selected':'')+'>'+t+'</option>').join('')+'</select>')+
+      fld('نوع نامه','<select name="type" class="inp" data-draft="type">'+LETTER_TYPES.map(t=>'<option '+((preset.type||draft.type)===t?'selected':'')+'>'+t+'</option>').join('')+'</select>')+
       fld('فایل پیوست (شبیه‌سازی)','<div class="file-row"><input id="ltrFileTxt" class="inp" placeholder="فایلی انتخاب نشده…" readonly value="'+esc(draft.file||'')+'"><label class="btn btn-outline btn-sm">انتخاب<input type="file" id="ltrFile" hidden></label></div>')+
     '</div>'+
-    fld('خلاصه نامه','<textarea name="summary" class="inp" rows="3" data-draft="summary" placeholder="خلاصه محتوا…">'+esc(draft.summary||'')+'</textarea>')+
+    fld('خلاصه نامه','<textarea name="summary" class="inp" rows="3" data-draft="summary" placeholder="خلاصه محتوا…">'+esc(preset.summary||draft.summary||'')+'</textarea>')+
     '<div class="draft-hint" id="draftHint"></div>'+
     '<button type="submit" class="btn btn-primary btn-block">ثبت نامه در دبیرخانه</button>'+
    '</form>',{width:'660px'});
@@ -2751,7 +2649,7 @@ VIEWS.finance=function(root){
      pend.map(t=>
       '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(t.description)+'</b><span class="badge b-warn">در انتظار بررسی</span>'+
       '<span style="margin-right:auto"><button class="btn btn-primary btn-sm" data-act="txReview" data-id="'+t.id+'">بررسی فاکتور و تصمیم</button></span></div>'+
-      '<small class="muted">'+faMoney(t.amount)+' افغانی · '+faDate(t.date_iso)+' · ثبت‌کننده: '+esc(usersById[t.created_by]||t.created_by||'—')+'</small></div>'
+      '<small class="muted">'+faMoney(t.amount)+' تومان · '+faDate(t.date_iso)+' · ثبت‌کننده: '+esc(usersById[t.created_by]||t.created_by||'—')+'</small></div>'
      ).join('')+'</div>':'')+
    '<div class="grid-stats">'+
      '<div class="stat-card accent-success"><span class="stat-label">درآمد '+J_MONTHS[tj.jm-1]+'</span><b class="stat-num c-success">'+faMoney(inc)+'</b></div>'+
@@ -2759,7 +2657,7 @@ VIEWS.finance=function(root){
      '<div class="stat-card accent-gold"><span class="stat-label">تراز '+J_MONTHS[tj.jm-1]+'</span><b class="stat-num '+(bal>=0?'c-success':'c-danger')+'">'+faMoney(bal)+'</b></div>'+
    '</div>'+
    '<div class="grid-2">'+
-    '<div class="card"><div style="padding:14px 18px 4px"><h3>'+icon('wallet')+' تراکنش‌ها</h3></div><div class="table-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>نوع</th><th>شرح</th><th>مبلغ (افغانی)</th><th>تاریخ</th><th>دسته</th><th>ثبت‌کننده</th><th>وضعیت</th></tr></thead><tbody>'+
+    '<div class="card"><div style="padding:14px 18px 4px"><h3>'+icon('wallet')+' تراکنش‌ها</h3></div><div class="table-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>نوع</th><th>شرح</th><th>مبلغ (تومان)</th><th>تاریخ</th><th>دسته</th><th>ثبت‌کننده</th><th>وضعیت</th></tr></thead><tbody>'+
       (rows.length?rows.map(r=>
         '<tr><td>'+(r.kind==='درآمد'?'<span class="badge b-success">درآمد</span>':'<span class="badge b-danger">هزینه</span>')+'</td>'+
         '<td>'+esc(r.description)+'</td>'+
@@ -2783,7 +2681,7 @@ function openTxModal(){
    '<form id="txForm" novalidate>'+
     '<div class="frow2">'+
       fld('نوع *','<select name="kind" class="inp" id="txKind"><option>درآمد</option><option>هزینه</option></select>')+
-      fld('مبلغ (افغانی) *','<input name="amount" type="number" min="1" class="inp" placeholder="مثال: 15000">')+
+      fld('مبلغ (تومان) *','<input name="amount" type="number" min="1" class="inp" placeholder="مثال: 15000">')+
     '</div>'+
     fld('شرح *','<input name="desc" class="inp" placeholder="شرح تراکنش…">')+
     '<div class="frow2">'+
@@ -2811,7 +2709,7 @@ function openTxModal(){
     const iso=jToIso(jd.jy,jd.jm,jd.jd);
     run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status) VALUES (?,?,?,?,?,?,?,?)',
       [form.kind.value,form.desc.value.trim(),amt,iso,form.cat.value,form.letter.value.trim(),session.username,'تأییدشده']);
-    logActivity('ثبت تراکنش مالی',(form.kind.value)+' «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' افغانی ثبت شد.');
+    logActivity('ثبت تراکنش مالی',(form.kind.value)+' «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' تومان ثبت شد.');
     markDirty(); saveNow(true);
     closeModal();
     toast('تراکنش ثبت شد ✓');
@@ -2823,7 +2721,7 @@ function openTxReviewModal(id){
   const ov=openModal('بررسی هزینه ثبت‌شده',
    '<div class="detail-grid" style="margin-bottom:12px">'+
     '<div><small>شرح</small><b>'+esc(t.description)+'</b></div>'+
-    '<div><small>مبلغ</small><b>'+faMoney(t.amount)+' افغانی</b></div>'+
+    '<div><small>مبلغ</small><b>'+faMoney(t.amount)+' تومان</b></div>'+
     '<div><small>دسته</small><b>'+esc(t.category)+'</b></div>'+
     '<div><small>تاریخ</small><b>'+faDate(t.date_iso)+'</b></div>'+
    '</div>'+
@@ -2833,7 +2731,7 @@ function openTxReviewModal(id){
   ov.querySelector('#txSaveDec').addEventListener('click',()=>{
     const dec=$('#txDec').value, note=$('#txNote').value.trim();
     run('UPDATE transactions SET tx_status=?, review_note=? WHERE id=?',[dec,note,id]);
-    if(t.created_by) addNotif(t.created_by,'نتیجه بررسی هزینه شما','هزینه «'+t.description+'» به مبلغ '+faMoney(t.amount)+' افغانی: '+dec+(note?' — '+note:''));
+    if(t.created_by) addNotif(t.created_by,'نتیجه بررسی هزینه شما','هزینه «'+t.description+'» به مبلغ '+faMoney(t.amount)+' تومان: '+dec+(note?' — '+note:''));
     logActivity('بررسی هزینه','هزینه «'+t.description+'» '+dec+' شد.');
     renderNotifBadge(); markDirty(); saveNow(true);
     closeModal(); toast('تصمیم مالی ثبت شد ✓');
@@ -3199,7 +3097,7 @@ VIEWS.reports=function(root){
     }
     const maxM=maxOf(months.map(m=>Math.max(m.inc,m.exp)));
     finCard=
-    '<div class="card pad"><h3>'+icon('wallet')+' مالی ۶ ماه اخیر (افغانی)</h3>'+
+    '<div class="card pad"><h3>'+icon('wallet')+' مالی ۶ ماه اخیر (تومان)</h3>'+
      '<div class="legend"><span><i style="background:var(--success)"></i>درآمد</span><span><i style="background:var(--danger)"></i>هزینه</span></div>'+
      '<div class="month-chart">'+months.map(m=>
        '<div class="mcol"><div class="mbars">'+
@@ -3477,6 +3375,54 @@ const ACTIONS={
     markDirty(); saveNow(true);
     toast('یادداشت افزوده شد ✓');
     openLetterDetail(+d.id);
+  },
+  cultTab:d=>{ window._cultTab=d.k; renderView(); },
+  coordLetter:d=>openLetterModal(COORD_PRESETS[d.k]||{}),
+  ideaSt:d=>{
+    const it=one('SELECT * FROM ideas WHERE id=?',[+d.id]); if(!it) return;
+    run('UPDATE ideas SET status=? WHERE id=?',[d.st,it.id]);
+    logActivity('بانک ایده‌های فرهنگی','وضعیت ایده «'+it.title+'» به «'+d.st+'» تغییر کرد.');
+    markDirty(); saveNow(true); toast('وضعیت ایده به‌روزرسانی شد ✓'); renderView();
+  },
+  ideaToProg:d=>{
+    const it=one('SELECT * FROM ideas WHERE id=?',[+d.id]); if(!it) return;
+    run('INSERT INTO culture_programs (title,goal,wgroup,owner,date_iso,needs,status,report,created_by,created_at_fa,official) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+      [it.title,it.body||'',it.wgroup||'',session.name,'','','برنامه‌ریزی‌شده','ایدهٔ تأییدشدهٔ بانک ایده',session.username,faStamp(),'خیر']);
+    run("UPDATE ideas SET status='تبدیل به برنامه' WHERE id=?",[it.id]);
+    addNotif('culture','تبدیل ایده به برنامه','ایده «'+it.title+'» به برنامه اجرایی تبدیل شد؛ در بخش «برنامه‌ها و مراسم» تکمیل کنید.');
+    logActivity('بانک ایده‌های فرهنگی','ایده «'+it.title+'» به برنامه اجرایی تبدیل شد.');
+    markDirty(); saveNow(true); toast('ایده به برنامه اجرایی تبدیل شد ✓ (بخش برنامه‌ها)'); renderView();
+  },
+  cultPerfPrint:()=>{
+    const progs=all('SELECT * FROM culture_programs ORDER BY date_iso');
+    const done=progs.filter(function(p){ return p.status==='اجراشده'; });
+    const parts=done.reduce(function(s,p){ return s+(p.participants||0); },0);
+    const rows=done.map(function(p){ return '<tr><td>'+esc(p.title)+'</td><td>'+(faDate(p.date_iso)||'—')+'</td><td>'+faNum(p.participants||0)+'</td><td>'+esc(p.docs||'—')+'</td><td>'+esc(p.problems||'—')+'</td></tr>'; }).join('');
+    const html=secLetterhead('—',faStamp(),'معاونت فرهنگی مسجد صاحب‌الزمان (عج)')+
+     '<h3 style="text-align:center;margin:6mm 0">گزارش عملکرد معاونت فرهنگی</h3>'+
+     '<table class="min"><thead><tr><th>برنامه</th><th>تاریخ</th><th>شرکت‌کنندگان</th><th>مستندات</th><th>مشکلات اجرایی</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5">برنامهٔ اجراشده‌ای ثبت نشده است</td></tr>')+'</tbody></table>'+
+     '<p>مجموع برنامه‌های اجراشده: <b>'+faNum(done.length)+'</b> &nbsp;·&nbsp; مجموع شرکت‌کنندگان: <b>'+faNum(parts)+'</b></p>'+
+     '<div class="sig"><div class="block">معاونت فرهنگی<div class="line">امضا</div></div><div class="block">امام جماعت<div class="line">تأیید</div></div></div>';
+    openOfficialDoc('گزارش عملکرد معاونت فرهنگی',html);
+  },
+  progCalOK:async d=>{
+    const p=one('SELECT * FROM culture_programs WHERE id=?',[+d.id]); if(!p) return;
+    run("UPDATE culture_programs SET official='تأییدشده — تقویم کل مسجد' WHERE id=?",[p.id]);
+    const ex=one('SELECT id FROM events WHERE title=? AND date_iso=?',[p.title,p.date_iso||'']);
+    if(!ex){
+      run('INSERT INTO events (title,type,hall,date_iso,start_time,end_time,created_by,created_by_name,org,status) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        [p.title,'مراسم',p.place||'سالن اصلی',p.date_iso||'','','',session.username,session.name,'center','تأییدشده']);
+    }
+    addNotif('culture','تأیید تقویم کل مسجد','برنامه «'+p.title+'» توسط دبیرخانه تأیید و در تقویم کل مسجد (تقویم اجرایی) درج شد.');
+    logActivity('تقویم کل مسجد','برنامه فرهنگی «'+p.title+'» پس از تأیید دبیرخانه به تقویم مسجد افزوده شد.');
+    markDirty(); saveNow(true); toast('برنامه در تقویم کل مسجد درج شد ✓'); renderView();
+  },
+  progCalNO:async d=>{
+    const p=one('SELECT * FROM culture_programs WHERE id=?',[+d.id]); if(!p) return;
+    run("UPDATE culture_programs SET official='خیر' WHERE id=?",[p.id]);
+    addNotif('culture','عدم تأیید تقویم کل مسجد','برنامه «'+p.title+'» توسط دبیرخانه به تقویم کل مسجد درج نشد؛ برای هماهنگی بیشتر با دبیرخانه تماس بگیرید.');
+    logActivity('تقویم کل مسجد','درخواست ورود برنامه «'+p.title+'» به تقویم مسجد تأیید نشد.');
+    markDirty(); saveNow(true); toast('ثبت شد'); renderView();
   },
   secTab:d=>{ window._secTab=d.k; renderView(); },
   adminOK:async d=>{
@@ -3876,12 +3822,12 @@ VIEWS.myexp=function(root){
    '<div class="page-head"><div><h2>هزینه‌های من</h2><p class="muted">ثبت هزینه‌های انجام‌شده توسط شما با رسید و پیگیری وضعیت بررسی — سایر اطلاعات مالی مسجد در اختیار معاونت امور مالی و امام جماعت است (§۳-۵)</p></div>'+
    '<button class="btn btn-primary no-print" data-act="myexpNew">'+icon('plus')+' ثبت هزینه جدید</button></div>'+
    '<div class="grid-stats">'+
-    '<div class="stat-card"><span class="stat-label">در انتظار بررسی</span><b class="stat-num">'+faNum(stC('در انتظار بررسی'))+'</b><small class="muted">'+faMoney(stS('در انتظار بررسی'))+' افغانی</small></div>'+
-    '<div class="stat-card accent-success"><span class="stat-label">تأییدشده</span><b class="stat-num c-success">'+faNum(stC('تأییدشده'))+'</b><small class="muted">'+faMoney(stS('تأییدشده'))+' افغانی</small></div>'+
+    '<div class="stat-card"><span class="stat-label">در انتظار بررسی</span><b class="stat-num">'+faNum(stC('در انتظار بررسی'))+'</b><small class="muted">'+faMoney(stS('در انتظار بررسی'))+' تومان</small></div>'+
+    '<div class="stat-card accent-success"><span class="stat-label">تأییدشده</span><b class="stat-num c-success">'+faNum(stC('تأییدشده'))+'</b><small class="muted">'+faMoney(stS('تأییدشده'))+' تومان</small></div>'+
     '<div class="stat-card accent-danger"><span class="stat-label">ردشده / بازگشتی</span><b class="stat-num c-danger">'+faNum(stC('ردشده')+stC('بازگشت برای اصلاح'))+'</b><small class="muted">با یادداشت معاونت مالی</small></div>'+
    '</div>'+
    '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>گردش هزینه شما (§۳-۵):</b> ۱) ثبت هزینه با شرح، مبلغ، دسته و رسید؛ ۲) ارسال به صف بررسی معاونت امور مالی؛ ۳) بررسی فاکتور و تأیید/رد/بازگشت برای اصلاح؛ ۴) مشاهده نتیجه و یادداشت بررسی در همین بخش. شما فقط وضعیت هزینه‌های خودتان را می‌بینید.</p></div>'+
-   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>شرح</th><th>مبلغ (افغانی)</th><th>تاریخ</th><th>دسته</th><th>رسید</th><th>وضعیت</th><th>یادداشت بررسی</th></tr></thead><tbody>'+
+   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>شرح</th><th>مبلغ (تومان)</th><th>تاریخ</th><th>دسته</th><th>رسید</th><th>وضعیت</th><th>یادداشت بررسی</th></tr></thead><tbody>'+
     (mine.length?mine.map(t=>
       '<tr><td>'+esc(t.description)+'</td>'+
       '<td><b>'+faMoney(t.amount)+'</b></td>'+
@@ -3897,7 +3843,7 @@ function openMyExpModal(){
   const ov=openModal('ثبت هزینه (ارسال به بررسی معاونت مالی)',
    '<form id="mxForm" novalidate>'+
     '<div class="frow2">'+
-      fld('مبلغ (افغانی) *','<input name="amount" type="number" min="1" class="inp" placeholder="مثال: 2500">')+
+      fld('مبلغ (تومان) *','<input name="amount" type="number" min="1" class="inp" placeholder="مثال: 2500">')+
       fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۳">')+
     '</div>'+
     fld('شرح هزینه *','<input name="desc" class="inp" placeholder="مثال: خرید ملزومات دفتری برنامه قرآنی…">')+
@@ -3923,8 +3869,8 @@ function openMyExpModal(){
     const receipt=$('#mxFileTxt').value;
     run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status,unit) VALUES (?,?,?,?,?,?,?,?,?)',
       ['هزینه',form.desc.value.trim(),amt,iso,form.cat.value,receipt,session.username,'در انتظار بررسی',myUnit()]);
-    addNotif('finance','هزینه جدید در انتظار بررسی','هزینه «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' افغانی از '+session.name+' ثبت شد و در انتظار بررسی فاکتور است.');
-    logActivity('ثبت هزینه شخصی','هزینه «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' افغانی برای بررسی ارسال شد.');
+    addNotif('finance','هزینه جدید در انتظار بررسی','هزینه «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' تومان از '+session.name+' ثبت شد و در انتظار بررسی فاکتور است.');
+    logActivity('ثبت هزینه شخصی','هزینه «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' تومان برای بررسی ارسال شد.');
     renderNotifBadge(); markDirty(); saveNow(true);
     closeModal();
     toast('هزینه ثبت و به معاونت مالی ارسال شد ✓');
@@ -3982,12 +3928,12 @@ VIEWS.orgfin=function(root){
    '<div class="page-head"><div><h2>گزارش مالی واحد</h2><p class="muted">ثبت و پیگیری هزینه‌های '+esc(UNIT_LABELS[u]||'واحد شما')+' — فقط هزینه‌های واحد خودتان قابل مشاهده است</p></div>'+
    '<button class="btn btn-primary no-print" data-act="orgNew">'+icon('plus')+' ثبت هزینه واحد</button></div>'+
    '<div class="grid-stats">'+
-    '<div class="stat-card"><span class="stat-label">در انتظار بررسی</span><b class="stat-num">'+faNum(stC('در انتظار بررسی'))+'</b><small class="muted">'+faMoney(stS('در انتظار بررسی'))+' افغانی</small></div>'+
-    '<div class="stat-card accent-success"><span class="stat-label">تأییدشده</span><b class="stat-num c-success">'+faNum(stC('تأییدشده'))+'</b><small class="muted">'+faMoney(stS('تأییدشده'))+' افغانی</small></div>'+
+    '<div class="stat-card"><span class="stat-label">در انتظار بررسی</span><b class="stat-num">'+faNum(stC('در انتظار بررسی'))+'</b><small class="muted">'+faMoney(stS('در انتظار بررسی'))+' تومان</small></div>'+
+    '<div class="stat-card accent-success"><span class="stat-label">تأییدشده</span><b class="stat-num c-success">'+faNum(stC('تأییدشده'))+'</b><small class="muted">'+faMoney(stS('تأییدشده'))+' تومان</small></div>'+
     '<div class="stat-card accent-danger"><span class="stat-label">ردشده / بازگشتی</span><b class="stat-num c-danger">'+faNum(stC('ردشده')+stC('بازگشت برای اصلاح'))+'</b><small class="muted">با یادداشت معاونت مالی</small></div>'+
    '</div>'+
    '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>محرمانگی (§۳-۵):</b> هر معاونت فقط هزینه‌های واحد خود را می‌بیند؛ هزینه‌های سایر معاونت‌ها و کل مسجد فقط در پنل اختصاصی معاونت امور مالی (و برای امام جماعت) قابل مشاهده است. گردش: ثبت ← صف بررسی معاونت مالی ← تأیید/رد/اصلاح ← اعلام نتیجه همین‌جا.</p></div>'+
-   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>شرح</th><th>مبلغ (افغانی)</th><th>تاریخ</th><th>دسته</th><th>رسید</th><th>ثبت‌کننده</th><th>وضعیت</th><th>یادداشت بررسی</th></tr></thead><tbody>'+
+   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>شرح</th><th>مبلغ (تومان)</th><th>تاریخ</th><th>دسته</th><th>رسید</th><th>ثبت‌کننده</th><th>وضعیت</th><th>یادداشت بررسی</th></tr></thead><tbody>'+
     (rows.length?rows.map(t=>
       '<tr><td>'+esc(t.description)+'</td>'+
       '<td><b>'+faMoney(t.amount)+'</b></td>'+
@@ -4005,7 +3951,7 @@ function openOrgExpModal(){
   const ov=openModal('ثبت هزینه '+esc(UNIT_LABELS[u]||'واحد')+' (ارسال به بررسی معاونت مالی)',
    '<form id="ogForm" novalidate>'+
     '<div class="frow2">'+
-      fld('مبلغ (افغانی) *','<input name="amount" type="number" min="1" class="inp" placeholder="مثال: 2500">')+
+      fld('مبلغ (تومان) *','<input name="amount" type="number" min="1" class="inp" placeholder="مثال: 2500">')+
       fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۳">')+
     '</div>'+
     fld('شرح هزینه *','<input name="desc" class="inp" placeholder="مثال: خرید ملزومات برنامه فرهنگی واحد…">')+
@@ -4031,7 +3977,7 @@ function openOrgExpModal(){
     const receipt=$('#ogFileTxt').value;
     run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status,unit) VALUES (?,?,?,?,?,?,?,?,?)',
       ['هزینه',form.desc.value.trim(),amt,iso,form.cat.value,receipt,session.username,'در انتظار بررسی',u]);
-    addNotif('finance','هزینه جدید از '+ (UNIT_LABELS[u]||'واحد'),'هزینه «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' افغانی از '+session.name+' ثبت شد و در انتظار بررسی فاکتور است.');
+    addNotif('finance','هزینه جدید از '+ (UNIT_LABELS[u]||'واحد'),'هزینه «'+form.desc.value.trim()+'» به مبلغ '+faMoney(amt)+' تومان از '+session.name+' ثبت شد و در انتظار بررسی فاکتور است.');
     logActivity('ثبت هزینه واحد','هزینه «'+form.desc.value.trim()+'» برای بررسی ارسال شد.');
     renderNotifBadge(); markDirty(); saveNow(true);
     closeModal();
@@ -4139,22 +4085,25 @@ const ENT={
   fields:[{k:'name',l:'نام کارگروه *',t:'text'},{k:'head',l:'مسئول کارگروه',t:'text'},{k:'members',l:'اعضا (با ویرگول جدا کنید)',t:'ta'},{k:'note',l:'وظایف / وضعیت عملکرد',t:'ta'}],
   cols:[{k:'name',l:'کارگروه'},{k:'head',l:'مسئول'},{k:'members',l:'اعضا'},{k:'note',l:'وضعیت'}]},
  cprog:{table:'culture_programs',title:'برنامه‌ها و مراسم فرهنگی',icon:'calendar',
-  fields:[{k:'title',l:'عنوان برنامه *',t:'text'},{k:'goal',l:'هدف برنامه',t:'text'},{k:'wgroup',l:'کارگروه مسئول',t:'sel',opts:'wg'},{k:'owner',l:'مسئول اجرا',t:'text'},{k:'date_iso',l:'تاریخ (شمسی)',t:'date'},{k:'needs',l:'نیازهای مالی و پشتیبانی',t:'ta'},{k:'status',l:'وضعیت',t:'sel',opts:['برنامه‌ریزی‌شده','در حال اجرا','اجراشده','لغوشده']},{k:'report',l:'گزارش اجرا و مستندات',t:'ta'}],
-  cols:[{k:'title',l:'عنوان'},{k:'wgroup',l:'کارگروه'},{k:'date_iso',l:'تاریخ',f:'date'},{k:'status',l:'وضعیت',f:'badge'}]},
+  fields:[{k:'title',l:'عنوان برنامه *',t:'text'},{k:'goal',l:'هدف برنامه',t:'text'},{k:'wgroup',l:'کارگروه مسئول',t:'sel',opts:'wg'},{k:'owner',l:'مسئول اجرا',t:'text'},{k:'date_iso',l:'تاریخ (شمسی)',t:'date'},{k:'place',l:'مکان برگزاری',t:'text'},{k:'needs',l:'نیازهای مالی و پشتیبانی',t:'ta'},{k:'status',l:'وضعیت و پیگیری اجرا',t:'sel',opts:['برنامه‌ریزی‌شده','در حال اجرا','اجراشده','لغوشده']},{k:'participants',l:'تعداد شرکت‌کنندگان (پس از اجرا)',t:'num'},{k:'report',l:'گزارش اجرای برنامه',t:'ta'},{k:'docs',l:'تصاویر و مستندات (نام فایل‌ها / لینک‌ها)',t:'ta'},{k:'problems',l:'مشکلات اجرایی',t:'ta'},{k:'official',l:'تقویم کل مسجد (گردش تأیید دبیرخانه)',t:'sel',opts:['خیر','درخواست به دبیرخانه','تأییدشده — تقویم کل مسجد']}],
+  cols:[{k:'title',l:'عنوان'},{k:'wgroup',l:'کارگروه'},{k:'date_iso',l:'تاریخ',f:'date'},{k:'place',l:'مکان'},{k:'status',l:'وضعیت',f:'badge'},{k:'official',l:'تقویم مسجد',f:'badge'}]},
  idea:{table:'ideas',title:'بانک ایده‌های فرهنگی',icon:'file',
   fields:[{k:'title',l:'عنوان ایده *',t:'text'},{k:'body',l:'شرح ایده',t:'ta'},{k:'wgroup',l:'کارگروه مرتبط',t:'sel',opts:'wg'},{k:'status',l:'وضعیت بررسی',t:'sel',opts:['ثبت‌شده','در بررسی','تأییدشده','ردشده','تبدیل به برنامه']},{k:'note',l:'نتیجه بررسی / تصمیم معاون',t:'ta'}],
   cols:[{k:'title',l:'ایده'},{k:'wgroup',l:'کارگروه'},{k:'status',l:'وضعیت',f:'badge'}]},
+ occ:{table:'cult_occasions',title:'مناسبت‌های مذهبی و ملی (تقویم فرهنگی)',icon:'calendar',
+  fields:[{k:'title',l:'عنوان مناسبت *',t:'text'},{k:'kind',l:'نوع مناسبت',t:'sel',opts:['مذهبی','ملی']},{k:'date_iso',l:'تاریخ (شمسی)',t:'date'},{k:'note',l:'توضیح / زمان‌بندی مراسم',t:'ta'}],
+  cols:[{k:'title',l:'مناسبت'},{k:'kind',l:'نوع',f:'badge'},{k:'date_iso',l:'تاریخ',f:'date'},{k:'note',l:'توضیح'}]},
  proj:{table:'projects',title:'پروژه‌های عمرانی',icon:'home',
-  fields:[{k:'title',l:'عنوان پروژه *',t:'text'},{k:'descr',l:'شرح، محل، هدف و ضرورت',t:'ta'},{k:'owner',l:'مسئول پروژه',t:'text'},{k:'contractor',l:'پیمانکار',t:'text'},{k:'start_iso',l:'تاریخ شروع (شمسی)',t:'date'},{k:'end_iso',l:'تاریخ پایان (شمسی)',t:'date'},{k:'budget',l:'برآورد / بودجه مصوب (افغانی)',t:'num'},{k:'progress',l:'درصد پیشرفت (۰ تا ۱۰۰)',t:'num'},{k:'status',l:'وضعیت پروژه',t:'sel',opts:['پیشنهادی','تأییدشده','در حال اجرا','متوقف‌شده','نیمه‌تمام','تکمیل‌شده','تحویل‌شده','تحویل نهایی']}],
+  fields:[{k:'title',l:'عنوان پروژه *',t:'text'},{k:'descr',l:'شرح، محل، هدف و ضرورت',t:'ta'},{k:'owner',l:'مسئول پروژه',t:'text'},{k:'contractor',l:'پیمانکار',t:'text'},{k:'start_iso',l:'تاریخ شروع (شمسی)',t:'date'},{k:'end_iso',l:'تاریخ پایان (شمسی)',t:'date'},{k:'budget',l:'برآورد / بودجه مصوب (تومان)',t:'num'},{k:'progress',l:'درصد پیشرفت (۰ تا ۱۰۰)',t:'num'},{k:'status',l:'وضعیت پروژه',t:'sel',opts:['پیشنهادی','تأییدشده','در حال اجرا','متوقف‌شده','نیمه‌تمام','تکمیل‌شده','تحویل‌شده','تحویل نهایی']}],
   cols:[{k:'title',l:'پروژه'},{k:'status',l:'وضعیت',f:'badge'},{k:'progress',l:'پیشرفت',f:'pct'},{k:'budget',l:'بودجه',f:'money'}]},
  asset:{table:'assets',title:'اموال و اقلام',icon:'inbox',
   fields:[{k:'name',l:'نام قلم *',t:'text'},{k:'category',l:'دسته‌بندی',t:'sel',opts:['صوتی و تصویری','نرم‌افزار و کامپیوتر','فرنیچر','فرش و موکت','کتابخانه','تهویه و گرمایش','آشپزخانه و پذیرایی','ابزار و یراق','تبلیغات و اعلان','سایر']},{k:'qty',l:'تعداد',t:'num'},{k:'loc',l:'محل نگهداری',t:'text'},{k:'condition_txt',l:'وضعیت سلامت',t:'sel',opts:['سالم','نیاز به تعمیر','خراب','اسقاطی']},{k:'holder',l:'تحویل‌گیرنده',t:'text'}],
   cols:[{k:'name',l:'قلم'},{k:'category',l:'دسته'},{k:'qty',l:'تعداد'},{k:'loc',l:'محل'},{k:'condition_txt',l:'وضعیت',f:'badge'}]},
  fix:{table:'repairs',title:'تعمیرات و نگهداری',icon:'settings',
-  fields:[{k:'title',l:'عنوان درخواست *',t:'text'},{k:'loc',l:'محل خرابی',t:'text'},{k:'descr',l:'شرح مشکل',t:'ta'},{k:'urgency',l:'فوریت',t:'sel',opts:['عادی','مهم','فوری']},{k:'assigned',l:'تعمیرکار مسئول',t:'text'},{k:'cost',l:'هزینه نهایی (افغانی)',t:'num'},{k:'status',l:'وضعیت',t:'sel',opts:['ثبت‌شده','در حال بررسی','در حال تعمیر','انجام‌شد','بایگانی']}],
+  fields:[{k:'title',l:'عنوان درخواست *',t:'text'},{k:'loc',l:'محل خرابی',t:'text'},{k:'descr',l:'شرح مشکل',t:'ta'},{k:'urgency',l:'فوریت',t:'sel',opts:['عادی','مهم','فوری']},{k:'assigned',l:'تعمیرکار مسئول',t:'text'},{k:'cost',l:'هزینه نهایی (تومان)',t:'num'},{k:'status',l:'وضعیت',t:'sel',opts:['ثبت‌شده','در حال بررسی','در حال تعمیر','انجام‌شد','بایگانی']}],
   cols:[{k:'title',l:'درخواست'},{k:'loc',l:'محل'},{k:'urgency',l:'فوریت',f:'badge'},{k:'cost',l:'هزینه',f:'money'},{k:'status',l:'وضعیت',f:'badge'}]},
  prop:{table:'properties',title:'مغازه‌ها و املاک',icon:'home',
-  fields:[{k:'title',l:'مشخصه ملک *',t:'text'},{k:'tenant',l:'مستأجر',t:'text'},{k:'phone',l:'تلفن مستأجر',t:'text'},{k:'rent',l:'اجاره ماهانه (افغانی)',t:'num'},{k:'deposit',l:'ودیعه (افغانی)',t:'num'},{k:'contract_no',l:'شماره قرارداد',t:'text'},{k:'start_iso',l:'شروع قرارداد (شمسی)',t:'date'},{k:'end_iso',l:'پایان قرارداد (شمسی)',t:'date'},{k:'status',l:'وضعیت',t:'sel',opts:['فعال','نزدیک به پایان','تمدید‌شده','تخلیه‌شده','واگذارشده']}],
+  fields:[{k:'title',l:'مشخصه ملک *',t:'text'},{k:'tenant',l:'مستأجر',t:'text'},{k:'phone',l:'تلفن مستأجر',t:'text'},{k:'rent',l:'اجاره ماهانه (تومان)',t:'num'},{k:'deposit',l:'ودیعه (تومان)',t:'num'},{k:'contract_no',l:'شماره قرارداد',t:'text'},{k:'start_iso',l:'شروع قرارداد (شمسی)',t:'date'},{k:'end_iso',l:'پایان قرارداد (شمسی)',t:'date'},{k:'status',l:'وضعیت',t:'sel',opts:['فعال','نزدیک به پایان','تمدید‌شده','تخلیه‌شده','واگذارشده']}],
   cols:[{k:'title',l:'ملک'},{k:'tenant',l:'مستأجر'},{k:'rent',l:'اجاره',f:'money'},{k:'end_iso',l:'پایان قرارداد',f:'date'},{k:'status',l:'وضعیت',f:'badge'}]},
  cer:{table:'ceremonies',title:'مراسم و مناسبت‌های هیئت',icon:'calendar',
   fields:[{k:'title',l:'عنوان مراسم *',t:'text'},{k:'date_iso',l:'تاریخ (شمسی)',t:'date'},{k:'time_fa',l:'ساعت',t:'text'},{k:'place',l:'مکان',t:'text'},{k:'maddah',l:'مداح',t:'text'},{k:'speaker',l:'سخنران',t:'text'},{k:'owner',l:'مسئول برگزاری',t:'text'},{k:'needs',l:'نیازهای اجرایی',t:'ta'},{k:'report',l:'گزارش برگزاری',t:'ta'}],
@@ -4205,36 +4154,39 @@ function openOfficialDoc(docTitle,bodyHtml){
   const w=window.open('','_blank');
   if(!w){ toast('پنجرهٔ چاپ مرورگر مسدود است؛ لطفاً اجازه پاپ‌آپ دهید','error'); return; }
   const faces='@font-face{font-family:"B Zar";src:url('+BZAR_WOFF+') format("woff");font-weight:normal;font-style:normal}\n'+vazirFaceCss();
+  /* v2.7 — کادر سه‌خط به‌صورت جاری‌رو داخل برگهٔ A4 (بدون fixed) تا در خروجی PDF/چاپ هیچ‌گاه به‌هم نمی‌ریزد */
   w.document.write('<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="utf-8"><title>'+docTitle+'</title>'+
    '<style>'+faces+
-   '@page{size:A4;margin:16mm 13mm} *{box-sizing:border-box} html,body{margin:0;padding:0}'+
-   'body{font-family:"B Zar","Vazirmatn",Tahoma,sans-serif;direction:rtl;color:#1a1a1a;line-height:2.05;font-size:13.5pt;padding:14mm 16mm}'+
-   '.pgframe{position:fixed;top:5mm;bottom:5mm;left:5mm;right:5mm;border:1px solid #000;pointer-events:none}'+
-   '.pgframe::before{content:"";position:absolute;top:1.4mm;bottom:1.4mm;left:1.4mm;right:1.4mm;border:2.6px solid #000}'+
-   '.pgframe::after{content:"";position:absolute;top:2.8mm;bottom:2.8mm;left:2.8mm;right:2.8mm;border:1px solid #000}'+
+   '@page{size:A4;margin:0} *{box-sizing:border-box} html,body{margin:0;padding:0}'+
+   'body{background:#eceae4;font-family:"B Zar","Vazirmatn",Tahoma,sans-serif;direction:rtl;color:#1a1a1a;line-height:2;font-size:13.5pt}'+
+   '.sheet{position:relative;width:210mm;min-height:296mm;margin:5mm auto;background:#fff;padding:18mm 17mm 22mm;box-shadow:0 2px 14px rgba(0,0,0,.18)}'+
+   '.fr{position:absolute;pointer-events:none}'+
+   '.fr1{top:5mm;bottom:5mm;left:5mm;right:5mm;border:1px solid #000}'+
+   '.fr2{top:6.4mm;bottom:6.4mm;left:6.4mm;right:6.4mm;border:1.15mm solid #000}'+
+   '.fr3{top:9.3mm;bottom:9.3mm;left:9.3mm;right:9.3mm;border:1px solid #000}'+
    '.lhead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px double #B49A60;padding-bottom:10px;margin-bottom:6px}'+
    '.lhead .org{font-size:17pt;font-weight:bold;color:#245743;text-align:center;flex:1} .lhead .org small{display:block;font-size:10pt;font-weight:normal;color:#555}'+
    '.meta{display:flex;justify-content:space-between;font-size:11pt;border-bottom:1px solid #999;padding:6px 0;margin-bottom:18px}'+
-   '.to{font-weight:bold;margin:10px 0} .subj{margin:10px 0} .subj b{text-decoration:underline}'+
-   '.greet{font-weight:bold;margin:8px 0 0} .greet2{margin:2px 0 6px}'+
-   '.body{text-align:justify;margin-top:8px;min-height:110px}'+
-   '.regards{font-weight:bold;margin-top:30px}'+
-   '.signer{text-align:center;margin-top:10px} .signer b{display:block;font-size:13.5pt} .signer .sttl{font-size:12pt}'+
-   '.sigimg{height:20mm;max-width:60mm;object-fit:contain;display:block;margin:0 auto 4px}'+
-   '.sigwarn{font-size:9pt;color:#999}'+
-   '.cc{margin-top:34px;font-size:11.5pt} .cc ul{margin:4px 0 0;padding:0 18px 0 0;list-style:none} .cc li{line-height:1.9}'+
-   '.trk{margin-top:14px;font-size:10pt;color:#555}'+
-   '.ltop{display:flex;align-items:flex-start;margin-bottom:4px}'+
-   '.ltop .lcol{width:25%} .ltop .lcenter{flex:1;text-align:center} .ltop .lleft{text-align:left;font-size:11pt;line-height:1.9}'+
-   '.ltop .lg1{height:86px;max-width:100%} .ltop .lg2{height:58px}'+
-   '.ltop .slogan{font-weight:bold;font-size:12.5pt;margin-top:2px}'+
-   '.ltop .orgname{font-size:10.5pt;color:#333}'+
-   '.sig{margin-top:46px;display:flex;justify-content:space-between;align-items:flex-end}'+
-   '.sig .block{text-align:center;font-size:12pt} .sig .line{border-top:1.5px solid #333;margin-top:34px;padding-top:6px;min-width:170px}'+
-   '.draftmark{position:fixed;top:42%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:44pt;color:rgba(180,20,20,.14);font-weight:bold;border:5px solid rgba(180,20,20,.14);padding:6px 26px;border-radius:12px;white-space:nowrap}'+
+   '.to{font-weight:bold;margin:6mm 0 0} .subj{margin:4mm 0} .subj b{text-decoration:underline}'+
+   '.greet{font-weight:bold;margin:2mm 0 0} .greet2{margin:0 0 3mm}'+
+   '.body{text-align:justify;min-height:40mm}'+
+   '.regards{font-weight:bold;margin-top:12mm}'+
+   '.signer{text-align:center;margin:16mm 0 0;page-break-inside:avoid} .signer b{display:block;font-size:14pt} .signer .sttl{font-size:11.5pt}'+
+   '.sigimg{height:21mm;max-width:62mm;object-fit:contain;display:block;margin:0 auto 2mm}'+
+   '.cc{margin-top:12mm;font-size:11.5pt} .cc ul{margin:2mm 0 0;padding:0 18px 0 0;list-style:none} .cc li{line-height:1.9}'+
+   '.trk{margin-top:6mm;font-size:10pt;color:#555}'+
+   '.ltop{display:flex;align-items:flex-start;margin-bottom:6mm}'+
+   '.ltop .lcol{width:26%} .ltop .lcenter{flex:1;text-align:center} .ltop .lleft{text-align:left;font-size:11pt;line-height:2}'+
+   '.ltop .lg1{height:88px;max-width:100%;object-fit:contain} .ltop .lg2{height:64px}'+
+   '.ltop .slogan{font-weight:bold;font-size:14pt;line-height:1.7}'+
+   '.ltop .orgname{font-size:11pt;color:#333}'+
+   '.sig{margin-top:14mm;display:flex;justify-content:space-between;align-items:flex-end}'+
+   '.sig .block{text-align:center;font-size:12pt} .sig .line{border-top:1.5px solid #333;margin-top:10mm;padding-top:6px;min-width:170px}'+
+   '.draftmark{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:44pt;color:rgba(180,20,20,.13);font-weight:bold;border:5px solid rgba(180,20,20,.13);padding:6px 26px;border-radius:12px;white-space:nowrap;z-index:5}'+
    '.sig-img-note{font-size:9.5pt;color:#777}'+
-   'table.min{width:100%;border-collapse:collapse;margin:10px 0} table.min th,table.min td{border:1px solid #666;padding:7px 9px;font-size:11.5pt;text-align:right} table.min th{background:#f0ece1}'+
-   '@media print{ .noprint{display:none} body{padding:0} }</style></head><body><div class="pgframe"></div>'+bodyHtml+
+   'table.min{width:100%;border-collapse:collapse;margin:5mm 0} table.min th,table.min td{border:1px solid #666;padding:7px 9px;font-size:11.5pt;text-align:right} table.min th{background:#f0ece1}'+
+   '@media print{ body{background:#fff} .sheet{margin:0;box-shadow:none} }</style></head><body>'+
+   '<div class="sheet"><div class="fr fr1"></div><div class="fr fr2"></div><div class="fr fr3"></div>'+bodyHtml+'</div>'+
    '<script>setTimeout(function(){window.print()},700)<\/script></body></html>');
   w.document.close();
 }
@@ -4265,6 +4217,7 @@ function renderSecSec(){
   const inType=L.filter(function(x){return x.type==='وارده'}).length;
   const outType=L.filter(function(x){return x.type==='صادره'}).length;
   const inTypeIn=L.filter(function(x){return x.type==='داخلی'}).length;
+  const calReqs=all("SELECT * FROM culture_programs WHERE official='درخواست به دبیرخانه' ORDER BY date_iso");
   const rowHtml=function(x,actions){
     return '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b>'+esc(x.subject)+'</b>'+typeBadge(x.type)+statusBadge(x.status)+
      (x.tracking_no?'<span class="badge b-gold">رسید: '+esc(x.tracking_no)+'</span>':'')+
@@ -4294,12 +4247,20 @@ function renderSecSec(){
     (back.length?back.slice(0,10).map(function(x){return rowHtml(x,'<button class="btn btn-outline btn-sm" data-act="letterView" data-id="'+x.id+'">مشاهده</button><button class="btn btn-primary btn-sm" data-act="adminOK" data-id="'+x.id+'">تکمیل شد — ارسال</button>')}).join(''):emptyState('موردی نیست'))+'</div>'+
    '<div class="card pad"><h3>'+icon('file',17)+' پرونده‌های اداری و بایگانی</h3><p class="tiny muted" style="margin:6px 0 10px">پرونده اداری هر واحد بر اساس نامه‌های ارجاع‌شده به آن واحد؛ آرشیو رسمی در بخش «مکاتبات» با فیلتر بایگانی.</p>'+
     '<div class="table-wrap"><table class="tbl"><thead><tr><th>پرونده (واحد مقصد)</th><th>نامه‌های جاری</th><th>بایگانی‌شده</th></tr></thead><tbody>'+
-    ROLES.map(function(r){
+    (ROLES.map(function(r){
       const a=referred.filter(function(x){return x.assigned_role===r}).length, b=arch.filter(function(x){return x.assigned_role===r}).length;
       if(!a&&!b) return '';
       return '<tr><td>'+esc(r)+'</td><td>'+faNum(a)+'</td><td>'+faNum(b)+'</td></tr>';
-    }).join('')||'<tr><td colspan="3">'+emptyState('پرونده‌ای تشکیل نشده است')+'</td></tr>'+
+    }).join('')||'<tr><td colspan="3">'+emptyState('پرونده‌ای تشکیل نشده است')+'</td></tr>')+
    '</tbody></table></div></div>'+
+   '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('calendar',17)+' درخواست‌های ورود برنامه فرهنگی به تقویم کل مسجد ('+faNum(calReqs.length)+')</h3>'+
+    '<p class="tiny muted" style="margin:6px 0 10px">برنامه‌های رسمی معاونت فرهنگی پس از تأیید دبیرخانه به‌صورت خودکار وارد تقویم کل مسجد (تقویم اجرایی) می‌شوند.</p>'+
+    (calReqs.length?calReqs.map(function(p){
+      return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(p.title)+'</b><span class="badge b-warn">در انتظار تأیید دبیرخانه</span>'+
+       '<span style="margin-right:auto;display:flex;gap:6px"><button class="btn btn-primary btn-sm" data-act="progCalOK" data-id="'+p.id+'">تأیید و درج در تقویم</button>'+
+       '<button class="btn btn-outline btn-sm" data-act="progCalNO" data-id="'+p.id+'" style="color:var(--danger)">عدم تأیید</button></span></div>'+
+       '<small class="muted">'+esc(p.wgroup||'—')+' · '+(faDateLong(p.date_iso)||'—')+' · مکان: '+esc(p.place||'—')+' · مسئول اجرا: '+esc(p.owner||'—')+'</small></div>';
+    }).join(''):emptyState('درخواستی نیست'))+'</div>'+
    '<div class="tiny muted" style="margin-top:8px">ترکیب مکاتبات: وارده '+faNum(inType)+' · صادره '+faNum(outType)+' · داخلی '+faNum(inTypeIn)+'</div>';
 }
 
@@ -4401,7 +4362,7 @@ function openExtLetterModal(id){
     '</div>'+
     fld('رونوشت (هر خط یک مورد)','<textarea name="cc" class="inp" rows="2" placeholder="مثال: معاونت جهاد بسازندگی ناحیه یاسر">'+esc(r?(r.cc||''):'')+'</textarea>')+
     '<div class="frow2">'+
-      fld('نام امضاکننده','<input name="sname" class="inp" value="'+esc(r?(r.signer_name||''):'احسان رحیمی')+'">')+
+      fld('نام امضاکننده (خالی = «امضای رئیس»)','<input name="sname" class="inp" value="'+esc(r?(r.signer_name||''):'')+'">')+
       fld('سمت امضاکننده','<input name="stitle" class="inp" value="'+esc(r?(r.signer_title||''):'امام جماعت مسجد صاحب‌الزمان (عج)')+'">')+
     '</div>'+
     '<div class="frow2">'+
@@ -4409,7 +4370,7 @@ function openExtLetterModal(id){
       '<div></div>'+
     '</div>'+
     '<label class="chk" style="margin-bottom:10px"><input type="checkbox" name="sig" '+(r&&r.signed_imam?'checked':'')+'> دارای مجوز امضای امام جماعت</label>'+
-    '<div class="badge '+(sigReg?'b-success':'b-warn')+'" style="margin-bottom:12px">'+(sigReg?'تصویر امضای امام جماعت ثبت شده و روی نامه‌های دارای مجوز (وضعیت «صادرشده») خودکار درج می‌شود.':'تصویر امضای امام جماعت هنوز ثبت نشده؛ از کارت «امضای امام جماعت» در همین بخش ثبت کنید.')+' پیش‌نویس‌ها بدون امضا چاپ می‌شوند.</div>'+
+    '<div class="badge '+(sigReg?'b-success':'b-warn')+'" style="margin-bottom:12px">'+(sigReg?'تصویر امضای امام جماعت ثبت شده و روی نامه‌های دارای مجوز (وضعیت «صادرشده») خودکار درج می‌شود.':'برای درج خودکار امضا، تصویر امضا را از کارت «امضای امام جماعت» در همین بخش ثبت کنید.')+' پیش‌نویس‌ها بدون امضا چاپ می‌شوند.</div>'+
     '<button type="submit" class="btn btn-primary btn-block">'+(r?'ذخیره تغییرات':'ثبت نامه')+'</button>'+
    '</form>',{width:'700px'});
   const form=ov.querySelector('#exForm');
@@ -4451,8 +4412,8 @@ function extLetterHtml(x){
    '<div class="body">'+(esc(x.body||'').replace(/\n/g,'<br>')||'…')+'</div>'+
    '<div class="regards">با احترام</div>'+
    '<div class="signer">'+(sig?'<img class="sigimg" src="'+sig+'">':'')+
-    '<b>'+esc(x.signer_name||'احسان رحیمی')+'</b><div class="sttl">'+esc(x.signer_title||'امام جماعت مسجد صاحب‌الزمان (عج)')+'</div>'+
-    (isSigned&&!sig?'<div class="sigwarn">تصویر امضای امام جماعت در سامانه ثبت نشده است؛ پس از ثبت، نسخهٔ رسمی با امضا صادر می‌شود.</div>':'')+'</div>'+
+    '<b>'+esc(x.signer_name||'امضای رئیس')+'</b><div class="sttl">'+esc(x.signer_title||'امام جماعت مسجد صاحب‌الزمان (عج)')+'</div>'+
+   '</div>'+
    (ccs.length?'<div class="cc"><b>رونوشت:</b><ul>'+ccs.map(function(c){return '<li>'+esc(c)+'</li>'}).join('')+'</ul></div>':'')+
    (x.tracking_no?'<div class="trk">شناسه پیگیری: '+esc(x.tracking_no)+'</div>':'');
 }
@@ -4587,14 +4548,195 @@ function renderSecPanel(root){
   }).join('')+'</div>';
   const head='<div class="page-head"><div><h2>پنل دبیر هیئت امنا و دبیرخانه مرکزی</h2><p class="muted">یک حساب با سه مسئولیت تجمیع‌شده: مدیر دبیرخانه مرکزی · مسئول امور اداری و مکاتبات برون‌سازمانی · دبیر جلسات هیئت امنا (سند مأموریت §۳-۲)</p></div></div>';
   const fn=tab==='sec'?renderSecSec:tab==='ext'?renderSecExt:tab==='meet'?renderSecMeet:renderSecFollow;
-  root.innerHTML=head+tabs+fn();
+  root.innerHTML=imamPanelTabs()+head+tabs+fn();
 }
 
 const PANEL_KIND={
- culture:{title:'پنل معاونت فرهنگی',desc:'کارگروه‌ها، برنامه‌ها و بانک ایده — طبق سند مأموریت §۳-۳ (بدون حق مدیریت جلسات هیئت امنا)',ents:['wg','cprog','idea']},
+ culture:{title:'پنل معاونت فرهنگی',desc:'کارگروه‌ها، برنامه‌ها و بانک ایده — طبق سند مأموریت §۳-۳ (بدون حق مدیریت جلسات هیئت امنا)',ents:['wg','cprog','occ','idea']},
  support:{title:'پنل عمران و پشتیبانی',desc:'پروژه‌ها، اموال، تعمیرات و املاک — طبق سند مأموریت §۳-۶',ents:['proj','asset','fix','prop']},
  heyat:{title:'پنل هیئت فداییان حضرت زینب (س)',desc:'مراسم، اعضا و تجهیزات اختصاصی — طبق سند مأموریت §۳-۷ (به‌همراه دبیرخانه مستقل در بخش دبیرخانه)',ents:['cer','hmem','heq']}
 };
+
+/* ============================================================
+   v2.7 — پنل تخصصی معاونت فرهنگی (۷ بخش طبق مشخصات کارفرما)
+   ۱) داشبورد فرهنگی  ۲) مدیریت برنامه‌ها و مراسم  ۳) مدیریت کارگروه‌ها
+   ۴) تقویم فرهنگی  ۵) مکاتبات و هماهنگی فرهنگی  ۶) گزارش عملکرد  ۷) بانک ایده‌های فرهنگی
+   ============================================================ */
+const CULT_TABS=[
+ {id:'dash',label:'داشبورد فرهنگی'},
+ {id:'cprog',label:'برنامه‌ها و مراسم'},
+ {id:'wg',label:'کارگروه‌ها'},
+ {id:'cal',label:'تقویم فرهنگی'},
+ {id:'coord',label:'مکاتبات و هماهنگی'},
+ {id:'perf',label:'گزارش عملکرد'},
+ {id:'ideas',label:'بانک ایده‌ها'}
+];
+function imamPanelTabs(){
+  if(!session||session.username!=='imam') return '';
+  const tabDefs=[['secretary','دبیر هیئت امنا'],['culture','معاونت فرهنگی'],['support','عمران و پشتیبانی'],['heyat','هیئت فداییان (س)']];
+  return '<div class="seg" style="margin-bottom:12px;flex-wrap:wrap">'+tabDefs.map(function(td){
+    return '<button class="seg-btn '+((window._panelTab===td[0])||(!window._panelTab&&td[0]==='culture')?'on':'')+'" data-act="panelTab" data-k="'+td[0]+'">'+td[1]+'</button>';
+  }).join('')+'</div>';
+}
+const COORD_PRESETS={
+ hamkari:{recv:'',type:'داخلی',sender:'معاونت فرهنگی مسجد صاحب‌الزمان (عج)',subject:'درخواست همکاری فرهنگی — معاونت فرهنگی',summary:'با سلام؛ معاونت فرهنگی مسجد صاحب‌الزمان (عج) درخواست همکاری در برنامه‌های مشترک فرهنگی را دارد. خواهشمند است دستور فرمایید موضوع بررسی و هماهنگی لازم انجام شود.'},
+ tajhiz:{recv:'معاون عمران و پشتیبانی',type:'داخلی',sender:'معاونت فرهنگی مسجد صاحب‌الزمان (عج)',subject:'درخواست تجهیزات جهت برنامه فرهنگی',summary:'با سلام؛ جهت برگزاری برنامه‌های فرهنگی، درخواست تجهیزات و پشتیبانی فنی از معاونت عمران و پشتیبانی دارد. مشخصات اقلام موردنیاز در متن نامه اعلام می‌گردد.'},
+ budje:{recv:'معاون امور مالی',type:'داخلی',sender:'معاونت فرهنگی مسجد صاحب‌الزمان (عج)',subject:'درخواست بودجه برنامه فرهنگی',summary:'با سلام؛ جهت اجرای برنامه‌های مصوب فرهنگی، درخواست تخصیص بودجه از معاونت امور مالی دارد. برآورد هزینه پس از بررسی اولیه اعلام می‌گردد.'},
+ tashakkol:{recv:'مسئول هیئت فداییان حضرت زینب (س)',type:'داخلی',sender:'معاونت فرهنگی مسجد صاحب‌الزمان (عج)',subject:'هماهنگی برنامه مشترک با تشکل',summary:'با سلام؛ جهت هماهنگی برنامه مشترک فرهنگی با تشکل مستقل، خواهشمند است نمایندگان محترم برای زمان‌بندی و تقسیم وظایف هماهنگی لازم را به عمل آورند. (تشکل‌ها مستقل‌اند و زیرمجموعه کارگروه‌های معاونت فرهنگی نیستند.)'}
+};
+function cultLateMissions(){
+  const t=todayIso();
+  return all("SELECT d.id AS d_id, d.title AS d_title, d.assignee_username AS dun, t.status AS t_status, t.deadline_iso AS t_deadline, m.date_iso AS m_date FROM decisions d LEFT JOIN tasks t ON t.id=d.task_id LEFT JOIN meetings m ON m.id=d.meeting_id WHERE d.assignee_username='culture'")
+   .filter(function(x){ return x.t_status!=='انجام‌شده'&&((x.t_deadline&&x.t_deadline<t)||(!x.t_deadline&&x.m_date&&x.m_date<t)); });
+}
+function cultStat(l,n,cls,sub){
+  return '<div class="stat-card '+(cls||'')+'"><span class="stat-label">'+l+'</span><b class="stat-num">'+faNum(n)+'</b><small class="muted">'+sub+'</small></div>';
+}
+/* ۱) داشبورد فرهنگی */
+function cultDash(){
+  const t=todayIso();
+  const progs=all('SELECT * FROM culture_programs ORDER BY date_iso');
+  const upcoming=progs.filter(function(p){ return p.date_iso&&p.date_iso>=t&&p.status!=='لغوشده'; });
+  const occs=all('SELECT * FROM cult_occasions WHERE date_iso IS NOT NULL AND date_iso<>\'\' AND date_iso>=? ORDER BY date_iso LIMIT 8',[t]);
+  const late=cultLateMissions();
+  const wgs=all('SELECT * FROM wg_groups ORDER BY id');
+  const noRep=progs.filter(function(p){ return p.date_iso&&p.date_iso<t&&p.status!=='لغوشده'&&!p.report; });
+  return ''+
+   '<div class="grid-stats">'+
+    cultStat('برنامه‌های پیش‌رو',upcoming.length,'','جاری و آینده')+
+    cultStat('مناسبت‌های نزدیک',occs.length,'','تقویم فرهنگی')+
+    cultStat('مأموریت‌های معوق',late.length,late.length?'accent-danger':'','فراتر از مهلت')+
+    cultStat('کارگروه‌ها',wgs.length,'accent-success','۵ کارگروه مصوب')+
+    cultStat('گزارش‌های ثبت‌نشده',noRep.length,noRep.length?'accent-gold':'','نیازمند تکمیل')+
+   '</div>'+
+   '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px">'+
+    '<div class="card pad"><h3>'+icon('calendar',17)+' برنامه‌های پیش‌رو</h3>'+
+     (upcoming.length?upcoming.slice(0,6).map(function(p){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(p.title)+'</b><span class="badge '+entBadgeCls(p.status)+'">'+esc(p.status)+'</span></div><small class="muted">'+faDateLong(p.date_iso)+' · '+esc(p.place||p.wgroup||'—')+'</small></div>'; }).join(''):emptyState('برنامه‌ای پیش‌رو ثبت نشده است'))+'</div>'+
+    '<div class="card pad"><h3>'+icon('bell',17)+' مناسبت‌های نزدیک</h3>'+
+     (occs.length?occs.slice(0,6).map(function(o){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(o.title)+'</b><span class="badge '+(o.kind==='مذهبی'?'b-success':'b-info')+'">'+esc(o.kind||'مذهبی')+'</span></div><small class="muted">'+faDateLong(o.date_iso)+'</small></div>'; }).join(''):emptyState('مناسبتی ثبت نشده است'))+'</div>'+
+    '<div class="card pad"><h3>'+icon('clock',17)+' مأموریت‌های معوق</h3>'+
+     (late.length?late.map(function(x){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(x.d_title)+'</b><span class="badge b-danger">معوق</span></div><small class="muted">'+(x.t_deadline?'مهلت: '+faDateLong(x.t_deadline):'تاریخ جلسه: '+faDateLong(x.m_date))+'</small></div>'; }).join(''):emptyState('مأموریت معوقی وجود ندارد'))+'</div>'+
+    '<div class="card pad"><h3>'+icon('users',17)+' وضعیت کارگروه‌ها</h3>'+
+     (wgs.length?wgs.map(function(w){ const mem=(w.members||'').split(/[,،\n]/).filter(function(x){return x.trim()}).length; return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(w.name)+'</b>'+(w.head?'<span class="badge b-neutral">مسئول: '+esc(w.head)+'</span>':'<span class="badge b-warn">بدون مسئول</span>')+'</div><small class="muted">'+faNum(mem)+' عضو</small></div>'; }).join(''):emptyState('کارگروهی تعریف نشده است'))+'</div>'+
+   '</div>'+
+   (noRep.length?'<div class="card pad" style="border-right:4px solid var(--gold);margin-top:12px"><h3>'+icon('file',17)+' گزارش‌های ثبت‌نشده ('+faNum(noRep.length)+')</h3>'+noRep.map(function(p){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(p.title)+'</b><span class="badge b-warn">بدون گزارش</span><span style="margin-right:auto"><button class="btn btn-outline btn-sm" data-act="cultTab" data-k="cprog">ثبت گزارش</button></span></div><small class="muted">'+faDateLong(p.date_iso)+'</small></div>'; }).join('')+'</div>':'');
+}
+/* ۴) تقویم فرهنگی */
+function cultCal(){
+  const progs=all('SELECT * FROM culture_programs WHERE date_iso IS NOT NULL AND date_iso<>\'\' ORDER BY date_iso');
+  const occs=all('SELECT * FROM cult_occasions WHERE date_iso IS NOT NULL AND date_iso<>\'\' ORDER BY date_iso');
+  const byM={};
+  progs.forEach(function(p){ const j=isoToJ(p.date_iso); const k=j.jy+'/'+('0'+j.jm).slice(-2); (byM[k]=byM[k]||[]).push({t:p.title,k:'برنامه'}); });
+  occs.forEach(function(o){ const j=isoToJ(o.date_iso); const k=j.jy+'/'+('0'+j.jm).slice(-2); (byM[k]=byM[k]||[]).push({t:o.title,k:'مناسبت'}); });
+  const months=Object.keys(byM).sort();
+  const byD={};
+  progs.forEach(function(p){ (byD[p.date_iso]=byD[p.date_iso]||[]).push({t:p.title,k:'برنامه'}); });
+  occs.forEach(function(o){ (byD[o.date_iso]=byD[o.date_iso]||[]).push({t:o.title,k:'مناسبت'}); });
+  const confl=Object.keys(byD).filter(function(d){ return byD[d].length>1; });
+  return ''+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>گردش رسمی:</b> برنامه‌های رسمی پس از طی گردش تأیید دبیرخانه (ستون «تقویم مسجد» در بخش برنامه‌ها) به‌صورت خودکار وارد تقویم کل مسجد (تقویم اجرایی) می‌شوند؛ تداخل تاریخ‌ها به‌صورت خودکار شناسایی می‌شود.</p></div>'+
+   entSection('occ')+
+   '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('calendar',17)+' برنامه‌ریزی سالانه</h3>'+
+    (months.length?'<div class="table-wrap"><table class="tbl"><thead><tr><th>ماه</th><th>تعداد موارد</th><th>موارد</th></tr></thead><tbody>'+
+     months.map(function(m){ const parts=m.split('/'); return '<tr><td><b>'+faNum(parts[0])+'/'+faNum(+parts[1])+'</b></td><td>'+faNum(byM[m].length)+'</td><td class="tiny">'+byM[m].map(function(x){ return esc(x.t)+' ('+x.k+')'; }).join('، ')+'</td></tr>'; }).join('')+
+     '</tbody></table></div>':emptyState('موردی برای برنامه‌ریزی ثبت نشده است'))+'</div>'+
+   '<div class="card pad"><h3>'+icon('check',17)+' تداخل‌های شناسایی‌شده</h3>'+
+    (confl.length?confl.map(function(d){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+faDateLong(d)+'</b><span class="badge b-danger">تداخل</span></div><small class="muted">'+byD[d].map(function(x){ return esc(x.t)+' ('+x.k+')'; }).join(' + ')+'</small></div>'; }).join(''):emptyState('تداخلی شناسایی نشده است'))+'</div>';
+}
+/* ۵) مکاتبات و هماهنگی فرهنگی */
+function cultLettersMini(){
+  const L=all('SELECT * FROM letters WHERE assigned_role=? OR created_by=? ORDER BY id DESC LIMIT 12',['معاونت فرهنگی',session.username]);
+  return L.length?'<div class="table-wrap"><table class="tbl"><thead><tr><th>شماره</th><th>موضوع</th><th>فرستنده</th><th>گیرنده</th><th>وضعیت</th></tr></thead><tbody>'+
+   L.map(function(x){ return '<tr><td class="tiny">'+esc(x.number)+'</td><td>'+esc(x.subject)+'</td><td class="tiny">'+esc(x.sender||'—')+'</td><td class="tiny">'+esc(x.assigned_role||'دبیرخانه')+'</td><td><span class="badge '+entBadgeCls(x.status)+'">'+esc(x.status)+'</span></td></tr>'; }).join('')+
+   '</tbody></table></div>':emptyState('نامه‌ای یافت نشد');
+}
+function cultCoord(){
+  const btn=function(k,ic,t,d){ return '<button class="btn btn-outline" data-act="coordLetter" data-k="'+k+'" style="justify-content:flex-start;margin-top:10px">'+icon(ic,16)+' '+t+'</button><p class="tiny muted" style="margin:4px 0 2px">'+d+'</p>'; };
+  return '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('send',17)+' درخواست‌های هماهنگی</h3>'+
+   '<p class="tiny muted" style="margin:6px 0 4px">نامه‌ها با مبدأ «معاونت فرهنگی» در دبیرخانه مرکزی ثبت و پس از بررسی اداری به مقصد ارجاع می‌شود؛ پاسخ به همین بخش (مکاتبات پنل عمومی) بازمی‌گردد.</p>'+
+   btn('hamkari','users','درخواست همکاری از سایر معاونت‌ها','نامه داخلی از طریق دبیرخانه به معاونت‌های دیگر')+
+   btn('tajhiz','inbox','درخواست تجهیزات از عمران و پشتیبانی','اقلام و پشتیبانی فنی برنامه‌های فرهنگی')+
+   btn('budje','wallet','درخواست بودجه از معاونت مالی','تخصیص اعتبار برنامه‌های مصوب')+
+   btn('tashakkol','mail','هماهنگی با تشکل‌ها','تشکل‌ها مستقل‌اند و زیرمجموعه کارگروه‌های معاونت فرهنگی تعریف نمی‌شوند')+
+   '</div>'+
+   '<div class="card pad"><h3>'+icon('mail',17)+' نامه‌های مرتبط با معاونت فرهنگی</h3><p class="tiny muted" style="margin:6px 0 10px">نامه‌هایی که مقصد یا مبدأ آن‌ها معاونت فرهنگی است (فهرست کامل در «مکاتبات» پنل عمومی).</p>'+
+   cultLettersMini()+'</div>';
+}
+/* ۶) گزارش عملکرد */
+function cultPerf(){
+  const progs=all('SELECT * FROM culture_programs ORDER BY date_iso DESC');
+  const done=progs.filter(function(p){ return p.status==='اجراشده'; });
+  const parts=done.reduce(function(s,p){ return s+(p.participants||0); },0);
+  const withDocs=done.filter(function(p){ return p.docs; }).length;
+  const byM={};
+  done.forEach(function(p){ if(!p.date_iso) return; const j=isoToJ(p.date_iso); const k=j.jy+'/'+('0'+j.jm).slice(-2); const row=byM[k]=byM[k]||{n:0,part:0}; row.n++; row.part+=(p.participants||0); });
+  const months=Object.keys(byM).sort().reverse();
+  return ''+
+   '<div class="grid-stats">'+
+    cultStat('برنامه‌های اجراشده',done.length,'accent-success','')+
+    cultStat('مجموع شرکت‌کنندگان',parts,'', '')+
+    cultStat('برنامه‌های دارای مستندات',withDocs,'','تصاویر و مدارک')+
+    cultStat('کل برنامه‌ها',progs.length,'','همه وضعیت‌ها')+
+   '</div>'+
+   '<div class="card pad" style="margin:12px 0 14px"><h3 style="display:flex;align-items:center;gap:8px">'+icon('chart',18)+' گزارش تفصیلی برنامه‌ها'+
+    '<button class="btn btn-outline btn-sm no-print" data-act="cultPerfPrint" style="margin-inline-start:auto">'+icon('printer',14)+' چاپ گزارش عملکرد</button></h3>'+
+    (progs.length?'<div class="table-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>عنوان</th><th>تاریخ</th><th>وضعیت</th><th>شرکت‌کنندگان</th><th>مستندات</th><th>مشکلات اجرایی</th></tr></thead><tbody>'+
+     progs.map(function(p){ return '<tr><td>'+esc(p.title)+'</td><td class="tiny">'+(faDate(p.date_iso)||'—')+'</td><td><span class="badge '+entBadgeCls(p.status)+'">'+esc(p.status)+'</span></td><td>'+faNum(p.participants||0)+'</td><td class="tiny">'+esc(p.docs||'—')+'</td><td class="tiny">'+esc(p.problems||'—')+'</td></tr>'; }).join('')+
+     '</tbody></table></div>':emptyState('برنامه‌ای ثبت نشده است'))+'</div>'+
+   '<div class="card pad"><h3>'+icon('calendar',17)+' خلاصه ماهانه و سالانه</h3>'+
+    (months.length?'<div class="table-wrap"><table class="tbl"><thead><tr><th>ماه</th><th>برنامه‌های اجراشده</th><th>شرکت‌کنندگان</th></tr></thead><tbody>'+
+     months.map(function(m){ const parts2=m.split('/'); return '<tr><td><b>'+faNum(parts2[0])+'/'+faNum(+parts2[1])+'</b></td><td>'+faNum(byM[m].n)+'</td><td>'+faNum(byM[m].part)+'</td></tr>'; }).join('')+
+     '<tr><td><b>جمع کل</b></td><td><b>'+faNum(done.length)+'</b></td><td><b>'+faNum(parts)+'</b></td></tr>'+
+     '</tbody></table></div>':emptyState('آمار ماهانه پس از ثبت گزارش برنامه‌ها تشکیل می‌شود'))+'</div>';
+}
+/* ۷) بانک ایده‌های فرهنگی — گردش کامل */
+function cultIdeas(){
+  const rows=all('SELECT * FROM ideas ORDER BY id DESC');
+  const isDep=session.username==='culture'||session.username==='imam';
+  const uMap={}; all('SELECT username,display_name FROM users').forEach(function(u){ uMap[u.username]=u.display_name; });
+  const card=function(it){
+    return '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b>'+esc(it.title)+'</b>'+
+     '<span class="badge '+entBadgeCls(it.status)+'">'+esc(it.status)+'</span>'+
+     '<span style="margin-right:auto;display:flex;gap:6px">'+
+     (it.status==='ثبت‌شده'?'<button class="btn btn-outline btn-sm" data-act="ideaSt" data-id="'+it.id+'" data-st="در بررسی">بررسی اولیه کارگروه</button>':'')+
+     (isDep&&it.status==='در بررسی'?'<button class="btn btn-primary btn-sm" data-act="ideaSt" data-id="'+it.id+'" data-st="تأییدشده">تأیید معاون</button><button class="btn btn-outline btn-sm" data-act="ideaSt" data-id="'+it.id+'" data-st="ردشده" style="color:var(--danger)">رد</button>':'')+
+     (isDep&&it.status==='تأییدشده'?'<button class="btn btn-primary btn-sm" data-act="ideaToProg" data-id="'+it.id+'">تبدیل به برنامه اجرایی</button>':'')+
+     '<button class="icon-btn" data-act="entEdit" data-ent="idea" data-id="'+it.id+'" title="ویرایش">'+icon('edit',15)+'</button>'+
+     '<button class="icon-btn danger" data-act="entDel" data-ent="idea" data-id="'+it.id+'" title="حذف" style="color:var(--danger)">'+icon('trash',15)+'</button>'+
+     '</span></div>'+
+     (it.body?'<p class="tiny">'+esc(it.body)+'</p>':'')+
+     '<p class="tiny muted">کارگروه: '+esc(it.wgroup||'—')+(it.note?' · نتیجه بررسی: '+esc(it.note):'')+' · ثبت‌کننده: '+esc(it.created_by?(uMap[it.created_by]||it.created_by):'—')+'</p></div>';
+  };
+  return '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>گردش بانک ایده:</b> ثبت ایده توسط اعضا ← بررسی اولیه توسط مسئول کارگروه ← بررسی و تصمیم‌گیری معاون فرهنگی ← تبدیل ایدهٔ تأییدشده به برنامه اجرایی (در بخش «برنامه‌ها و مراسم»). تشکل‌های مستقل زیرمجموعه کارگروه‌ها نیستند.</p></div>'+
+   '<div class="card pad"><h3 style="display:flex;align-items:center;gap:8px">'+icon('file',18)+' بانک ایده‌های فرهنگی'+
+    '<button class="btn btn-primary btn-sm" data-act="entNew" data-ent="idea" style="margin-inline-start:auto">'+icon('plus',14)+' ثبت ایده جدید</button></h3>'+
+    '<div style="margin-top:10px">'+(rows.length?rows.map(card).join(''):emptyState('ایده‌ای ثبت نشده است'))+'</div></div>';
+}
+/* قالب‌بندی ۷ بخشی */
+function renderCultPanel(root){
+  try{
+    if(one('SELECT COUNT(*) AS c FROM wg_groups').c===0){
+      ['قرآن و عترت','مناسبت‌ها و مراسم','تبلیغات و اطلاع‌رسانی','فعالیت‌های اجتماعی','کتاب و مطالعات'].forEach(function(nm){
+        run('INSERT INTO wg_groups (name,head,members,note,updated_at_fa) VALUES (?,?,?,?,?)',[nm,'','','',faStamp()]);
+      });
+      markDirty();
+    }
+  }catch(e){}
+  const tab=window._cultTab||'dash';
+  const tabs='<div class="seg" style="margin-bottom:14px;flex-wrap:wrap">'+CULT_TABS.map(function(t){
+    return '<button class="seg-btn '+(tab===t.id?'on':'')+'" data-act="cultTab" data-k="'+t.id+'">'+t.label+'</button>';
+  }).join('')+'</div>';
+  const head='<div class="page-head"><div><h2>پنل معاونت فرهنگی</h2><p class="muted">داشبورد فرهنگی · برنامه‌ها و مراسم · کارگروه‌ها · تقویم فرهنگی · مکاتبات و هماهنگی · گزارش عملکرد · بانک ایده (سند مأموریت §۳-۳)</p></div></div>';
+  let body;
+  if(tab==='dash') body=cultDash();
+  else if(tab==='cprog') body='<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>گردش برنامه:</b> ثبت برنامه (عنوان و هدف، تاریخ و مکان، کارگروه مسئول، مسئول اجرا، نیازهای مالی و پشتیبانی) ← پیگیری وضعیت اجرا ← ثبت گزارش، شرکت‌کنندگان و مستندات. برنامهٔ رسمی با گزینهٔ «درخواست به دبیرخانه» پس از تأیید دبیر هیئت امنا وارد تقویم کل مسجد می‌شود.</p></div>'+entSection('cprog');
+  else if(tab==='wg') body='<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>پنج کارگروه مصوب:</b> قرآن و عترت · مناسبت‌ها و مراسم · تبلیغات و اطلاع‌رسانی · فعالیت‌های اجتماعی · کتاب و مطالعات. برای هر کارگروه: تعیین مسئول، مدیریت اعضا، تقسیم وظایف و ثبت گزارش عملکرد. <b>تشکل‌های مستقل زیرمجموعه کارگروه‌های معاونت فرهنگی تعریف نمی‌شوند.</b></p></div>'+entSection('wg');
+  else if(tab==='cal') body=cultCal();
+  else if(tab==='coord') body=cultCoord();
+  else if(tab==='perf') body=cultPerf();
+  else body=cultIdeas();
+  root.innerHTML=imamPanelTabs()+head+tabs+body;
+}
 function panelKindOfUser(){
   if(!session) return null;
   if(session.username==='secretary') return 'secretary';
@@ -4608,10 +4750,10 @@ function entAllowed(k){
   return !!pk&&PANEL_KIND[pk].ents.includes(k);
 }
 function entBadgeCls(v){
-  if(['تأییدشده','اجراشده','سالم','فعال','انجام‌شد','بایگانی','تحویل نهایی','تکمیل‌شده','تحویل‌شده','توانمند و پیشرو','تبدیل به برنامه'].includes(v)) return 'b-success';
+  if(['تأییدشده','اجراشده','سالم','فعال','انجام‌شد','بایگانی','تحویل نهایی','تکمیل‌شده','تحویل‌شده','توانمند و پیشرو','تبدیل به برنامه','تأییدشده — تقویم کل مسجد'].includes(v)) return 'b-success';
   if(['در حال اجرا','در حال بررسی','در حال تعمیر','در بررسی','مطلوب','تمدید‌شده'].includes(v)) return 'b-info';
   if(['نیاز به تعمیر','مهم','فوری','نزدیک به پایان','متوقف‌شده','لغوشده','ردشده','خراب','اسقاطی','تخلیه‌شده','نیازمند توجه و تقویت'].includes(v)) return 'b-danger';
-  if(['برنامه‌ریزی‌شده','پیشنهادی','ثبت‌شده','عادی'].includes(v)) return 'b-warn';
+  if(['برنامه‌ریزی‌شده','پیشنهادی','ثبت‌شده','عادی','درخواست به دبیرخانه'].includes(v)) return 'b-warn';
   return 'b-neutral';
 }
 function entCell(cfg,c,r){
@@ -4644,13 +4786,9 @@ VIEWS.panel=function(root){
   if(!kind&&session.username==='imam') kind=window._panelTab||'culture';
   if(!kind){ root.innerHTML='<div class="card pad"><p class="muted">پنل اختصاصی برای حساب شما تعریف نشده است.</p></div>'; return; }
   if(kind==='secretary'){ renderSecPanel(root); return; }
+  if(kind==='culture'){ renderCultPanel(root); return; }
   const cfg=PANEL_KIND[kind];
-  let tabs='';
-  if(session.username==='imam'){
-    const tabDefs=[['secretary','دبیر هیئت امنا']].concat(Object.keys(PANEL_KIND).map(function(k){return [k,PANEL_KIND[k].title.replace('پنل ','')]}));
-    tabs='<div class="seg" style="margin-bottom:14px">'+
-      tabDefs.map(function(td){return '<button class="seg-btn '+(kind===td[0]?'on':'')+'" data-act="panelTab" data-k="'+td[0]+'">'+td[1]+'</button>'}).join('')+'</div>';
-  }
+  const tabs=imamPanelTabs();
   root.innerHTML=
    '<div class="page-head"><div><h2>'+cfg.title+'</h2><p class="muted">'+cfg.desc+'</p></div></div>'+
    tabs+
@@ -4710,21 +4848,7 @@ function entOpen(k,id){
     renderView();
   });
 }
-/* داده اولیه ۵ کارگروه فرهنگی (سند §۳-۳) — فقط بار اول */
-(function(){
-  const t=setInterval(()=>{
-    if(typeof one!=='function'||!session) return;
-    clearInterval(t);
-    try{
-      if(session.username==='culture'&&one('SELECT COUNT(*) AS c FROM wg_groups').c===0){
-        ['قرآن و عترت','مناسبت‌ها و مراسم','تبلیغات و اطلاع‌رسانی','فعالیت‌های اجتماعی','کتاب و مطالعات'].forEach(nm=>{
-          run('INSERT INTO wg_groups (name,head,members,note,updated_at_fa) VALUES (?,?,?,?,?)',[nm,'','','',faStamp()]);
-        });
-        markDirty();
-      }
-    }catch(e){}
-  },800);
-})();
+/* v2.7 — دادهٔ اولیهٔ ۵ کارگروه فرهنگی به‌صورت قطعی هنگام باز شدن پنل معاونت فرهنگی ثبت می‌شود (بدون نژاد زمانی) */
 
 
 /* ============================================================
