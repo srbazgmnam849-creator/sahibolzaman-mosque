@@ -1575,7 +1575,13 @@ function ensureSchema(){
     "CREATE TABLE IF NOT EXISTS fin_corr(id INTEGER PRIMARY KEY AUTOINCREMENT, tx_table TEXT DEFAULT 'transactions', row_id INTEGER DEFAULT 0, old_vals TEXT DEFAULT '', new_vals TEXT DEFAULT '', reason TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
     "CREATE TABLE IF NOT EXISTS fin_periods(id INTEGER PRIMARY KEY AUTOINCREMENT, year INTEGER, closed INTEGER DEFAULT 0, closed_by TEXT DEFAULT '', closed_at_fa TEXT)",
     /* v3.0 — بایگانی مدارک دبیرخانه (آپلود تصویر + نامه‌های نهایی‌شده) */
-    "CREATE TABLE IF NOT EXISTS arch_docs(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, cat TEXT DEFAULT 'سند اداری', letter_id INTEGER DEFAULT 0, ext_letter_id INTEGER DEFAULT 0, images TEXT DEFAULT '[]', note TEXT DEFAULT '', date_fa TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)"
+    "CREATE TABLE IF NOT EXISTS arch_docs(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, cat TEXT DEFAULT 'سند اداری', letter_id INTEGER DEFAULT 0, ext_letter_id INTEGER DEFAULT 0, images TEXT DEFAULT '[]', note TEXT DEFAULT '', date_fa TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    /* v3.1 — پنل تخصصی عمران و پشتیبانی */
+    "CREATE TABLE IF NOT EXISTS om_supreq(id INTEGER PRIMARY KEY AUTOINCREMENT, org TEXT DEFAULT '', requester TEXT DEFAULT '', program TEXT DEFAULT '', date_iso TEXT DEFAULT '', place TEXT DEFAULT '', items TEXT DEFAULT '', status TEXT DEFAULT 'ثبت‌شده', review TEXT DEFAULT '', delivery TEXT DEFAULT '', returns TEXT DEFAULT '', damage TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS om_staff(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, kind TEXT DEFAULT 'خادم', duties TEXT DEFAULT '', schedule TEXT DEFAULT '', performance TEXT DEFAULT '', active INTEGER DEFAULT 1, created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS om_recruit(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, cnt INTEGER DEFAULT 1, justification TEXT DEFAULT '', status TEXT DEFAULT 'ثبت‌شده', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS om_contracts(id INTEGER PRIMARY KEY AUTOINCREMENT, party TEXT NOT NULL, subject TEXT DEFAULT '', amount INTEGER DEFAULT 0, start_iso TEXT DEFAULT '', end_iso TEXT DEFAULT '', obligations TEXT DEFAULT '', pay_schedule TEXT DEFAULT '', progress INTEGER DEFAULT 0, images TEXT DEFAULT '[]', status TEXT DEFAULT 'فعال', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS om_bills(id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT DEFAULT 'برق', period_fa TEXT DEFAULT '', issue_fa TEXT DEFAULT '', due_iso TEXT DEFAULT '', amount INTEGER DEFAULT 0, images TEXT DEFAULT '[]', pay_status TEXT DEFAULT 'ثبت‌شده', consumption TEXT DEFAULT '', tx_id INTEGER DEFAULT 0, created_by TEXT DEFAULT '', created_at_fa TEXT)"
   ];
   try{
     const cols=t=>{ try{ return all("SELECT name FROM pragma_table_info('"+t+"')").map(x=>x.name); }catch(e){ return []; } };
@@ -1671,6 +1677,58 @@ function ensureSchema(){
     try{ addCol('transactions','party',"TEXT DEFAULT ''"); }catch(e){}
     try{ addCol('transactions','receipt',"TEXT DEFAULT ''"); }catch(e){}
     try{ addCol('ext_letters','archived',"INTEGER DEFAULT 0"); }catch(e){}
+    /* v3.1 — ستون‌های پنل عمران و پشتیبانی */
+    try{ addCol('projects','place',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('projects','goal',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('projects','est_cost',"INTEGER DEFAULT 0"); }catch(e){}
+    try{ addCol('projects','stages',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('projects','images',"TEXT DEFAULT '[]'"); }catch(e){}
+    try{ addCol('projects','docs',"TEXT DEFAULT '[]'"); }catch(e){}
+    try{ addCol('projects','problems',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('projects','report_txt',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('projects','handover',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('properties','area',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('properties','location',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('properties','conditions',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('properties','renew_fa',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('properties','rent_note',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('properties','images',"TEXT DEFAULT '[]'"); }catch(e){}
+    try{ addCol('assets','code',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('assets','buy_fa',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('assets','price',"INTEGER DEFAULT 0"); }catch(e){}
+    try{ addCol('assets','images',"TEXT DEFAULT '[]'"); }catch(e){}
+    try{ addCol('assets','transfers',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('assets','repair_log',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('assets','scrap_note',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('repairs','images',"TEXT DEFAULT '[]'"); }catch(e){}
+    try{ addCol('repairs','est_cost',"INTEGER DEFAULT 0"); }catch(e){}
+    try{ addCol('repairs','start_fa',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('repairs','end_fa',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('repairs','confirmed',"INTEGER DEFAULT 0"); }catch(e){}
+    /* v3.1 — مهاجرت یک‌بارهٔ وضعیت پروژه‌ها، دسته‌بندی اموال و کد اموال */
+    try{
+      const omflag=one('SELECT value FROM sys_flags WHERE name=?',['om_1405_v1']);
+      if(!omflag){
+        run("UPDATE projects SET status='مصوب' WHERE status='تأییدشده'");
+        run("UPDATE projects SET status='در حال اجرا' WHERE status='نیمه‌تمام'");
+        run("UPDATE projects SET status='تحویل نهایی' WHERE status='تحویل‌شده'");
+        run("UPDATE properties SET status='فعال' WHERE status IN ('','تمدید‌شده')");
+        run("UPDATE properties SET status='نزدیک به پایان' WHERE status='نزدیک به پایان'");
+        run("UPDATE assets SET category='تجهیزات اداری و رایانه‌ای' WHERE category IN ('نرم‌افزار و کامپیوتر')");
+        run("UPDATE assets SET category='میز و صندلی' WHERE category IN ('فرنیچر')");
+        run("UPDATE assets SET category='سرمایشی و گرمایشی' WHERE category IN ('تهویه و گرمایش')");
+        run("UPDATE assets SET category='ابزار عمرانی' WHERE category IN ('ابزار و یراق')");
+        run("UPDATE assets SET category='سایر' WHERE category IN ('کتابخانه','تبلیغات و اعلان')");
+        try{
+          const seq=one('SELECT COALESCE(MAX(id),0) AS m FROM assets').m||0;
+          all('SELECT id FROM assets WHERE code IS NULL OR code=\'\' ORDER BY id').forEach(function(r,i){
+            run('UPDATE assets SET code=? WHERE id=?',['MSZ-AST-'+String(1001+seq+i),r.id]);
+          });
+        }catch(e){}
+        run('INSERT OR REPLACE INTO sys_flags(name,value) VALUES (?,?)',['om_1405_v1',faStamp()]);
+        markDirty();
+      }
+    }catch(e){ console.warn('om migrate',e); }
   }catch(e){ console.warn('ensureSchema migrate',e); }
   try{ run("CREATE TABLE IF NOT EXISTS user_perms(username TEXT NOT NULL, module TEXT NOT NULL, lvl INTEGER NOT NULL, updated_at_fa TEXT DEFAULT '', PRIMARY KEY(username,module))"); }catch(e){}
   try{
@@ -1811,8 +1869,9 @@ const NAV=[
  {id:'orgfin',label:'گزارش مالی',icon:'wallet',min:1,group:'پنل عمومی — امکانات مشترک',desc:'هر واحد مسئول هزینه‌های خودش؛ کل مالی فقط در پنل اختصاصی معاونت مالی و امام جماعت'},
  {id:'reports',label:'گزارش‌ها',icon:'chart',min:1,group:'پنل عمومی — امکانات مشترک',desc:'نمودارها و گزارش‌های کلی'},
  {id:'anns',label:'اعلان‌ها',icon:'bell',min:1,group:'پنل عمومی — امکانات مشترک',desc:'تابلوی اعلان‌ها و پیام‌های دریافتی — انتشار فقط رسانه و امام'},
- {id:'panel',label:'پنل اختصاصی',icon:'inbox',roles:['secretary','culture','support','heyat','imam','education'],group:'پنل اختصاصی',desc:'بخش‌های تخصصی واحد شما'},
- {id:'finance',label:'پنل تخصصی مالی',icon:'wallet',roles:['finance','imam'],group:'پنل اختصاصی',desc:'پنل تخصصی مالی: داشبورد، درآمد، هزینه، بودجه، حساب‌ها، اسناد، بدهی‌ها، حسابداری و قالب‌ها'},
+ {id:'panel',label:'پنل اختصاصی',icon:'inbox',roles:['secretary','culture','heyat','imam','education'],group:'پنل اختصاصی',desc:'بخش‌های تخصصی واحد شما'},
+ {id:'omran',label:'معاونت عمران و پشتیبانی',icon:'home',roles:['support','imam'],group:'پنل اختصاصی',desc:'پنل تخصصی عمران و پشتیبانی: داشبورد، پروژه‌های عمرانی، مغازه‌ها و املاک، اموال، تعمیرات، پشتیبانی برنامه‌ها، نیروی انسانی، قراردادها، قبوض و گزارش‌ها'},
+ {id:'finance',label:'معاونت امور مالی',icon:'wallet',roles:['finance','imam'],group:'پنل اختصاصی',desc:'پنل اختصاصی معاونت امور مالی: داشبورد، درآمد، هزینه، بودجه، حساب‌ها، اسناد، بدهی‌ها، حسابداری و قالب‌ها'},
  {id:'media',label:'رسانه و اطلاعیه‌ها',icon:'send',roles:['imam','media_admin'],group:'پنل اختصاصی',desc:'مدیریت محتوای رسانه'},
  {id:'meetings',label:'جلسات هیئت (داخلی)',icon:'users',roles:['heyat'],group:'پنل اختصاصی',desc:'صورت‌جلسه‌های داخلی هیئت فداییان؛ جلسات هیئت امنا فقط در پنل دبیر (§۳-۲)'}
 ];
@@ -2826,7 +2885,7 @@ function renderFinPanel(root){
   const tabs='<div class="seg" style="margin-bottom:14px;flex-wrap:wrap">'+FIN_TABS.map(function(t){
     return '<button class="seg-btn '+(tab===t.id?'on':'')+'" data-act="finTab" data-k="'+t.id+'">'+t.label+'</button>';
   }).join('')+'</div>';
-  const head='<div class="page-head"><div><h2>پنل تخصصی مالی</h2><p class="muted">داشبورد مالی · درآمدها · هزینه‌ها · بودجه · حساب‌ها و صندوق · اسناد و اموال · بدهی و مطالبات · حسابداری · قالب‌های مالی (§۳-۵) — دسترسی کامل: معاون امور مالی و امام جماعت</p></div></div>';
+  const head='<div class="page-head"><div><h2>معاونت امور مالی</h2><p class="muted">پنل اختصاصی مالی — داشبورد مالی · درآمدها · هزینه‌ها · بودجه · حساب‌ها و صندوق · اسناد و اموال · بدهی و مطالبات · حسابداری · قالب‌های مالی (§۳-۵) — دسترسی کامل: معاون امور مالی و امام جماعت</p></div></div>';
   let body;
   if(tab==='dash') body=finDash();
   else if(tab==='inc') body=finInc();
@@ -3775,7 +3834,7 @@ VIEWS.reports=function(root){
    ============================================================ */
 VIEWS.settings=function(root){
   root.innerHTML=
-   '<div class="page-head"><div><h2>تنظیمات و پشتیبان‌گیری</h2><p class="muted">مدیریت داده‌های محلی مرورگر، پشتیبان‌گیری و بازیابی</p></div></div>'+
+   '<div class="page-head"><div><h2>تنظیمات و پشتیبان‌گیری</h2><p class="muted">مدیریت داده‌های محلی مرورگر، پشتیبان‌گیری و بازیابی — نسخهٔ سامانه: <b>'+MSZ_VERSION+'</b></p></div></div>'+
    '<div class="grid-2">'+
     '<div class="card pad"><h3>'+icon('download')+' پشتیبان‌گیری</h3>'+
      '<p class="tiny muted" style="margin-bottom:12px">دیتابیس شما به‌صورت رمزنگاری‌شده (AES-GCM) در همین مرورگر ذخیره می‌شود. برای انتقال به دستگاه دیگر از پشتیبان رمزنگاری‌شده استفاده کنید (قابل بازیابی با همان رمز سامانه).</p>'+
@@ -5156,6 +5215,50 @@ const ACTIONS={
     markDirty(); saveNow(true);
     toast('حذف شد ✓'); renderView();
   },
+  /* v3.1 — پنل معاونت عمران و پشتیبانی */
+  omTab:d=>{ if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; } window._omTab=d.k; renderView(); },
+  omImg:d=>{ const arr=OM_IMG_REG[+d.s]||[]; const im=arr[+d.i]; if(im) openModal('تصویر مستند','<img src="'+im.d+'" alt="تصویر" style="width:100%;max-height:70vh;object-fit:contain">'); },
+  omProjNew:()=>omProjModal(null),
+  omProjEdit:d=>omProjModal(+d.id),
+  omProjFile:d=>omProjFileModal(+d.id),
+  omProjHandover:d=>omProjHandover(+d.id),
+  omProjDel:d=>omDel('projects',+d.id,'پروژه'),
+  omShopNew:()=>omShopModal(null),
+  omShopEdit:d=>omShopModal(+d.id),
+  omShopRenew:d=>omShopRenewModal(+d.id),
+  omShopDel:d=>omDel('properties',+d.id,'ملک'),
+  omSyncFin:()=>omSyncFin(),
+  omAssetNew:()=>omAssetModal(null),
+  omAssetEdit:d=>omAssetModal(+d.id),
+  omAssetOp:d=>omAssetOpModal(+d.id,d.k),
+  omAssetLbl:d=>omAssetLabel(+d.id),
+  omAssetDel:d=>omDel('assets',+d.id,'قلم اموال'),
+  omFixNew:()=>omFixModal(null),
+  omFixEdit:d=>omFixModal(+d.id),
+  omFixDone:d=>omFixDoneModal(+d.id),
+  omFixArchive:d=>{ if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; } const x=one('SELECT * FROM repairs WHERE id=?',[+d.id]); if(!x) return; run('UPDATE repairs SET status=?,confirmed=1 WHERE id=?',['بایگانی',x.id]); logActivity('تعمیرات و نگهداری','درخواست «'+x.title+'» تأیید و بایگانی شد.'); markDirty(); saveNow(true); toast('تأیید و بایگانی شد ✓'); renderView(); },
+  omFixSendFin:d=>omFixSendFin(+d.id),
+  omFixDel:d=>omDel('repairs',+d.id,'درخواست تعمیر'),
+  omSupNew:()=>omSupReqModal(),
+  omSupReview:d=>omSupFieldModal(+d.id,'review'),
+  omSupDeliver:d=>omSupFieldModal(+d.id,'deliver'),
+  omSupReturn:d=>omSupFieldModal(+d.id,'ret'),
+  omSupDamage:d=>omSupFieldModal(+d.id,'damage'),
+  omSupDel:d=>omDel('om_supreq',+d.id,'درخواست پشتیبانی'),
+  omStaffNew:()=>omStaffModal(null),
+  omStaffEdit:d=>omStaffModal(+d.id),
+  omStaffDel:d=>omDel('om_staff',+d.id,'نیرو'),
+  omRecNew:()=>omRecruitModal(null),
+  omRecEdit:d=>omRecruitModal(+d.id),
+  omRecDel:d=>omDel('om_recruit',+d.id,'درخواست جذب'),
+  omCtrNew:()=>omCtrModal(null),
+  omCtrEdit:d=>omCtrModal(+d.id),
+  omCtrDel:d=>omDel('om_contracts',+d.id,'قرارداد'),
+  omBillNew:()=>omBillModal(null),
+  omBillEdit:d=>omBillModal(+d.id),
+  omBillSend:d=>omBillSend(+d.id),
+  omBillDel:d=>omDel('om_bills',+d.id,'قبض'),
+  omRep:d=>omReportOut(d.k,d.f),
   /* search */
   gotoSearch:d=>gotoSearchResult(d)
 };
@@ -5340,6 +5443,9 @@ VIEWS.missions=function(root){
     (list.length?list.map(card).join(''):'<p class="muted tiny">موردی ثبت نشده است.</p>')+'</div>';
   root.innerHTML=
    '<div class="page-head"><div><h2>مأموریت‌ها (مصوبات)</h2><p class="muted">مصوبات جلسات هیئت امنا و واحدها — برای هر معاونت فقط مأموریت‌های مرتبط با مسئولیت خودش نمایش داده می‌شود</p></div></div>'+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><h3 style="font-size:14px;color:var(--primary-dark)">'+icon('home',17)+' درخواست پشتیبانی از معاونت عمران و پشتیبانی</h3>'+
+    '<p class="tiny muted" style="margin:6px 0 10px">برای برنامه‌ها و مصوبات واحد خود، اقلام و پشتیبانی موردنیاز (تجهیزات، تعمیرات، خدمات) را ثبت کنید؛ بررسی، تحویل و بازگشت اقلام در پنل تخصصی معاونت عمران پیگیری می‌شود.</p>'+
+    '<button class="btn btn-primary btn-sm" data-act="omSupNew">'+icon('plus',16)+' ثبت درخواست پشتیبانی</button></div>'+
    (pm('meetings',1)?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><p class="tiny muted"><b>گردش کار:</b> مصوبات در بخش «جلسات و مصوبات» ثبت می‌شوند و به‌صورت مأموریت برای واحد مسئول در همین تابلو مشخص می‌شوند؛ وضعیت اجرا از وظیفهٔ متصل پیگیری می‌شود.</p></div>':'')+
    grp('مأموریت‌های شما و واحد شما',mine,'مصوباتی که مسئول اجرای آن‌ها شما یا واحد شما هستید.')+
    (['imam','secretary','board'].includes(session.username)||myOrg()!=='center'?
@@ -6343,7 +6449,7 @@ function openExtPrintEditor(id){
 
 const PANEL_KIND={
  culture:{title:'پنل معاونت فرهنگی',desc:'کارگروه‌ها، برنامه‌ها و بانک ایده — طبق سند مأموریت §۳-۳ (بدون حق مدیریت جلسات هیئت امنا)',ents:['wg','cprog','occ','idea']},
- support:{title:'پنل عمران و پشتیبانی',desc:'پروژه‌ها، اموال، تعمیرات و املاک — طبق سند مأموریت §۳-۶',ents:['proj','asset','fix','prop']},
+ support:{title:'معاونت عمران و پشتیبانی',desc:'پنل تخصصی عمران و پشتیبانی — داشبورد، پروژه‌ها، املاک، اموال، تعمیرات، پشتیبانی برنامه‌ها، نیروی انسانی، قراردادها، قبوض و گزارش‌ها',ents:[]},
  heyat:{title:'پنل هیئت فداییان حضرت زینب (س)',desc:'مراسم، اعضا و تجهیزات اختصاصی — طبق سند مأموریت §۳-۷ (مکاتبات هیئت مثل سایر واحدها از پنل عمومی)',ents:['cer','hmem','heq']},
  education:{title:'پنل معاونت تعلیم و تربیت',desc:'کلاس‌ها، حضور و غیاب، مربیان، حلقه‌های تربیتی، اردوها و پرونده تربیتی اعضا',ents:['ecoach','ecirc','ecamp']}
 };
@@ -6364,7 +6470,8 @@ const CULT_TABS=[
 ];
 function imamPanelTabs(){
   if(!session||session.username!=='imam') return '';
-  const tabDefs=[['secretary','دبیر هیئت امنا'],['culture','معاونت فرهنگی'],['support','عمران و پشتیبانی'],['heyat','هیئت فداییان (س)'],['education','معاونت تعلیم و تربیت']];
+  const tabDefs=[['secretary','دبیر هیئت امنا'],['culture','معاونت فرهنگی'],['heyat','هیئت فداییان (س)'],['education','معاونت تعلیم و تربیت']];
+  /* v3.1 — عمران و پشتیبانی و امور مالی به پنل‌های اختصاصی مستقل منتقل شدند (NAV: omran / finance) */
   return '<div class="seg" style="margin-bottom:12px;flex-wrap:wrap">'+tabDefs.map(function(td){
     return '<button class="seg-btn '+((window._panelTab===td[0])||(!window._panelTab&&td[0]==='culture')?'on':'')+'" data-act="panelTab" data-k="'+td[0]+'">'+td[1]+'</button>';
   }).join('')+'</div>';
@@ -7229,6 +7336,890 @@ function entSection(k){
     '<button class="btn btn-primary btn-sm" data-act="entNew" data-ent="'+k+'" style="margin-inline-start:auto">'+icon('plus',14)+' افزودن</button></h3>'+
     '<div style="margin-top:10px">'+body+'</div></div>';
 }
+/* ============================================================
+   v3.1 — پنل تخصصی معاونت عمران و پشتیبانی (۱۰ بخش طبق مشخصات کارفرما)
+   ۱) داشبورد  ۲) پروژه‌های عمرانی  ۳) مغازه‌ها و املاک  ۴) اموال و اقلام
+   ۵) تعمیرات و نگهداری  ۶) پشتیبانی برنامه‌ها  ۷) خدمات و نیروی انسانی
+   ۸) قراردادها و پیمانکاران  ۹) قبوض و هزینه‌های جاری  ۱۰) گزارش‌ها
+   ارتباط مالی: قرارداد اجاره و اطلاعات املاک این‌جاست؛ ثبت دریافت و تأیید
+   درآمد و پرداخت‌ها فقط در پنل معاونت امور مالی انجام می‌شود.
+   ============================================================ */
+const MSZ_VERSION='v3.1';
+const OMR_TABS=[
+ {id:'dash',label:'داشبورد'},
+ {id:'proj',label:'پروژه‌های عمرانی'},
+ {id:'shop',label:'مغازه‌ها و املاک'},
+ {id:'asset',label:'اموال و اقلام'},
+ {id:'fix',label:'تعمیرات و نگهداری'},
+ {id:'supp',label:'پشتیبانی برنامه‌ها'},
+ {id:'hr',label:'خدمات و نیروی انسانی'},
+ {id:'ctr',label:'قراردادها و پیمانکاران'},
+ {id:'bill',label:'قبوض و هزینه‌های جاری'},
+ {id:'rep',label:'گزارش‌ها'}
+];
+const OMR_PROJ_ST=['پیشنهادی','در انتظار بررسی','در انتظار تأمین اعتبار','مصوب','در حال اجرا','متوقف','تکمیل‌شده','تحویل نهایی'];
+const OMR_ASSET_CATS=['صوتی و تصویری','فرش و موکت','آشپزخانه و پذیرایی','سرمایشی و گرمایشی','میز و صندلی','تجهیزات اداری و رایانه‌ای','ابزار عمرانی','نظافت و خدمات','روشنایی و برق','سایر'];
+const OMR_BILL_KINDS=['آب','برق','گاز','تلفن'];
+const OMR_GUARD=()=>session&&['support','imam'].includes(session.username);
+let OM_IMG_REG=[];
+function omBadge(v){
+  if(['مصوب','تکمیل‌شده','تحویل نهایی','فعال','سالم','پرداخت‌شده','تأییدشده','تحویل‌شده','بسته‌شده','انجام‌شد','به‌روز','تأییدشده — مالی','جذب شد','تکمیل'].includes(v)) return 'b-success';
+  if(['در حال اجرا','در حال بررسی','در حال تعمیر','ارسال‌شده به مالی','تحویل‌شده به واحد','تمدید شد','در جریان'].includes(v)) return 'b-info';
+  if(['پیشنهادی','در انتظار بررسی','در انتظار تأمین اعتبار','ثبت‌شده','در انتظار پرداخت','نزدیک به پایان','معوق','در بررسی','برنامه‌ریزی‌شده','نیاز به تعمیر','عادی','مهم'].includes(v)) return 'b-warn';
+  if(['متوقف','خراب','اسقاطی','ردشده','تخلیه‌شده','فوری','خسارت ثبت‌شده','لغوشده','برگشت از مالی','منتفی'].includes(v)) return 'b-danger';
+  return 'b-neutral';
+}
+function omImgs(d){ try{ const a=JSON.parse(d||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function omThumbBar(imgs){
+  if(!imgs||!imgs.length) return '';
+  const slot=OM_IMG_REG.length; OM_IMG_REG.push(imgs);
+  return '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'+imgs.map(function(im,idx){
+    return '<img src="'+im.d+'" alt="تصویر" style="width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid #d8d2c2;cursor:pointer" data-act="omImg" data-s="'+slot+'" data-i="'+idx+'">';
+  }).join('')+'</div>';
+}
+function omFaMoney(n){ return faMoney(n||0); }
+/* بارکد Code39 برای برچسب کد اموال (بدون وابستگی خارجی) */
+const C39={'0':'nnnwwnwnn','1':'wnnwnnnnw','2':'nnwwnnnnw','3':'wnwwnnnnn','4':'nnnwwnnnw','5':'wnnwwnnnn','6':'nnwwwnnnn','7':'nnnwnnwnw','8':'wnnwnnwnn','9':'nnwwnnwnn','A':'wnnnnwnnw','B':'nnwnnwnnw','C':'wnwnnwnnn','D':'nnnnwwnnw','E':'wnnnwwnnn','F':'nnwnwwnnn','G':'nnnnnwwnw','H':'wnnnnwwnn','I':'nnwnnwwnn','J':'nnnnwwwnn','K':'wnnnnnnww','L':'nnwnnnnww','M':'wnwnnnnwn','N':'nnnnwnnww','O':'wnnnwnnwn','P':'nnwnwnnwn','Q':'nnnnnnwww','R':'wnnnnnwwn','S':'nnwnnnwwn','T':'nnnnwnwwn','U':'wwnnnnnnw','V':'nwwnnnnnw','W':'wwwnnnnnn','X':'nwnnwnnnw','Y':'wwnnwnnnn','Z':'nwwnwnnnn','-':'nwnnnnwnw','.':'wwnnnnwnn',' ':'nwwnnnwnn'};
+function code39Html(txt,h){
+  const t='*'+String(txt||'').toUpperCase()+'*'; let out='';
+  for(let c=0;c<t.length;c++){
+    const p=C39[t[c]]; if(!p) continue;
+    for(let i=0;i<9;i++){ out+='<span style="display:inline-block;width:'+(p[i]==='w'?5:2)+'px;height:'+(h||46)+'px;background:'+(i%2===0?'#1a1a1a':'transparent')+'"></span>'; }
+    out+='<span style="display:inline-block;width:3px;height:'+(h||46)+'px"></span>';
+  }
+  return '<div style="direction:ltr;text-align:center;padding:8px 10px;background:#fff;white-space:nowrap;overflow:hidden">'+out+'</div>';
+}
+function renderOmranPanel(root){
+  OM_IMG_REG=[];
+  if(!OMR_GUARD()){ root.innerHTML='<div class="card pad"><p class="muted">این پنل تخصصی فقط برای معاون عمران و پشتیبانی و امام جماعت فعال است.</p></div>'; return; }
+  const tab=window._omTab||'dash';
+  const tabs='<div class="seg" style="margin-bottom:14px;flex-wrap:wrap">'+OMR_TABS.map(function(t){
+    return '<button class="seg-btn '+(tab===t.id?'on':'')+'" data-act="omTab" data-k="'+t.id+'">'+t.label+'</button>';
+  }).join('')+'</div>';
+  const head='<div class="page-head"><div><h2>معاونت عمران و پشتیبانی</h2><p class="muted">داشبورد · پروژه‌های عمرانی · مغازه‌ها و املاک · اموال و اقلام · تعمیرات و نگهداری · پشتیبانی برنامه‌ها · خدمات و نیروی انسانی · قراردادها و پیمانکاران · قبوض و هزینه‌های جاری · گزارش‌ها — قرارداد اجاره و املاک این‌جاست؛ ثبت دریافت و تأیید مالی فقط در معاونت امور مالی (§۳-۶)</p></div></div>';
+  let body;
+  if(tab==='dash') body=omrDash();
+  else if(tab==='proj') body=omrProj();
+  else if(tab==='shop') body=omrShop();
+  else if(tab==='asset') body=omrAsset();
+  else if(tab==='fix') body=omrFix();
+  else if(tab==='supp') body=omrSupp();
+  else if(tab==='hr') body=omrHr();
+  else if(tab==='ctr') body=omrCtr();
+  else if(tab==='bill') body=omrBill();
+  else body=omrRep();
+  root.innerHTML=head+tabs+body;
+}
+VIEWS.omran=function(root){ renderOmranPanel(root); };
+function omStat(l,n,cls,sub){ return '<div class="stat-card '+(cls||'')+'"><span class="stat-label">'+l+'</span><b class="stat-num">'+faNum(n)+'</b><small class="muted">'+(sub||'')+'</small></div>'; }
+function omTable(cols,rows,emptyMsg){
+  return '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr>'+cols.map(function(c){return '<th>'+c+'</th>'}).join('')+'</tr></thead><tbody>'+
+   (rows.length?rows.join(''):'<tr><td colspan="'+cols.length+'">'+emptyState(emptyMsg||'موردی ثبت نشده است')+'</td></tr>')+'</tbody></table></div></div>';
+}
+/* ---------- ۱) داشبورد ---------- */
+function omrDash(){
+  const t=todayIso();
+  const projs=all('SELECT * FROM projects ORDER BY id DESC');
+  const active=projs.filter(function(p){ return p.status==='مصوب'||p.status==='در حال اجرا'; });
+  const half=projs.filter(function(p){ return p.status==='در حال اجرا'&&(p.progress||0)<100; });
+  const fixes=all('SELECT * FROM repairs ORDER BY id DESC');
+  const fixPend=fixes.filter(function(x){ return x.status==='ثبت‌شده'||x.status==='در حال بررسی'||x.status==='در حال تعمیر'; });
+  const sups=all('SELECT * FROM om_supreq ORDER BY id DESC');
+  const supOpen=sups.filter(function(s){ return s.status!=='تکمیل‌شده'&&s.status!=='بسته‌شده'; });
+  const assets=all('SELECT * FROM assets ORDER BY id DESC');
+  const aSick=assets.filter(function(a){ return a.condition_txt==='نیاز به تعمیر'||a.condition_txt==='خراب'; }).length;
+  const t2=addDaysIso(t,45);
+  const props=all('SELECT * FROM properties ORDER BY id DESC');
+  const nearProp=props.filter(function(p){ return p.status!=='تخلیه‌شده'&&p.status!=='واگذارشده'&&p.end_iso&&p.end_iso<=t2; });
+  const ctrs=all('SELECT * FROM om_contracts ORDER BY id DESC');
+  const nearCtr=ctrs.filter(function(c){ return c.status==='فعال'&&c.end_iso&&c.end_iso<=t2; });
+  const expPend=all("SELECT * FROM transactions WHERE created_by=? AND tx_status='در انتظار بررسی' ORDER BY id DESC",[session.username]);
+  return ''+
+   '<div class="grid-stats">'+
+    omStat('پروژه‌های فعال',active.length,'accent-info','مصوب و در حال اجرا')+
+    omStat('پروژه‌های نیمه‌تمام',half.length,'accent-gold','پیشرفت کمتر از ۱۰۰٪')+
+    omStat('تعمیرات در انتظار رسیدگی',fixPend.length,fixPend.length?'accent-danger':'','ثبت‌شده و در جریان')+
+    omStat('درخواست‌های پشتیبانی',supOpen.length,'','در انتظار بررسی و تحویل')+
+    omStat('اقلام نیازمند توجه',aSick,aSick?'accent-danger':'','نیاز به تعمیر یا خراب')+
+    omStat('قراردادهای نزدیک به پایان',nearProp.length+nearCtr.length,(nearProp.length+nearCtr.length)?'accent-gold':'','تا ۴۵ روز آینده')+
+    omStat('هزینه‌های در انتظار بررسی مالی',expPend.length,expPend.length?'accent-gold':'','ثبت‌شده توسط این معاونت')+
+   '</div>'+
+   '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px">'+
+    '<div class="card pad"><h3>'+icon('home',17)+' پروژه‌های در جریان</h3>'+
+     (active.length?active.slice(0,6).map(function(p){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(p.title)+'</b><span class="badge '+omBadge(p.status)+'">'+esc(p.status)+'</span></div><small class="muted">'+esc(p.location||'—')+' · پیشرفت '+faNum(p.progress||0)+'٪</small></div>'; }).join(''):emptyState('پروژه فعالی وجود ندارد'))+
+     '<button class="btn btn-outline btn-sm no-print" style="margin-top:8px" data-act="omTab" data-k="proj">مدیریت پروژه‌ها</button></div>'+
+    '<div class="card pad"><h3>'+icon('settings',17)+' تعمیرات در انتظار رسیدگی</h3>'+
+     (fixPend.length?fixPend.slice(0,6).map(function(x){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(x.title)+'</b><span class="badge '+omBadge(x.urgency)+'">'+esc(x.urgency)+'</span></div><small class="muted">'+esc(x.loc||'—')+'</small></div>'; }).join(''):emptyState('تعمیرات در جریان وجود ندارد'))+
+     '<button class="btn btn-outline btn-sm no-print" style="margin-top:8px" data-act="omTab" data-k="fix">مدیریت تعمیرات</button></div>'+
+    '<div class="card pad"><h3>'+icon('bell',17)+' درخواست‌های پشتیبانی واحدها</h3>'+
+     (supOpen.length?supOpen.slice(0,6).map(function(s){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(s.program||s.org)+'</b><span class="badge '+omBadge(s.status)+'">'+esc(s.status)+'</span></div><small class="muted">'+esc(s.org||'—')+' · '+(s.date_iso?faDate(s.date_iso):'—')+'</small></div>'; }).join(''):emptyState('درخواست پشتیبانی باز وجود ندارد'))+
+     '<button class="btn btn-outline btn-sm no-print" style="margin-top:8px" data-act="omTab" data-k="supp">مدیریت درخواست‌ها</button></div>'+
+    '<div class="card pad"><h3>'+icon('clock',17)+' قراردادهای نزدیک به پایان</h3>'+
+     ((nearProp.length||nearCtr.length)?
+      nearProp.slice(0,4).map(function(p){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(p.title)+'</b><span class="badge b-warn">اجاره</span></div><small class="muted">پایان: '+faDateLong(p.end_iso)+' · مستأجر: '+esc(p.tenant||'—')+'</small></div>'; }).join('')+
+      nearCtr.slice(0,4).map(function(c){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(c.subject||c.party)+'</b><span class="badge b-warn">پیمانکار</span></div><small class="muted">پایان: '+faDateLong(c.end_iso)+' · '+esc(c.party||'—')+'</small></div>'; }).join('')
+      :emptyState('قراردادی در ۴۵ روز آینده به پایان نمی‌رسد'))+'</div>'+
+    '<div class="card pad"><h3>'+icon('wallet',17)+' هزینه‌های در انتظار بررسی مالی</h3>'+
+     (expPend.length?expPend.slice(0,6).map(function(x){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(x.description)+'</b><span class="badge b-warn">'+faMoney(x.amount)+'</span></div><small class="muted">'+faDate(x.date_iso)+' · '+esc(x.category||'—')+'</small></div>'; }).join(''):emptyState('هزینه در انتظار بررسی وجود ندارد'))+
+     '<p class="tiny muted" style="margin-top:8px">تأیید و ثبت نهایی پرداخت‌ها فقط در پنل معاونت امور مالی انجام می‌شود.</p></div>'+
+   '</div>';
+}
+/* ---------- ۲) پروژه‌های عمرانی ---------- */
+function omrProj(){
+  const rows=all('SELECT * FROM projects ORDER BY id DESC').map(function(p){
+    return '<tr><td><b>'+esc(p.title)+'</b><br><small class="muted">'+esc(p.location||'—')+(p.owner?' · مسئول: '+esc(p.owner):'')+(p.contractor?' · پیمانکار: '+esc(p.contractor):'')+'</small></td>'+
+     '<td><span class="badge '+omBadge(p.status)+'">'+esc(p.status)+'</span></td>'+
+     '<td><b>'+faNum(p.progress||0)+'٪</b><div style="background:#eee;height:5px;border-radius:3px;margin-top:4px;min-width:70px"><div style="background:var(--primary);height:5px;border-radius:3px;width:'+Math.min(100,p.progress||0)+'%"></div></div></td>'+
+     '<td>'+faMoney(p.budget)+'</td>'+
+     '<td>'+(p.start_iso?faDate(p.start_iso):'—')+'<br>'+(p.end_iso?faDate(p.end_iso):'—')+'</td>'+
+     '<td class="no-print" style="white-space:nowrap"><button class="btn btn-outline btn-sm" data-act="omProjFile" data-id="'+p.id+'">پرونده</button> <button class="btn btn-outline btn-sm" data-act="omProjEdit" data-id="'+p.id+'">ویرایش</button> <button class="btn btn-danger btn-sm" data-act="omProjDel" data-id="'+p.id+'">حذف</button></td></tr>';
+  });
+  return '<div class="page-head"><div><h3>مدیریت پروژه‌های عمرانی</h3><p class="muted">برای هر پروژه پروندهٔ مستقل تشکیل می‌شود: مشخصات، مراحل اجرایی، تصاویر قبل/حین/بعد، قرارداد و فاکتور، مشکلات، گزارش دوره‌ای و تحویل نهایی</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="omProjNew">'+icon('plus')+' ثبت پروژه</button></div>'+omTable(['پروژه','وضعیت','پیشرفت','بودجه مصوب (تومان)','شروع / پایان','عملیات'],rows,'پروژه‌ای ثبت نشده است');
+}
+function omProjModal(id){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const r=id?one('SELECT * FROM projects WHERE id=?',[id]):null;
+  let imgs=omImgs(r&&r.images), docs=omImgs(r&&r.docs);
+  const ov=openModal(r?'ویرایش پروژه — '+r.title:'ثبت پروژه عمرانی جدید',
+   '<form id="omProjForm" novalidate>'+
+    fld('عنوان پروژه *','<input name="title" class="inp" value="'+esc(r?r.title:'')+'">')+
+    '<div class="frow2">'+
+     fld('محل اجرا','<input name="location" class="inp" value="'+esc(r?r.location:'')+'" placeholder="مثال: حیاط شمالی">')+
+     fld('مسئول پروژه','<input name="owner" class="inp" value="'+esc(r?r.owner:'')+'">')+
+    '</div>'+
+    fld('شرح پروژه','<textarea name="descr" class="inp" rows="2">'+esc(r?r.descr:'')+'</textarea>')+
+    fld('هدف و ضرورت','<textarea name="goal" class="inp" rows="2">'+esc(r?r.goal||'':'')+'</textarea>')+
+    '<div class="frow2">'+
+     fld('پیمانکار','<input name="contractor" class="inp" value="'+esc(r?r.contractor:'')+'">')+
+     fld('وضعیت پروژه','<select name="status" class="inp">'+OMR_PROJ_ST.map(function(s){ return '<option '+((r&&r.status===s)||(!r&&s==='پیشنهادی')?'selected':'')+'>'+s+'</option>'; }).join('')+'</select>')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('تاریخ شروع (شمسی)','<input name="start" class="inp" value="'+(r&&r.start_iso?faDate(r.start_iso):'')+'" placeholder="۱۴۰۵/۰۸/۰۱">')+
+     fld('تاریخ پایان (شمسی)','<input name="end" class="inp" value="'+(r&&r.end_iso?faDate(r.end_iso):'')+'" placeholder="۱۴۰۵/۱۰/۰۱">')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('برآورد هزینه (تومان)','<input name="est" type="number" min="0" class="inp" value="'+(r?(r.est_cost||0):0)+'">')+
+     fld('بودجه مصوب (تومان)','<input name="budget" type="number" min="0" class="inp" value="'+(r?(r.budget||0):0)+'">')+
+    '</div>'+
+    fld('درصد پیشرفت (۰ تا ۱۰۰)','<input name="progress" type="number" min="0" max="100" class="inp" value="'+(r?(r.progress||0):0)+'">')+
+    fld('مراحل اجرایی (هر مرحله در یک سطر)','<textarea name="stages" class="inp" rows="3">'+esc(r?r.stages||'':'')+'</textarea>')+
+    fld('مشکلات اجرایی','<textarea name="problems" class="inp" rows="2">'+esc(r?r.problems||'':'')+'</textarea>')+
+    fld('گزارش دوره‌ای','<textarea name="report_txt" class="inp" rows="2">'+esc(r?r.report_txt||'':'')+'</textarea>')+
+    '<div class="frow2">'+
+     '<div><label class="tiny muted">تصاویر قبل، حین و بعد از اجرا</label><button type="button" id="pImgBtn" class="btn btn-outline btn-sm btn-block">آپلود تصویر</button><div id="pImgBox"></div></div>'+
+     '<div><label class="tiny muted">قراردادها و فاکتورها (تصویر)</label><button type="button" id="pDocBtn" class="btn btn-outline btn-sm btn-block">آپلود سند</button><div id="pDocBox"></div></div>'+
+    '</div>'+
+    '<button type="submit" class="btn btn-primary btn-block">'+(r?'ذخیره تغییرات':'ثبت پروژه')+'</button></form>');
+  const draw=function(boxId,arr){ const b=ov.querySelector(boxId); if(b) b.innerHTML=omThumbBar(arr)+'<p class="tiny muted">برای حذف روی تصویر کلیک کنید</p>'; };
+  draw('#pImgBox',imgs); draw('#pDocBox',docs);
+  ov.querySelector('#pImgBtn').onclick=function(){ pickImages(900,function(arr){ imgs=imgs.concat(arr); draw('#pImgBox',imgs); }); };
+  ov.querySelector('#pDocBtn').onclick=function(){ pickImages(1100,function(arr){ docs=docs.concat(arr); draw('#pDocBox',docs); }); };
+  ov.querySelector('#pImgBox').addEventListener('click',function(e){ if(e.target.tagName==='IMG'){ const i=Array.prototype.indexOf.call(e.target.parentNode.querySelectorAll('img'),e.target); imgs.splice(i,1); draw('#pImgBox',imgs); } });
+  ov.querySelector('#pDocBox').addEventListener('click',function(e){ if(e.target.tagName==='IMG'){ const i=Array.prototype.indexOf.call(e.target.parentNode.querySelectorAll('img'),e.target); docs.splice(i,1); draw('#pDocBox',docs); } });
+  const form=ov.querySelector('#omProjForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    if(!form.title.value.trim()){ setErr(form.title,'عنوان پروژه الزامی است.'); return; }
+    const s=parseJDate(form.start.value), en=parseJDate(form.end.value);
+    const vals=[form.title.value.trim(),form.descr.value.trim(),form.location.value.trim(),form.goal.value.trim(),form.owner.value.trim(),form.contractor.value.trim(),
+     s?jToIso(s.jy,s.jm,s.jd):'', en?jToIso(en.jy,en.jm,en.jd):'', +form.est.value||0, +form.budget.value||0, Math.min(100,+form.progress.value||0), form.status.value,
+     form.stages.value.trim(), form.problems.value.trim(), form.report_txt.value.trim(), JSON.stringify(imgs), JSON.stringify(docs)];
+    if(r){ run('UPDATE projects SET title=?,descr=?,location=?,goal=?,owner=?,contractor=?,start_iso=?,end_iso=?,est_cost=?,budget=?,progress=?,status=?,stages=?,problems=?,report_txt=?,images=?,docs=? WHERE id=?',vals.concat([r.id])); }
+    else{ run('INSERT INTO projects (title,descr,location,goal,owner,contractor,start_iso,end_iso,est_cost,budget,progress,status,stages,problems,report_txt,images,docs,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',vals.concat([session.username,faStamp()])); }
+    logActivity('پروژه عمرانی',(r?'ویرایش ':'ثبت ')+'پروژه «'+form.title.value.trim()+'»');
+    markDirty(); saveNow(true); closeModal(); toast('ذخیره شد ✓'); renderView();
+  });
+}
+function omProjFileModal(id){
+  const p=one('SELECT * FROM projects WHERE id=?',[id]); if(!p) return;
+  const stages=(p.stages||'').split(/\n/).filter(function(x){ return x.trim(); });
+  const h='<div class="card pad">'+
+   '<h3>'+esc(p.title)+' <span class="badge '+omBadge(p.status)+'">'+esc(p.status)+'</span></h3>'+
+   '<p class="tiny muted">'+esc(p.location||'—')+(p.owner?' · مسئول: '+esc(p.owner):'')+(p.contractor?' · پیمانکار: '+esc(p.contractor):'')+'</p>'+
+   '<div class="grid-2">'+
+    '<div><b class="tiny">شرح:</b><p class="tiny">'+esc(p.descr||'—')+'</p><b class="tiny">هدف و ضرورت:</b><p class="tiny">'+esc(p.goal||'—')+'</p></div>'+
+    '<div><b class="tiny">مبالغ:</b><p class="tiny">برآورد: '+faMoney(p.est_cost)+' تومان · بودجه مصوب: '+faMoney(p.budget)+' تومان</p><b class="tiny">تاریخ‌ها:</b><p class="tiny">شروع: '+(p.start_iso?faDateLong(p.start_iso):'—')+' · پایان: '+(p.end_iso?faDateLong(p.end_iso):'—')+'</p><b class="tiny">پیشرفت:</b><p>'+faNum(p.progress||0)+'٪</p></div>'+
+   '</div>'+
+   (stages.length?'<b class="tiny">مراحل اجرایی:</b><ol class="tiny" style="margin:4px 18px 8px 0">'+stages.map(function(s){ return '<li>'+esc(s)+'</li>'; }).join('')+'</ol>':'')+
+   (p.problems?'<b class="tiny">مشکلات اجرایی:</b><p class="tiny">'+esc(p.problems)+'</p>':'')+
+   (p.report_txt?'<b class="tiny">گزارش دوره‌ای:</b><p class="tiny">'+esc(p.report_txt)+'</p>':'')+
+   (p.handover?'<div class="badge b-success" style="margin:6px 0">تحویل نهایی: '+esc(p.handover)+'</div>':'')+
+   omThumbBar(omImgs(p.images))+'<p class="tiny muted">تصاویر قبل، حین و بعد</p>'+
+   omThumbBar(omImgs(p.docs))+'<p class="tiny muted">قراردادها و فاکتورها</p>'+
+   '<div class="act-row no-print">'+
+    '<button class="btn btn-outline btn-sm" data-act="omProjEdit" data-id="'+p.id+'">ویرایش پرونده</button>'+
+    (p.status!=='تحویل نهایی'?'<button class="btn btn-primary btn-sm" data-act="omProjHandover" data-id="'+p.id+'">ثبت تحویل نهایی</button>':'')+
+   '</div></div>';
+  openModal('پرونده پروژه — '+p.title,h,{width:'780px'});
+}
+async function omProjHandover(id){
+  const p=one('SELECT * FROM projects WHERE id=?',[id]); if(!p) return;
+  if(!await confirmDlg('ثبت تحویل نهایی','پروژه «'+p.title+'» به حالت «تحویل نهایی» برود؟',{okText:'ثبت تحویل'})) return;
+  run('UPDATE projects SET status=?, handover=? WHERE id=?',['تحویل نهایی','تحویل نهایی در '+faStamp()+' توسط '+session.name,id]);
+  logActivity('تحویل نهایی پروژه','پروژه «'+p.title+'» تحویل نهایی شد.');
+  markDirty(); saveNow(true); toast('تحویل نهایی ثبت شد ✓'); renderView();
+}
+/* ---------- ۳) مغازه‌ها و املاک ---------- */
+function omRentStatusOf(pr){
+  const r=one('SELECT * FROM fin_rentals WHERE shop_name=?',[pr.title]);
+  if(!r) return {cls:'b-neutral',txt:'در مالی ثبت نشده'};
+  const last=one('SELECT MAX(date_iso) AS d FROM fin_rent_pay WHERE rental_id=?',[r.id]);
+  if(last&&last.d&&last.d>=addDaysIso(todayIso(),-45)) return {cls:'b-success',txt:'دریافت اجاره به‌روز'};
+  return {cls:'b-warn',txt:'بدون دریافت اخیر'};
+}
+function omrShop(){
+  const t2=addDaysIso(todayIso(),45);
+  const rows=all('SELECT * FROM properties ORDER BY id DESC').map(function(p){
+    const st=omRentStatusOf(p);
+    const near=p.end_iso&&p.end_iso<=t2&&p.status!=='تخلیه‌شده'&&p.status!=='واگذارشده';
+    return '<tr><td><b>'+esc(p.title)+'</b><br><small class="muted">'+esc(p.location||'—')+(p.area?' · متراژ: '+esc(p.area):'')+'</small></td>'+
+     '<td>'+esc(p.tenant||'—')+'<br><small class="muted">'+esc(p.phone||'')+'</small></td>'+
+     '<td>'+faMoney(p.rent)+'<br><small class="muted">ودیعه: '+faMoney(p.deposit)+'</small></td>'+
+     '<td>'+(p.start_iso?faDate(p.start_iso):'—')+'<br>'+(p.end_iso?faDate(p.end_iso):'—')+(near?'<br><span class="badge b-warn">نزدیک به پایان</span>':'')+'</td>'+
+     '<td><span class="badge '+omBadge(p.status)+'">'+esc(p.status)+'</span><br><span class="badge '+st.cls+'" style="margin-top:4px">'+st.txt+'</span></td>'+
+     '<td class="no-print" style="white-space:nowrap"><button class="btn btn-outline btn-sm" data-act="omShopEdit" data-id="'+p.id+'">ویرایش</button> <button class="btn btn-outline btn-sm" data-act="omShopRenew" data-id="'+p.id+'">تمدید</button> <button class="btn btn-danger btn-sm" data-act="omShopDel" data-id="'+p.id+'">حذف</button></td></tr>';
+  });
+  return '<div class="page-head"><div><h3>مدیریت مغازه‌ها و املاک مسجد</h3><p class="muted">مشخصات ملک، قرارداد، مستأجر، اجاره و ودیعه این‌جا ثبت می‌شود؛ <b>ثبت دریافت اجاره و تأیید درآمد فقط در پنل معاونت امور مالی</b> انجام می‌شود و وضعیت پرداخت برای مسئولان مجاز نمایش داده می‌شود (§۳-۶)</p></div>'+
+   '<div class="no-print"><button class="btn btn-outline" data-act="omSyncFin">'+icon('refresh',16)+' همگام‌سازی قراردادها با مالی</button> <button class="btn btn-primary" data-act="omShopNew">'+icon('plus')+' ثبت مغازه / ملک</button></div></div>'+
+   omTable(['ملک','مستأجر','اجاره ماهانه (تومان)','قرارداد','وضعیت','عملیات'],rows,'ملکی ثبت نشده است');
+}
+function omShopModal(id){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const r=id?one('SELECT * FROM properties WHERE id=?',[id]):null;
+  let imgs=omImgs(r&&r.images);
+  const ov=openModal(r?'ویرایش ملک — '+r.title:'ثبت مغازه / ملک جدید',
+   '<form id="omShopForm" novalidate>'+
+    '<div class="frow2">'+
+     fld('شماره و مشخصه ملک *','<input name="title" class="inp" value="'+esc(r?r.title:'')+'" placeholder="مثال: مغازه شرقی شماره ۱">')+
+     fld('موقعیت','<input name="location" class="inp" value="'+esc(r?r.location:'')+'">')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('متراژ (متر مربع)','<input name="area" class="inp" value="'+esc(r?r.area||'':'')+'">')+
+     fld('وضعیت','<select name="status" class="inp">'+['فعال','نزدیک به پایان','تخلیه‌شده','واگذارشده'].map(function(s){ return '<option '+((r&&r.status===s)||(!r&&s==='فعال')?'selected':'')+'>'+s+'</option>'; }).join('')+'</select>')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('نام مستأجر','<input name="tenant" class="inp" value="'+esc(r?r.tenant:'')+'">')+
+     fld('تلفن مستأجر','<input name="phone" class="inp" value="'+esc(r?r.phone:'')+'">')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('اجاره ماهانه (تومان)','<input name="rent" type="number" min="0" class="inp" value="'+(r?(r.rent||0):0)+'">')+
+     fld('ودیعه (تومان)','<input name="deposit" type="number" min="0" class="inp" value="'+(r?(r.deposit||0):0)+'">')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('شماره قرارداد','<input name="contract_no" class="inp" value="'+esc(r?r.contract_no:'')+'">')+
+     fld('تغییر مبلغ اجاره (یادداشت)','<input name="rent_note" class="inp" value="'+esc(r?r.rent_note||'':'')+'" placeholder="مثال: از ۱۴۰۵/۰۸ مبلغ جدید ۳ میلیون">')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('شروع قرارداد (شمسی)','<input name="start" class="inp" value="'+(r&&r.start_iso?faDate(r.start_iso):'')+'" placeholder="۱۴۰۵/۰۱/۰۱">')+
+     fld('پایان قرارداد (شمسی)','<input name="end" class="inp" value="'+(r&&r.end_iso?faDate(r.end_iso):'')+'" placeholder="۱۴۰۶/۰۱/۰۱">')+
+    '</div>'+
+    fld('شرایط قرارداد','<textarea name="conditions" class="inp" rows="2">'+esc(r?r.conditions||'':'')+'</textarea>')+
+    '<div><label class="tiny muted">تصویر قرارداد</label><button type="button" id="shImgBtn" class="btn btn-outline btn-sm">آپلود تصویر قرارداد</button><div id="shImgBox"></div></div>'+
+    '<button type="submit" class="btn btn-primary btn-block" style="margin-top:10px">'+(r?'ذخیره تغییرات':'ثبت ملک')+'</button></form>');
+  const draw=function(){ const b=ov.querySelector('#shImgBox'); b.innerHTML=omThumbBar(imgs)+'<p class="tiny muted">برای حذف روی تصویر کلیک کنید</p>'; };
+  draw();
+  ov.querySelector('#shImgBtn').onclick=function(){ pickImages(1100,function(arr){ imgs=imgs.concat(arr); draw(); }); };
+  ov.querySelector('#shImgBox').addEventListener('click',function(e){ if(e.target.tagName==='IMG'){ const i=Array.prototype.indexOf.call(e.target.parentNode.querySelectorAll('img'),e.target); imgs.splice(i,1); draw(); } });
+  const form=ov.querySelector('#omShopForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    if(!form.title.value.trim()){ setErr(form.title,'مشخصه ملک الزامی است.'); return; }
+    const s=parseJDate(form.start.value), en=parseJDate(form.end.value);
+    const vals=[form.title.value.trim(),form.tenant.value.trim(),form.phone.value.trim(),+form.rent.value||0,+form.deposit.value||0,form.contract_no.value.trim(),
+     s?jToIso(s.jy,s.jm,s.jd):'', en?jToIso(en.jy,en.jm,en.jd):'', form.status.value, form.area.value.trim(), form.location.value.trim(), form.conditions.value.trim(), form.rent_note.value.trim(), JSON.stringify(imgs)];
+    if(r){ run('UPDATE properties SET title=?,tenant=?,phone=?,rent=?,deposit=?,contract_no=?,start_iso=?,end_iso=?,status=?,area=?,location=?,conditions=?,rent_note=?,images=? WHERE id=?',vals.concat([r.id])); }
+    else{ run('INSERT INTO properties (title,tenant,phone,rent,deposit,contract_no,start_iso,end_iso,status,area,location,conditions,rent_note,images,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',vals.concat([session.username,faStamp()])); }
+    logActivity('املاک و مغازه‌ها',(r?'ویرایش ':'ثبت ')+'ملک «'+form.title.value.trim()+'»');
+    markDirty(); saveNow(true); closeModal(); toast('ذخیره شد ✓'); renderView();
+  });
+}
+function omShopRenewModal(id){
+  const p=one('SELECT * FROM properties WHERE id=?',[id]); if(!p) return;
+  const ov=openModal('ثبت تمدید قرارداد — '+p.title,
+   '<form id="omRenForm" novalidate>'+
+    '<div class="frow2">'+
+     fld('پایان جدید قرارداد (شمسی) *','<input name="end" class="inp" value="'+(p.end_iso?faDate(p.end_iso):'')+'" placeholder="۱۴۰۷/۰۱/۰۱">')+
+     fld('اجاره ماهانه جدید (تومان)','<input name="rent" type="number" min="0" class="inp" value="'+(p.rent||0)+'">')+
+    '</div>'+
+    fld('یادداشت تمدید','<input name="note" class="inp" value="'+esc(p.rent_note||'')+'">')+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت تمدید</button></form>');
+  const form=ov.querySelector('#omRenForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    const en=parseJDate(form.end.value);
+    if(!en){ setErr(form.end,'تاریخ شمسی معتبر نیست.'); return; }
+    run('UPDATE properties SET end_iso=?,rent=?,rent_note=?,status=? WHERE id=?',[jToIso(en.jy,en.jm,en.jd),+form.rent.value||0,form.note.value.trim(),'فعال',p.id]);
+    logActivity('تمدید قرارداد ملک','قرارداد «'+p.title+'» تا '+faDate(jToIso(en.jy,en.jm,en.jd))+' تمدید شد.');
+    markDirty(); saveNow(true); closeModal(); toast('تمدید ثبت شد ✓'); renderView();
+  });
+}
+function omSyncFin(){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const props=all('SELECT * FROM properties').filter(function(p){ return p.status==='فعال'||p.status==='نزدیک به پایان'; });
+  let n=0;
+  props.forEach(function(p){
+    const ex=one('SELECT id FROM fin_rentals WHERE shop_name=?',[p.title]);
+    if(!ex){ run('INSERT INTO fin_rentals (shop_name,tenant,monthly_rent,due_day,start_fa,end_fa,status,imported,note,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+      [p.title,p.tenant,p.rent||0,5,'','',(p.end_iso&&p.end_iso<todayIso())?'غیرفعال':'فعال',1,'همگام‌سازی از پنل عمران'+(p.contract_no?' — قرارداد: '+p.contract_no:''),session.username,faStamp()]); n++; }
+  });
+  if(n){ markDirty(); saveNow(true); toast(faNum(n)+' قرارداد اجاره به معاونت امور مالی منتقل شد ✓ (ثبت دریافت فقط در پنل مالی)'); }
+  else toast('قرارداد جدیدی برای انتقال نبود؛ قراردادهای قبلی در پنل مالی موجود است','info');
+  renderView();
+}
+/* ---------- ۴) اموال و اقلام ---------- */
+function omNextAssetCode(){ return 'MSZ-AST-'+String(1001+(one('SELECT COALESCE(MAX(id),0) AS m FROM assets').m||0)); }
+function omrAsset(){
+  const rows=all('SELECT * FROM assets ORDER BY id DESC').map(function(a){
+    return '<tr><td><span class="badge b-neutral" style="direction:ltr">'+esc(a.code||'—')+'</span></td>'+
+     '<td><b>'+esc(a.name)+'</b>'+(a.price?'<br><small class="muted">خرید: '+faMoney(a.price)+(a.buy_fa?' — '+esc(a.buy_fa):'')+'</small>':'')+'</td>'+
+     '<td>'+esc(a.category||'—')+'</td><td>'+faNum(a.qty||0)+'</td><td>'+esc(a.loc||'—')+'</td>'+
+     '<td><span class="badge '+omBadge(a.condition_txt)+'">'+esc(a.condition_txt||'—')+'</span>'+(a.holder?'<br><small class="muted">'+esc(a.holder)+'</small>':'')+'</td>'+
+     '<td class="no-print" style="white-space:nowrap"><button class="btn btn-outline btn-sm" data-act="omAssetOp" data-id="'+a.id+'" data-k="move">جابه‌جایی</button> <button class="btn btn-outline btn-sm" data-act="omAssetOp" data-id="'+a.id+'" data-k="repair">تعمیر</button> <button class="btn btn-outline btn-sm" data-act="omAssetOp" data-id="'+a.id+'" data-k="scrap">خرابی/اسقاط</button> <button class="btn btn-outline btn-sm" data-act="omAssetOp" data-id="'+a.id+'" data-k="hand">تحویل و تحول</button> <button class="btn btn-outline btn-sm" data-act="omAssetLbl" data-id="'+a.id+'">برچسب بارکد</button> <button class="btn btn-outline btn-sm" data-act="omAssetEdit" data-id="'+a.id+'">ویرایش</button> <button class="btn btn-danger btn-sm" data-act="omAssetDel" data-id="'+a.id+'">حذف</button></td></tr>';
+  });
+  return '<div class="page-head"><div><h3>مدیریت اموال و اقلام مسجد</h3><p class="muted">برای هر قلم کد اموال اختصاصی (MSZ-AST) و برچسب بارکد Code39 صادر می‌شود؛ جابه‌جایی، تعمیر، خرابی/اسقاط و تحویل و تحول با ثبت سابقه</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="omAssetNew">'+icon('plus')+' ثبت قلم جدید</button></div>'+
+   omTable(['کد اموال','قلم','دسته‌بندی','تعداد','محل نگهداری','وضعیت','عملیات'],rows,'قلمی ثبت نشده است');
+}
+function omAssetModal(id){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const r=id?one('SELECT * FROM assets WHERE id=?',[id]):null;
+  let imgs=omImgs(r&&r.images);
+  const ov=openModal(r?'ویرایش قلم — '+r.name:'ثبت قلم جدید',
+   '<form id="omAstForm" novalidate>'+
+    '<div class="frow2">'+
+     fld('نام قلم *','<input name="name" class="inp" value="'+esc(r?r.name:'')+'">')+
+     fld('دسته‌بندی','<select name="cat" class="inp">'+OMR_ASSET_CATS.map(function(c){ return '<option '+((r&&r.category===c)?'selected':'')+'>'+c+'</option>'; }).join('')+'</select>')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('تعداد','<input name="qty" type="number" min="1" class="inp" value="'+(r?(r.qty||1):1)+'">')+
+     fld('تاریخ خرید (شمسی)','<input name="buy" class="inp" value="'+esc(r?r.buy_fa||'':'')+'" placeholder="۱۴۰۵/۰۵/۱۰">')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('قیمت خرید (تومان)','<input name="price" type="number" min="0" class="inp" value="'+(r?(r.price||0):0)+'">')+
+     fld('وضعیت سلامت','<select name="cond" class="inp">'+['سالم','نیاز به تعمیر','خراب','اسقاطی'].map(function(c){ return '<option '+((r&&r.condition_txt===c)||(!r&&c==='سالم')?'selected':'')+'>'+c+'</option>'; }).join('')+'</select>')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('محل نگهداری','<input name="loc" class="inp" value="'+esc(r?r.loc:'')+'">')+
+     fld('مسئول تحویل‌گیرنده','<input name="holder" class="inp" value="'+esc(r?r.holder:'')+'">')+
+    '</div>'+
+    (r?'<p class="tiny muted">کد اموال: <b style="direction:ltr;display:inline-block">'+esc(r.code||'—')+'</b></p>':'<p class="tiny muted">کد اموال هنگام ثبت به‌صورت خودکار صادر می‌شود: '+omNextAssetCode()+'</p>')+
+    '<div><label class="tiny muted">تصویر قلم و فاکتور</label><button type="button" id="asImgBtn" class="btn btn-outline btn-sm">آپلود تصویر / فاکتور</button><div id="asImgBox"></div></div>'+
+    '<button type="submit" class="btn btn-primary btn-block" style="margin-top:10px">'+(r?'ذخیره تغییرات':'ثبت قلم')+'</button></form>');
+  const draw=function(){ ov.querySelector('#asImgBox').innerHTML=omThumbBar(imgs)+'<p class="tiny muted">برای حذف روی تصویر کلیک کنید</p>'; };
+  draw();
+  ov.querySelector('#asImgBtn').onclick=function(){ pickImages(1000,function(arr){ imgs=imgs.concat(arr); draw(); }); };
+  ov.querySelector('#asImgBox').addEventListener('click',function(e){ if(e.target.tagName==='IMG'){ const i=Array.prototype.indexOf.call(e.target.parentNode.querySelectorAll('img'),e.target); imgs.splice(i,1); draw(); } });
+  const form=ov.querySelector('#omAstForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    if(!form.name.value.trim()){ setErr(form.name,'نام قلم الزامی است.'); return; }
+    const vals=[form.name.value.trim(),form.cat.value,+form.qty.value||1,form.loc.value.trim(),form.cond.value,form.holder.value.trim(),form.buy.value.trim(),+form.price.value||0,JSON.stringify(imgs)];
+    if(r){ run('UPDATE assets SET name=?,category=?,qty=?,loc=?,condition_txt=?,holder=?,buy_fa=?,price=?,images=? WHERE id=?',vals.concat([r.id])); }
+    else{ const code=omNextAssetCode(); run('INSERT INTO assets (name,category,qty,loc,condition_txt,holder,buy_fa,price,images,code,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',vals.concat([code,session.username,faStamp()])); }
+    logActivity('اموال و اقلام',(r?'ویرایش ':'ثبت ')+'قلم «'+form.name.value.trim()+'»');
+    markDirty(); saveNow(true); closeModal(); toast('ذخیره شد ✓'); renderView();
+  });
+}
+function omAssetOpModal(id,op){
+  const a=one('SELECT * FROM assets WHERE id=?',[id]); if(!a) return;
+  const titles={move:'ثبت جابه‌جایی',repair:'ثبت تعمیر',scrap:'ثبت خرابی / اسقاط',hand:'ثبت تحویل و تحول'};
+  const ov=openModal(titles[op]+' — '+a.name,
+   '<form id="omAstOpForm" novalidate>'+
+    (op==='move'?fld('محل جدید نگهداری *','<input name="to" class="inp" value="'+esc(a.loc||'')+'">'):'')+
+    (op==='repair'?fld('شرح تعمیر *','<input name="txt" class="inp" placeholder="مثال: تعویض باتری سیستم صوتی">'):'')+
+    (op==='scrap'?'<div class="frow2">'+fld('وضعیت جدید','<select name="cond" class="inp"><option>خراب</option><option>اسقاطی</option></select>')+fld('توضیح','<input name="txt" class="inp" placeholder="دلیل خرابی یا اسقاط">')+'</div>':'')+
+    (op==='hand'?fld('تحویل‌گیرنده جدید *','<input name="to" class="inp" value="'+esc(a.holder||'')+'">'):'')+
+    fld('یادداشت / شرح سابقه','<textarea name="note" class="inp" rows="2"></textarea>')+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت سابقه</button></form>');
+  const form=ov.querySelector('#omAstOpForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    const now=faStamp(); let log=(a.transfers||'');
+    if(op==='move'){ const to=form.to.value.trim(); if(!to){ setErr(form.to,'محل جدید الزامی است.'); return; } log+=(log?'\n':'')+'['+now+'] جابه‌جایی از «'+(a.loc||'—')+'» به «'+to+'»'+(form.note.value.trim()?' — '+form.note.value.trim():''); run('UPDATE assets SET loc=?,transfers=? WHERE id=?',[to,log,a.id]); }
+    else if(op==='repair'){ const txt=form.txt.value.trim(); if(!txt){ setErr(form.txt,'شرح تعمیر الزامی است.'); return; } log+=(log?'\n':'')+'['+now+'] تعمیر: '+txt+(form.note.value.trim()?' — '+form.note.value.trim():''); const rl=(a.repair_log||'')+(a.repair_log?'\n':'')+'['+now+'] '+txt; run('UPDATE assets SET repair_log=?,transfers=?,condition_txt=? WHERE id=?',[rl,log,'سالم',a.id]); }
+    else if(op==='scrap'){ run('UPDATE assets SET condition_txt=?,scrap_note=?,transfers=? WHERE id=?',[form.cond.value,form.txt.value.trim()+(form.note.value.trim()?' — '+form.note.value.trim():''),log+((log?'\n':'')+'['+now+'] '+(form.cond.value==='اسقاطی'?'اسقاط':'خرابی')+' ثبت شد'),a.id]); }
+    else if(op==='hand'){ const to=form.to.value.trim(); if(!to){ setErr(form.to,'تحویل‌گیرنده الزامی است.'); return; } log+=(log?'\n':'')+'['+now+'] تحویل و تحول از «'+(a.holder||'—')+'» به «'+to+'»'+(form.note.value.trim()?' — '+form.note.value.trim():''); run('UPDATE assets SET holder=?,transfers=? WHERE id=?',[to,log,a.id]); }
+    logActivity('اموال و اقلام',titles[op]+' — «'+a.name+'»');
+    markDirty(); saveNow(true); closeModal(); toast('سابقه ثبت شد ✓'); renderView();
+  });
+}
+function omAssetLabel(id){
+  const a=one('SELECT * FROM assets WHERE id=?',[id]); if(!a) return;
+  const h='<div style="text-align:center;max-width:340px;margin:0 auto">'+
+   '<div class="subj"><b>برچسب کد اموال — مسجد صاحب‌الزمان (عج)</b></div>'+
+   code39Html(a.code||'—',52)+
+   '<p style="font-size:15pt;font-weight:bold;margin:4px 0;direction:ltr">'+esc(a.code||'—')+'</p>'+
+   '<table class="min" style="text-align:right"><tbody>'+
+    '<tr><th>نام قلم</th><td>'+esc(a.name)+'</td></tr>'+
+    '<tr><th>دسته‌بندی</th><td>'+esc(a.category||'—')+'</td></tr>'+
+    '<tr><th>محل نگهداری</th><td>'+esc(a.loc||'—')+'</td></tr>'+
+    '<tr><th>مسئول تحویل‌گیرنده</th><td>'+esc(a.holder||'—')+'</td></tr>'+
+   '</tbody></table>'+
+   '<p class="ftr">این برچسب با بارکد Code39 چاپ می‌شود و برای شناسایی قلم در دسته‌بندی اموال معاونت عمران و پشتیبانی کاربرد دارد.</p></div>';
+  openOfficialDoc('برچسب اموال — '+(a.code||a.name),h);
+}
+/* ---------- ۵) تعمیرات و نگهداری ---------- */
+function omrFix(){
+  const rows=all('SELECT * FROM repairs ORDER BY id DESC').map(function(x){
+    return '<tr><td><b>'+esc(x.title)+'</b><br><small class="muted">'+esc(x.loc||'—')+'</small></td>'+
+     '<td><span class="badge '+omBadge(x.urgency)+'">'+esc(x.urgency)+'</span></td>'+
+     '<td>'+esc(x.assigned||'—')+'</td>'+
+     '<td>'+(x.est_cost?faMoney(x.est_cost):'—')+(x.cost?'<br><small class="muted">نهایی: '+faMoney(x.cost)+'</small>':'')+'</td>'+
+     '<td><span class="badge '+omBadge(x.status)+'">'+esc(x.status)+'</span>'+(x.confirmed?'<br><span class="badge b-success">تأیید انجام</span>':'')+'</td>'+
+     '<td class="no-print" style="white-space:nowrap">'+
+      (x.status==='ثبت‌شده'?'<button class="btn btn-outline btn-sm" data-act="omFixEdit" data-id="'+x.id+'">ارجاع و برآورد</button> ':'')+
+      (x.status==='در حال تعمیر'?'<button class="btn btn-primary btn-sm" data-act="omFixDone" data-id="'+x.id+'">تکمیل تعمیر</button> ':'')+
+      (x.status==='انجام‌شد'?'<button class="btn btn-outline btn-sm" data-act="omFixArchive" data-id="'+x.id+'">تأیید و بایگانی</button> ':'')+
+      (x.cost>0&&x.status!=='بایگانی'?'<button class="btn btn-outline btn-sm" data-act="omFixSendFin" data-id="'+x.id+'">ثبت هزینه در مالی</button> ':'')+
+      '<button class="btn btn-danger btn-sm" data-act="omFixDel" data-id="'+x.id+'">حذف</button></td></tr>';
+  });
+  return '<div class="page-head"><div><h3>تعمیرات و نگهداری</h3><p class="muted">گردش: ثبت درخواست (محل، شرح، تصویر، فوریت) ← ارجاع به مسئول و تعیین تعمیرکار و برآورد ← اجرا ← ثبت هزینه نهایی و تأیید انجام ← بایگانی سوابق</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="omFixNew">'+icon('plus')+' ثبت درخواست تعمیر</button></div>'+
+   omTable(['درخواست','فوریت','تعمیرکار مسئول','برآورد / هزینه (تومان)','وضعیت','عملیات'],rows,'درخواست تعمیری ثبت نشده است');
+}
+function omFixModal(id){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const r=id?one('SELECT * FROM repairs WHERE id=?',[id]):null;
+  let imgs=omImgs(r&&r.images);
+  const ov=openModal(r?'ارجاع و بررسی — '+r.title:'ثبت درخواست تعمیر',
+   '<form id="omFixForm" novalidate>'+
+    fld('عنوان درخواست *','<input name="title" class="inp" value="'+esc(r?r.title:'')+'">')+
+    '<div class="frow2">'+
+     fld('محل خرابی *','<input name="loc" class="inp" value="'+esc(r?r.loc:'')+'" placeholder="مثال: سالن اصلی — سمت محراب">')+
+     fld('فوریت','<select name="urg" class="inp">'+['عادی','مهم','فوری'].map(function(u){ return '<option '+((r&&r.urgency===u)||(!r&&u==='عادی')?'selected':'')+'>'+u+'</option>'; }).join('')+'</select>')+
+    '</div>'+
+    fld('شرح مشکل','<textarea name="descr" class="inp" rows="2">'+esc(r?r.descr:'')+'</textarea>')+
+    '<div class="frow2">'+
+     fld('تعمیرکار مسئول','<input name="assigned" class="inp" value="'+esc(r?r.assigned:'')+'" placeholder="در صورت تعیین">')+
+     fld('برآورد هزینه (تومان)','<input name="est" type="number" min="0" class="inp" value="'+(r?(r.est_cost||0):0)+'">')+
+    '</div>'+(r?'<div class="frow2">'+
+     fld('تاریخ شروع تعمیر (شمسی)','<input name="st" class="inp" value="'+esc(r.start_fa||'')+'" placeholder="۱۴۰۵/۰۸/۱۵">')+
+     fld('تاریخ پایان (شمسی)','<input name="en" class="inp" value="'+esc(r.end_fa||'')+'">')+
+    '</div>'+
+    fld('وضعیت','<select name="status" class="inp">'+['ثبت‌شده','در حال بررسی','در حال تعمیر','انجام‌شد','بایگانی'].map(function(s){ return '<option '+(r.status===s?'selected':'')+'>'+s+'</option>'; }).join('')+'</select>')+
+    fld('هزینه نهایی (تومان)','<input name="cost" type="number" min="0" class="inp" value="'+(r.cost||0)+'">')+
+    '<label style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" name="conf" '+(r.confirmed?'checked':'')+'> تأیید انجام تعمیر</label>':'')+
+    '<div><label class="tiny muted">تصویر خرابی</label><button type="button" id="fxImgBtn" class="btn btn-outline btn-sm">آپلود تصویر</button><div id="fxImgBox"></div></div>'+
+    '<button type="submit" class="btn btn-primary btn-block" style="margin-top:10px">'+(r?'ذخیره':'ثبت درخواست')+'</button></form>');
+  const draw=function(){ ov.querySelector('#fxImgBox').innerHTML=omThumbBar(imgs)+'<p class="tiny muted">برای حذف روی تصویر کلیک کنید</p>'; };
+  draw();
+  ov.querySelector('#fxImgBtn').onclick=function(){ pickImages(900,function(arr){ imgs=imgs.concat(arr); draw(); }); };
+  ov.querySelector('#fxImgBox').addEventListener('click',function(e){ if(e.target.tagName==='IMG'){ const i=Array.prototype.indexOf.call(e.target.parentNode.querySelectorAll('img'),e.target); imgs.splice(i,1); draw(); } });
+  const form=ov.querySelector('#omFixForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    if(!form.title.value.trim()){ setErr(form.title,'عنوان الزامی است.'); return; }
+    if(!form.loc.value.trim()){ setErr(form.loc,'محل خرابی الزامی است.'); return; }
+    if(r){
+      run('UPDATE repairs SET title=?,loc=?,descr=?,urgency=?,assigned=?,est_cost=?,start_fa=?,end_fa=?,status=?,cost=?,confirmed=?,images=? WHERE id=?',
+       [form.title.value.trim(),form.loc.value.trim(),form.descr.value.trim(),form.urg.value,form.assigned.value.trim(),+form.est.value||0,form.st.value.trim(),form.en.value.trim(),form.status.value,+form.cost.value||0,form.conf.checked?1:0,JSON.stringify(imgs),r.id]);
+    }else{
+      run('INSERT INTO repairs (title,loc,descr,urgency,assigned,est_cost,images,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?)',
+       [form.title.value.trim(),form.loc.value.trim(),form.descr.value.trim(),form.urg.value,form.assigned.value.trim(),+form.est.value||0,JSON.stringify(imgs),session.username,faStamp()]);
+    }
+    logActivity('تعمیرات و نگهداری',(r?'ویرایش ':'ثبت ')+'درخواست «'+form.title.value.trim()+'»');
+    markDirty(); saveNow(true); closeModal(); toast('ذخیره شد ✓'); renderView();
+  });
+}
+function omFixDoneModal(id){
+  const x=one('SELECT * FROM repairs WHERE id=?',[id]); if(!x) return;
+  const ov=openModal('تکمیل تعمیر — '+x.title,
+   '<form id="omFixDoneForm" novalidate>'+
+    '<div class="frow2">'+
+     fld('تاریخ پایان (شمسی) *','<input name="en" class="inp" value="'+faDate(todayIso())+'">')+
+     fld('هزینه نهایی (تومان) *','<input name="cost" type="number" min="0" class="inp" value="'+(x.est_cost||0)+'">')+
+    '</div>'+
+    fld('توضیح انجام کار','<textarea name="note" class="inp" rows="2">'+esc(x.descr||'')+'</textarea>')+
+    '<label style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" name="conf" checked> تأیید انجام تعمیر</label>'+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت تکمیل</button></form>');
+  const form=ov.querySelector('#omFixDoneForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    run('UPDATE repairs SET status=?,cost=?,end_fa=?,confirmed=?,descr=? WHERE id=?',['انجام‌شد',+form.cost.value||0,form.en.value.trim(),form.conf.checked?1:0,form.note.value.trim(),x.id]);
+    logActivity('تعمیرات و نگهداری','تعمیر «'+x.title+'» با هزینه '+faMoney(+form.cost.value||0)+' تکمیل شد.');
+    markDirty(); saveNow(true); closeModal(); toast('تکمیل تعمیر ثبت شد ✓'); renderView();
+  });
+}
+function omFixSendFin(id){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const x=one('SELECT * FROM repairs WHERE id=?',[id]); if(!x||!(x.cost>0)) return;
+  const ex=one("SELECT id FROM transactions WHERE description=? AND kind='هزینه'",['هزینه تعمیر — '+x.title]);
+  if(ex){ toast('هزینه این تعمیر قبلاً به مالی ارسال شده است','info'); return; }
+  run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status,unit) VALUES (?,?,?,?,?,?,?,?,?)',
+   ['هزینه','هزینه تعمیر — '+x.title,x.cost,todayIso(),'نگهداری و تعمیرات','',session.username,'در انتظار بررسی',myUnit()]);
+  logActivity('ثبت هزینه تعمیر در مالی','هزینه تعمیر «'+x.title+'» به صف بررسی معاونت امور مالی ارسال شد.');
+  markDirty(); saveNow(true); toast('هزینه به صف بررسی معاونت امور مالی ارسال شد ✓'); renderView();
+}
+/* ---------- ۶) پشتیبانی برنامه‌ها ---------- */
+function omrSupp(){
+  const rows=all('SELECT * FROM om_supreq ORDER BY id DESC').map(function(s){
+    return '<tr><td><b>'+esc(s.program||'—')+'</b><br><small class="muted">درخواست‌کننده: '+esc(s.org||'—')+(s.requester?' — '+esc(s.requester):'')+'</small></td>'+
+     '<td>'+(s.date_iso?faDate(s.date_iso):'—')+'<br><small class="muted">'+esc(s.place||'—')+'</small></td>'+
+     '<td class="tiny">'+esc(s.items||'—')+'</td>'+
+     '<td><span class="badge '+omBadge(s.status)+'">'+esc(s.status)+'</span>'+(s.damage?'<br><small class="muted">'+esc(s.damage)+'</small>':'')+'</td>'+
+     '<td class="no-print" style="white-space:nowrap">'+
+      (s.status==='ثبت‌شده'?'<button class="btn btn-primary btn-sm" data-act="omSupReview" data-id="'+s.id+'">بررسی</button> ':'')+
+      (s.status==='تأییدشده'?'<button class="btn btn-primary btn-sm" data-act="omSupDeliver" data-id="'+s.id+'">ثبت تحویل</button> ':'')+
+      (s.status==='تحویل‌شده'?'<button class="btn btn-outline btn-sm" data-act="omSupReturn" data-id="'+s.id+'">ثبت بازگشت</button> <button class="btn btn-outline btn-sm" data-act="omSupDamage" data-id="'+s.id+'">خسارت/کسری</button> ':'')+
+      '<button class="btn btn-danger btn-sm" data-act="omSupDel" data-id="'+s.id+'">حذف</button></td></tr>';
+  });
+  return '<div class="page-head"><div><h3>پشتیبانی برنامه‌ها</h3><p class="muted">دریافت درخواست از معاونت‌ها و تشکل‌ها (از تابلوی مأموریت‌ها) ← انتخاب برنامه، تاریخ و مکان و اقلام موردنیاز ← بررسی ← تحویل ← بازگشت ← ثبت خسارت یا کسری</p></div></div>'+
+   omTable(['درخواست','تاریخ و مکان','اقلام موردنیاز','وضعیت','عملیات'],rows,'درخواست پشتیبانی ثبت نشده است');
+}
+function omSupReqModal(){
+  const ov=openModal('ثبت درخواست پشتیبانی از معاونت عمران و پشتیبانی',
+   '<form id="omSupForm" novalidate>'+
+    fld('عنوان برنامه یا نیاز *','<input name="prog" class="inp" placeholder="مثال: همایش هفته وحدت — تجهیزات صوتی">')+
+    '<div class="frow2">'+
+     fld('تاریخ نیاز (شمسی)','<input name="date" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۹/۰۱">')+
+     fld('مکان','<input name="place" class="inp" placeholder="مثال: سالن اصلی">')+
+    '</div>'+
+    fld('اقلام موردنیاز *','<textarea name="items" class="inp" rows="3" placeholder="هر قلم در یک سطر: سیستم صوتی، ۵۰ عدد صندلی، …"></textarea>')+
+    '<button type="submit" class="btn btn-primary btn-block">ارسال درخواست به معاونت عمران</button></form>');
+  const form=ov.querySelector('#omSupForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    if(!form.prog.value.trim()){ setErr(form.prog,'عنوان برنامه الزامی است.'); return; }
+    if(!form.items.value.trim()){ setErr(form.items,'اقلام موردنیاز را بنویسید.'); return; }
+    const d=parseJDate(form.date.value);
+    run('INSERT INTO om_supreq (org,requester,program,date_iso,place,items,status,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?)',
+     [session.role,session.name,form.prog.value.trim(),d?jToIso(d.jy,d.jm,d.jd):'',form.place.value.trim(),form.items.value.trim(),'ثبت‌شده',session.username,faStamp()]);
+    all('SELECT username FROM users WHERE username IN (\'support\',\'imam\')').forEach(function(u){ addNotif(u.username,'درخواست پشتیبانی جدید','واحد «'+session.role+'» برای «'+form.prog.value.trim()+'» درخواست پشتیبانی ثبت کرد.'); });
+    logActivity('درخواست پشتیبانی عمران','واحد «'+session.role+'» برای «'+form.prog.value.trim()+'» درخواست ثبت کرد.');
+    renderNotifBadge(); markDirty(); saveNow(true); closeModal(); toast('درخواست به معاونت عمران و پشتیبانی ارسال شد ✓'); renderView();
+  });
+}
+function omSupFieldModal(id,field){
+  const s=one('SELECT * FROM om_supreq WHERE id=?',[id]); if(!s) return;
+  const cfg={
+   review:{t:'بررسی درخواست',f:'review',st:['تأییدشده','ردشده'],lbl:'نتیجه بررسی و یادداشت'},
+   deliver:{t:'ثبت تحویل اقلام',f:'delivery',st:['تحویل‌شده'],lbl:'شرح اقلام تحویل‌شده و تاریخ'},
+   ret:{t:'ثبت بازگشت اقلام',f:'returns',st:['بازگشت‌شده'],lbl:'شرح اقلام بازگشتی'},
+   damage:{t:'ثبت خسارت یا کسری',f:'damage',st:['خسارت ثبت‌شده'],lbl:'شرح خسارت یا کسری'}
+  }[field]; if(!cfg) return;
+  const ov=openModal(cfg.t+' — '+(s.program||''),
+   '<form id="omSupFrm" novalidate>'+
+    fld(cfg.lbl+' *','<textarea name="txt" class="inp" rows="3">'+esc(s[cfg.f]||'')+'</textarea>')+
+    (cfg.st.length>1?fld('وضعیت نهایی','<select name="st" class="inp">'+cfg.st.map(function(x){ return '<option>'+x+'</option>'; }).join('')+'</select>'):'')+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت</button></form>');
+  const form=ov.querySelector('#omSupFrm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    if(!form.txt.value.trim()){ setErr(form.txt,'متن الزامی است.'); return; }
+    const st=cfg.st.length>1?form.st.value:cfg.st[0];
+    run('UPDATE om_supreq SET '+cfg.f+'=?,status=? WHERE id=?',[form.txt.value.trim(),st,s.id]);
+    logActivity('پشتیبانی برنامه‌ها',cfg.t+' برای «'+(s.program||'')+'»');
+    markDirty(); saveNow(true); closeModal(); toast('ثبت شد ✓'); renderView();
+  });
+}
+/* ---------- ۷) خدمات و نیروی انسانی ---------- */
+function omrHr(){
+  const staff=all('SELECT * FROM om_staff ORDER BY id DESC');
+  const stRows=staff.map(function(s){
+    const sal=one('SELECT * FROM fin_salaries WHERE who=?',[s.name]);
+    const pays=sal?all('SELECT * FROM fin_salary_pay WHERE who=? ORDER BY date_iso DESC LIMIT 6',[s.name]):[];
+    return '<tr><td><b>'+esc(s.name)+'</b><br><small class="muted">'+esc(s.kind||'خادم')+(s.active?'':' — غیرفعال')+'</small></td>'+
+     '<td class="tiny">'+esc(s.duties||'—')+'</td><td class="tiny">'+esc(s.schedule||'—')+'</td>'+
+     '<td>'+(sal?'<span class="badge b-gold">'+faMoney(sal.monthly)+' تومان / ماه</span><br><small class="muted">سررسید: روز '+faNum(sal.due_day||25)+' هر ماه</small>':'<span class="badge b-neutral">در مالی ثبت نشده</span>')+
+      (pays.length?'<br><small class="muted">آخرین پرداخت‌ها: '+pays.map(function(p){ return esc(p.month_fa||faDate(p.date_iso)); }).join('، ')+'</small>':'')+'</td>'+
+     '<td class="tiny">'+esc(s.performance||'—')+'</td>'+
+     '<td class="no-print" style="white-space:nowrap"><button class="btn btn-outline btn-sm" data-act="omStaffEdit" data-id="'+s.id+'">ویرایش</button> <button class="btn btn-danger btn-sm" data-act="omStaffDel" data-id="'+s.id+'">حذف</button></td></tr>';
+  });
+  const recs=all('SELECT * FROM om_recruit ORDER BY id DESC').map(function(r){
+    return '<tr><td><b>'+esc(r.title)+'</b><br><small class="muted">'+esc(r.justification||'—')+'</small></td><td>'+faNum(r.cnt||1)+'</td>'+
+     '<td><span class="badge '+omBadge(r.status)+'">'+esc(r.status)+'</span></td>'+
+     '<td class="no-print" style="white-space:nowrap"><button class="btn btn-outline btn-sm" data-act="omRecEdit" data-id="'+r.id+'">ویرایش</button> <button class="btn btn-danger btn-sm" data-act="omRecDel" data-id="'+r.id+'">حذف</button></td></tr>';
+  });
+  return '<div class="page-head"><div><h3>خدمات و نیروی انسانی پشتیبانی</h3><p class="muted">اطلاعات خادم و نیروهای خدماتی، شرح وظایف، برنامه کاری و گزارش عملکرد — <b>حقوق و سررسید پرداخت فقط در معاونت امور مالی ثبت و پرداخت می‌شود</b> و این‌جا فقط برای اطلاع نمایش داده می‌شود</p></div>'+
+   '<div class="no-print"><button class="btn btn-outline" data-act="omRecNew">'+icon('plus',16)+' درخواست جذب نیرو</button> <button class="btn btn-primary" data-act="omStaffNew">'+icon('plus')+' ثبت نیرو</button></div></div>'+
+   omTable(['نیرو','شرح وظایف','برنامه کاری','حقوق (اطلاع از مالی)','گزارش عملکرد','عملیات'],stRows,'نیرویی ثبت نشده است')+
+   '<h3 style="margin:16px 0 8px">'+icon('users',17)+' درخواست‌های جذب نیرو</h3>'+
+   omTable(['عنوان و توجیه','تعداد','وضعیت','عملیات'],recs,'درخواست جذبی ثبت نشده است');
+}
+function omStaffModal(id){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const r=id?one('SELECT * FROM om_staff WHERE id=?',[id]):null;
+  const ov=openModal(r?'ویرایش نیرو — '+r.name:'ثبت خادم / نیروی خدماتی',
+   '<form id="omStfForm" novalidate>'+
+    '<div class="frow2">'+
+     fld('نام و نام خانوادگی *','<input name="name" class="inp" value="'+esc(r?r.name:'')+'">')+
+     fld('نوع همکاری','<select name="kind" class="inp">'+['خادم','خدماتی','نظافت','فنی','سایر'].map(function(k){ return '<option '+((r&&r.kind===k)||(!r&&k==='خادم')?'selected':'')+'>'+k+'</option>'; }).join('')+'</select>')+
+    '</div>'+
+    fld('شرح وظایف و مسئولیت‌ها','<textarea name="duties" class="inp" rows="2">'+esc(r?r.duties:'')+'</textarea>')+
+    fld('برنامه کاری','<textarea name="schedule" class="inp" rows="2" placeholder="مثال: شنبه تا پنجشنبه ۶ تا ۱۰ صبح">'+esc(r?r.schedule:'')+'</textarea>')+
+    fld('گزارش عملکرد','<textarea name="perf" class="inp" rows="2">'+esc(r?r.performance:'')+'</textarea>')+
+    '<label style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" name="act" '+(r?(r.active?'checked':''):'checked')+'> فعال</label>'+
+    '<p class="tiny muted" style="border-right:3px solid var(--gold);padding-right:8px">مبلغ حقوق و ثبت پرداخت‌ها فقط از طریق «معاونت امور مالی» انجام می‌شود؛ اگر این نیرو در پنل مالی (بخش حقوق امام جماعت و خادم) ثبت شده باشد، اطلاعات آن این‌جا نمایش داده می‌شود.</p>'+
+    '<button type="submit" class="btn btn-primary btn-block">'+(r?'ذخیره تغییرات':'ثبت نیرو')+'</button></form>');
+  const form=ov.querySelector('#omStfForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    if(!form.name.value.trim()){ setErr(form.name,'نام الزامی است.'); return; }
+    const vals=[form.name.value.trim(),form.kind.value,form.duties.value.trim(),form.schedule.value.trim(),form.perf.value.trim(),form.act.checked?1:0];
+    if(r){ run('UPDATE om_staff SET name=?,kind=?,duties=?,schedule=?,performance=?,active=? WHERE id=?',vals.concat([r.id])); }
+    else{ run('INSERT INTO om_staff (name,kind,duties,schedule,performance,active,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?)',vals.concat([session.username,faStamp()])); }
+    logActivity('نیروی انسانی پشتیبانی',(r?'ویرایش ':'ثبت ')+'نیروی «'+form.name.value.trim()+'»');
+    markDirty(); saveNow(true); closeModal(); toast('ذخیره شد ✓'); renderView();
+  });
+}
+function omRecruitModal(id){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const r=id?one('SELECT * FROM om_recruit WHERE id=?',[id]):null;
+  const ov=openModal(r?'ویرایش درخواست جذب':'ثبت درخواست جذب نیرو',
+   '<form id="omRecForm" novalidate>'+
+    '<div class="frow2">'+
+     fld('عنوان نیاز *','<input name="title" class="inp" value="'+esc(r?r.title:'')+'" placeholder="مثال: خادم شب‌های جمعه">')+
+     fld('تعداد','<input name="cnt" type="number" min="1" class="inp" value="'+(r?(r.cnt||1):1)+'">')+
+    '</div>'+
+    fld('توجیه و شرح','<textarea name="just" class="inp" rows="2">'+esc(r?r.justification:'')+'</textarea>')+
+    fld('وضعیت','<select name="st" class="inp">'+['ثبت‌شده','در بررسی','مصوب','منتفی'].map(function(s){ return '<option '+((r&&r.status===s)||(!r&&s==='ثبت‌شده')?'selected':'')+'>'+s+'</option>'; }).join('')+'</select>')+
+    '<button type="submit" class="btn btn-primary btn-block">'+(r?'ذخیره':'ثبت درخواست')+'</button></form>');
+  const form=ov.querySelector('#omRecForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    if(!form.title.value.trim()){ setErr(form.title,'عنوان الزامی است.'); return; }
+    if(r){ run('UPDATE om_recruit SET title=?,cnt=?,justification=?,status=? WHERE id=?',[form.title.value.trim(),+form.cnt.value||1,form.just.value.trim(),form.st.value,r.id]); }
+    else{ run('INSERT INTO om_recruit (title,cnt,justification,status,created_by,created_at_fa) VALUES (?,?,?,?,?,?)',[form.title.value.trim(),+form.cnt.value||1,form.just.value.trim(),form.st.value,session.username,faStamp()]); }
+    logActivity('جذب نیرو',(r?'ویرایش ':'ثبت ')+'درخواست جذب «'+form.title.value.trim()+'»');
+    markDirty(); saveNow(true); closeModal(); toast('ذخیره شد ✓'); renderView();
+  });
+}
+/* ---------- ۸) قراردادها و پیمانکاران ---------- */
+function omrCtr(){
+  const t2=addDaysIso(todayIso(),45);
+  const rows=all('SELECT * FROM om_contracts ORDER BY id DESC').map(function(c){
+    const near=c.end_iso&&c.end_iso<=t2&&c.status==='فعال';
+    return '<tr><td><b>'+esc(c.party)+'</b><br><small class="muted">'+esc(c.subject||'—')+'</small></td>'+
+     '<td>'+faMoney(c.amount)+'</td>'+
+     '<td>'+(c.start_iso?faDate(c.start_iso):'—')+'<br>'+(c.end_iso?faDate(c.end_iso):'—')+(near?'<br><span class="badge b-warn">هشدار سررسید</span>':'')+'</td>'+
+     '<td><b>'+faNum(c.progress||0)+'٪</b></td>'+
+     '<td><span class="badge '+omBadge(c.status)+'">'+esc(c.status)+'</span><br><small class="muted tiny">'+esc(c.pay_schedule||'')+'</small></td>'+
+     '<td class="no-print" style="white-space:nowrap"><button class="btn btn-outline btn-sm" data-act="omCtrEdit" data-id="'+c.id+'">ویرایش</button> <button class="btn btn-danger btn-sm" data-act="omCtrDel" data-id="'+c.id+'">حذف</button></td></tr>';
+  });
+  return '<div class="page-head"><div><h3>قراردادها و پیمانکاران</h3><p class="muted">ثبت قرارداد با مشخصات طرف قرارداد، مبلغ، تعهدات و زمان‌بندی پرداخت + بارگذاری تصویر قرارداد + هشدار سررسید</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="omCtrNew">'+icon('plus')+' ثبت قرارداد</button></div>'+
+   omTable(['طرف قرارداد','مبلغ (تومان)','شروع / پایان','پیشرفت','وضعیت','عملیات'],rows,'قراردادی ثبت نشده است');
+}
+function omCtrModal(id){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const r=id?one('SELECT * FROM om_contracts WHERE id=?',[id]):null;
+  let imgs=omImgs(r&&r.images);
+  const ov=openModal(r?'ویرایش قرارداد — '+r.party:'ثبت قرارداد پیمانکاری',
+   '<form id="omCtrForm" novalidate>'+
+    '<div class="frow2">'+
+     fld('طرف قرارداد *','<input name="party" class="inp" value="'+esc(r?r.party:'')+'">')+
+     fld('موضوع قرارداد','<input name="subject" class="inp" value="'+esc(r?r.subject:'')+'">')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('مبلغ قرارداد (تومان)','<input name="amt" type="number" min="0" class="inp" value="'+(r?(r.amount||0):0)+'">')+
+     fld('وضعیت','<select name="st" class="inp">'+['فعال','پایان‌یافته','لغوشده'].map(function(s){ return '<option '+((r&&r.status===s)||(!r&&s==='فعال')?'selected':'')+'>'+s+'</option>'; }).join('')+'</select>')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('شروع (شمسی)','<input name="start" class="inp" value="'+(r&&r.start_iso?faDate(r.start_iso):'')+'">')+
+     fld('پایان (شمسی)','<input name="end" class="inp" value="'+(r&&r.end_iso?faDate(r.end_iso):'')+'">')+
+    '</div>'+
+    fld('تعهدات طرف قرارداد','<textarea name="obl" class="inp" rows="2">'+esc(r?r.obligations:'')+'</textarea>')+
+    fld('زمان‌بندی پرداخت','<textarea name="pays" class="inp" rows="2" placeholder="مثال: ۴۰٪ پیش‌پرداخت، ۶۰٪ پس از تحویل">'+esc(r?r.pay_schedule:'')+'</textarea>')+
+    '<div class="frow2">'+
+     fld('درصد پیشرفت','<input name="prog" type="number" min="0" max="100" class="inp" value="'+(r?(r.progress||0):0)+'">')+
+     '<div></div>'+
+    '</div>'+
+    '<div><label class="tiny muted">بارگذاری تصویر قرارداد</label><button type="button" id="ctImgBtn" class="btn btn-outline btn-sm">آپلود</button><div id="ctImgBox"></div></div>'+
+    '<button type="submit" class="btn btn-primary btn-block" style="margin-top:10px">'+(r?'ذخیره تغییرات':'ثبت قرارداد')+'</button></form>');
+  const draw=function(){ ov.querySelector('#ctImgBox').innerHTML=omThumbBar(imgs)+'<p class="tiny muted">برای حذف روی تصویر کلیک کنید</p>'; };
+  draw();
+  ov.querySelector('#ctImgBtn').onclick=function(){ pickImages(1100,function(arr){ imgs=imgs.concat(arr); draw(); }); };
+  ov.querySelector('#ctImgBox').addEventListener('click',function(e){ if(e.target.tagName==='IMG'){ const i=Array.prototype.indexOf.call(e.target.parentNode.querySelectorAll('img'),e.target); imgs.splice(i,1); draw(); } });
+  const form=ov.querySelector('#omCtrForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    if(!form.party.value.trim()){ setErr(form.party,'طرف قرارداد الزامی است.'); return; }
+    const s=parseJDate(form.start.value), en=parseJDate(form.end.value);
+    const vals=[form.party.value.trim(),form.subject.value.trim(),+form.amt.value||0,s?jToIso(s.jy,s.jm,s.jd):'',en?jToIso(en.jy,en.jm,en.jd):'',form.obl.value.trim(),form.pays.value.trim(),Math.min(100,+form.prog.value||0),JSON.stringify(imgs),form.st.value];
+    if(r){ run('UPDATE om_contracts SET party=?,subject=?,amount=?,start_iso=?,end_iso=?,obligations=?,pay_schedule=?,progress=?,images=?,status=? WHERE id=?',vals.concat([r.id])); }
+    else{ run('INSERT INTO om_contracts (party,subject,amount,start_iso,end_iso,obligations,pay_schedule,progress,images,status,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',vals.concat([session.username,faStamp()])); }
+    logActivity('قراردادها و پیمانکاران',(r?'ویرایش ':'ثبت ')+'قرارداد با «'+form.party.value.trim()+'»');
+    markDirty(); saveNow(true); closeModal(); toast('ذخیره شد ✓'); renderView();
+  });
+}
+/* ---------- ۹) قبوض و هزینه‌های جاری ساختمان ---------- */
+function omBillState(b){
+  if(b.tx_id){
+    const tx=one('SELECT tx_status FROM transactions WHERE id=?',[b.tx_id]);
+    if(tx){
+      if(tx.tx_status==='تأییدشده') return {cls:'b-success',txt:'پرداخت‌شده — تأیید مالی'};
+      if(tx.tx_status==='در انتظار بررسی') return {cls:'b-info',txt:'ارسال‌شده به مالی — در انتظار تأیید'};
+      return {cls:'b-danger',txt:'برگشت از مالی: '+(tx.tx_status||'')};
+    }
+  }
+  if(b.pay_status==='پرداخت‌شده') return {cls:'b-success',txt:'پرداخت‌شده'};
+  return {cls:'b-warn',txt:'در انتظار پرداخت'};
+}
+function omrBill(){
+  const t=todayIso();
+  const rows=all('SELECT * FROM om_bills ORDER BY id DESC').map(function(b){
+    const st=omBillState(b);
+    const late=b.due_iso&&b.due_iso<t&&st.cls!=='b-success';
+    return '<tr><td><b>'+esc(b.kind)+'</b><br><small class="muted">دوره: '+esc(b.period_fa||'—')+'</small></td>'+
+     '<td>'+(b.issue_fa?esc(b.issue_fa):'—')+'<br>'+(b.due_iso?faDate(b.due_iso):'—')+(late?'<span class="badge b-danger">از سررسید گذشته</span>':'')+'</td>'+
+     '<td><b>'+faMoney(b.amount)+'</b></td>'+
+     '<td><span class="badge '+st.cls+'">'+st.txt+'</span>'+(b.consumption?'<br><small class="muted">مصرف: '+esc(b.consumption)+'</small>':'')+'</td>'+
+     '<td class="no-print" style="white-space:nowrap">'+
+      (!b.tx_id?'<button class="btn btn-primary btn-sm" data-act="omBillSend" data-id="'+b.id+'">ارسال به مالی جهت پرداخت</button> ':'')+
+      '<button class="btn btn-outline btn-sm" data-act="omBillEdit" data-id="'+b.id+'">ویرایش</button> <button class="btn btn-danger btn-sm" data-act="omBillDel" data-id="'+b.id+'">حذف</button></td></tr>';
+  });
+  return '<div class="page-head"><div><h3>قبوض و هزینه‌های جاری ساختمان</h3><p class="muted">ثبت قبض آب، برق، گاز و تلفن با تاریخ صدور و سررسید، مبلغ، تصویر قبض و گزارش مصرف — <b>ثبت پرداخت و تأیید نهایی در اختیار معاونت امور مالی است</b>؛ با «ارسال به مالی» قبض به‌صورت هزینه در صف بررسی مالی قرار می‌گیرد (§۳-۶)</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="omBillNew">'+icon('plus')+' ثبت قبض</button></div>'+
+   omTable(['نوع قبض','صدور / سررسید','مبلغ (تومان)','وضعیت پرداخت','عملیات'],rows,'قبضی ثبت نشده است');
+}
+function omBillModal(id){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const r=id?one('SELECT * FROM om_bills WHERE id=?',[id]):null;
+  let imgs=omImgs(r&&r.images);
+  const tj=isoToJ(todayIso());
+  const ov=openModal(r?'ویرایش قبض':'ثبت قبض جاری ساختمان',
+   '<form id="omBillForm" novalidate>'+
+    '<div class="frow2">'+
+     fld('نوع قبض *','<select name="kind" class="inp">'+OMR_BILL_KINDS.map(function(k){ return '<option '+((r&&r.kind===k)||(!r&&k==='برق')?'selected':'')+'>'+k+'</option>'; }).join('')+'</select>')+
+     fld('دوره (ماه/مقطع)','<input name="period" class="inp" value="'+esc(r?r.period_fa:(tj.jy+'/'+(tj.jm<10?'0':'')+tj.jm))+'">')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('تاریخ صدور (شمسی)','<input name="issue" class="inp" value="'+esc(r?r.issue_fa:'')+'" placeholder="۱۴۰۵/۰۸/۰۱">')+
+     fld('سررسید (شمسی) *','<input name="due" class="inp" value="'+(r&&r.due_iso?faDate(r.due_iso):faDate(addDaysIso(todayIso(),15)))+'" placeholder="۱۴۰۵/۰۸/۱۵">')+
+    '</div>'+
+    fld('مبلغ (تومان) *','<input name="amt" type="number" min="0" class="inp" value="'+(r?(r.amount||0):0)+'">')+
+    fld('گزارش مصرف (کنتور / مقادیر)','<input name="cons" class="inp" value="'+esc(r?r.consumption||'':'')+'" placeholder="مثال: ۱۲۴۰ کیلووات‌ساعت">')+
+    '<div><label class="tiny muted">تصویر قبض</label><button type="button" id="blImgBtn" class="btn btn-outline btn-sm">آپلود تصویر قبض</button><div id="blImgBox"></div></div>'+
+    '<button type="submit" class="btn btn-primary btn-block" style="margin-top:10px">'+(r?'ذخیره تغییرات':'ثبت قبض')+'</button></form>');
+  const draw=function(){ ov.querySelector('#blImgBox').innerHTML=omThumbBar(imgs)+'<p class="tiny muted">برای حذف روی تصویر کلیک کنید</p>'; };
+  draw();
+  ov.querySelector('#blImgBtn').onclick=function(){ pickImages(1100,function(arr){ imgs=imgs.concat(arr); draw(); }); };
+  ov.querySelector('#blImgBox').addEventListener('click',function(e){ if(e.target.tagName==='IMG'){ const i=Array.prototype.indexOf.call(e.target.parentNode.querySelectorAll('img'),e.target); imgs.splice(i,1); draw(); } });
+  const form=ov.querySelector('#omBillForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    const due=parseJDate(form.due.value);
+    if(!due){ setErr(form.due,'سررسید شمسی معتبر نیست.'); return; }
+    if(+form.amt.value<=0){ setErr(form.amt,'مبلغ معتبر وارد کنید.'); return; }
+    const vals=[form.kind.value,form.period.value.trim(),form.issue.value.trim(),jToIso(due.jy,due.jm,due.jd),+form.amt.value||0,form.cons.value.trim(),JSON.stringify(imgs)];
+    if(r){ run('UPDATE om_bills SET kind=?,period_fa=?,issue_fa=?,due_iso=?,amount=?,consumption=?,images=? WHERE id=?',vals.concat([r.id])); }
+    else{ run('INSERT INTO om_bills (kind,period_fa,issue_fa,due_iso,amount,consumption,images,pay_status,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,\'ثبت‌شده\',?,?)',vals.concat([session.username,faStamp()])); }
+    logActivity('قبوض جاری ساختمان',(r?'ویرایش ':'ثبت ')+'قبض '+form.kind.value+' — دوره '+form.period.value.trim());
+    markDirty(); saveNow(true); closeModal(); toast('قبض ثبت شد ✓'); renderView();
+  });
+}
+function omBillSend(id){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const b=one('SELECT * FROM om_bills WHERE id=?',[id]); if(!b) return;
+  if(b.tx_id){ toast('این قبض قبلاً به مالی ارسال شده است','info'); return; }
+  run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status,unit) VALUES (?,?,?,?,?,?,?,?,?)',
+   ['هزینه','قبض '+b.kind+' — دوره '+(b.period_fa||''),b.amount,todayIso(),'قبوض','',session.username,'در انتظار بررسی',myUnit()]);
+  const txid=one('SELECT id FROM transactions ORDER BY id DESC LIMIT 1').id;
+  run('UPDATE om_bills SET tx_id=?,pay_status=? WHERE id=?',[txid,'ارسال‌شده به مالی',b.id]);
+  logActivity('ارسال قبض به مالی','قبض '+b.kind+' دوره '+(b.period_fa||'')+' برای تأیید و پرداخت به معاونت امور مالی ارسال شد.');
+  markDirty(); saveNow(true); toast('قبض به صف بررسی معاونت امور مالی ارسال شد ✓'); renderView();
+}
+/* ---------- ۱۰) گزارش‌ها ---------- */
+function omReportData(kind){
+  const t=todayIso();
+  function tab(title,cols,rows){ return {t:title,cols:cols,rows:rows}; }
+  if(kind==='proj'){
+    return tab('پروژه‌های عمرانی',['عنوان','محل','مسئول','پیمانکار','وضعیت','پیشرفت ٪','برآورد','بودجه مصوب','شروع','پایان'],
+     all('SELECT * FROM projects ORDER BY id').map(function(p){ return [p.title,p.location||'',p.owner||'',p.contractor||'',p.status,p.progress||0,p.est_cost||0,p.budget||0,p.start_iso?faDate(p.start_iso):'',p.end_iso?faDate(p.end_iso):'']; }));
+  }
+  if(kind==='asset'){
+    return tab('اموال و اقلام',['کد اموال','نام','دسته','تعداد','محل','وضعیت','تحویل‌گیرنده','قیمت خرید'],
+     all('SELECT * FROM assets ORDER BY code').map(function(a){ return [a.code||'',a.name,a.category||'',a.qty||0,a.loc||'',a.condition_txt||'',a.holder||'',a.price||0]; }));
+  }
+  if(kind==='fix'){
+    return tab('تعمیرات و نگهداری',['عنوان','محل','فوریت','تعمیرکار','برآورد','هزینه نهایی','وضعیت'],
+     all('SELECT * FROM repairs ORDER BY id').map(function(x){ return [x.title,x.loc||'',x.urgency||'',x.assigned||'',x.est_cost||0,x.cost||0,x.status]; }));
+  }
+  if(kind==='sup'){
+    return tab('درخواست‌های پشتیبانی',['واحد درخواست‌کننده','برنامه','تاریخ','مکان','اقلام','وضعیت'],
+     all('SELECT * FROM om_supreq ORDER BY id').map(function(s){ return [s.org||'',s.program||'',s.date_iso?faDate(s.date_iso):'',s.place||'',s.items||'',s.status]; }));
+  }
+  if(kind==='ctr'){
+    return tab('قراردادها و پیمانکاران',['طرف قرارداد','موضوع','مبلغ','شروع','پایان','پیشرفت ٪','وضعیت'],
+     all('SELECT * FROM om_contracts ORDER BY id').map(function(c){ return [c.party,c.subject||'',c.amount||0,c.start_iso?faDate(c.start_iso):'',c.end_iso?faDate(c.end_iso):'',c.progress||0,c.status]; }));
+  }
+  if(kind==='rent'){
+    return tab('اجاره مغازه‌ها',['ملک','مستأجر','اجاره ماهانه','ودیعه','شروع','پایان','وضعیت','وضعیت دریافت از مالی'],
+     all('SELECT * FROM properties ORDER BY id').map(function(p){ const st=omRentStatusOf(p); return [p.title,p.tenant||'',p.rent||0,p.deposit||0,p.start_iso?faDate(p.start_iso):'',p.end_iso?faDate(p.end_iso):'',p.status,st.txt]; }));
+  }
+  if(kind==='bill'){
+    return tab('قبوض و هزینه‌های جاری',['نوع','دوره','صدور','سررسید','مبلغ','وضعیت','مصرف'],
+     all('SELECT * FROM om_bills ORDER BY id').map(function(b){ const st=omBillState(b); return [b.kind,b.period_fa||'',b.issue_fa||'',b.due_iso?faDate(b.due_iso):'',b.amount||0,st.txt,b.consumption||'']; }));
+  }
+  const tj=isoToJ(t);
+  if(kind==='mon'){
+    const s=jToIso(tj.jy,tj.jm,1), e=jToIso(tj.jy,tj.jm,jalaaliMonthLength(tj.jy,tj.jm));
+    const fx=all('SELECT * FROM repairs WHERE cost>0').filter(function(x){ return x.end_fa&&x.end_fa.indexOf(String(tj.jy+'/'+(tj.jm<10?'0':'')+tj.jm))===0; });
+    const bl=all('SELECT * FROM om_bills WHERE amount>0').filter(function(b){ return b.created_at_fa&&b.created_at_fa.indexOf(faStamp().slice(0,7))===0; });
+    return tab('گزارش ماهانه '+J_MONTHS[tj.jm-1]+' '+faNum(tj.jy),['مؤلفه','تعداد / جمع'],[
+     ['پروژه‌های در جریان',all("SELECT COUNT(*) AS c FROM projects WHERE status IN ('مصوب','در حال اجرا')").c+' مورد'],
+     ['درخواست تعمیر این ماه',faNum(fx.length)+' مورد — جمع هزینه '+faMoney(fx.reduce(function(a,x){ return a+x.cost; },0))+' تومان'],
+     ['درخواست پشتیبانی باز',all("SELECT COUNT(*) AS c FROM om_supreq WHERE status NOT IN ('تکمیل‌شده','بسته‌شده')").c+' مورد'],
+     ['قبوض ثبت‌شده',faNum(bl.length)+' مورد — جمع '+faMoney(bl.reduce(function(a,b){ return a+b.amount; },0))+' تومان'],
+     ['قرارداد فعال',all("SELECT COUNT(*) AS c FROM om_contracts WHERE status='فعال'").c+' مورد']]);
+  }
+  const y=tj.jy, ys=jToIso(y,1,1), ye=jToIso(y,12,jalaaliMonthLength(y,12));
+  return tab('گزارش سالانه '+faNum(y),['مؤلفه','تعداد / جمع'],[
+   ['پروژه‌های تکمیل‌شده',all("SELECT COUNT(*) AS c FROM projects WHERE status IN ('تکمیل‌شده','تحویل نهایی')").c+' مورد'],
+   ['جمع هزینه تعمیرات سال',faMoney(all('SELECT * FROM repairs WHERE cost>0').reduce(function(a,x){ return a+(x.cost||0); },0))+' تومان'],
+   ['ارزش اموال ثبت‌شده',faMoney(all('SELECT COALESCE(SUM(price*qty),0) AS s FROM assets').s)+' تومان'],
+   ['اقلام فعال',all('SELECT COUNT(*) AS c FROM assets').c+' قلم'],
+   ['قراردادهای فعال',all("SELECT COUNT(*) AS c FROM om_contracts WHERE status='فعال'").c+' مورد'],
+   ['اجاره ماهانه ملک‌های فعال',faMoney(all("SELECT COALESCE(SUM(rent),0) AS s FROM properties WHERE status IN ('فعال','نزدیک به پایان')").s)+' تومان در ماه'],
+   ['جمع قبوض ثبت‌شده',faMoney(all('SELECT COALESCE(SUM(amount),0) AS s FROM om_bills').s)+' تومان']]);
+}
+function omReportHtml(d){
+  return '<div class="meta"><span>'+esc(d.t)+'</span><span>تاریخ گزارش: '+faStamp()+' — معاونت عمران و پشتیبانی</span></div>'+
+   '<table class="min"><thead><tr>'+d.cols.map(function(c){ return '<th>'+esc(c)+'</th>'; }).join('')+'</tr></thead><tbody>'+
+   (d.rows.length?d.rows.map(function(r){ return '<tr>'+r.map(function(c){ return '<td>'+esc(c==null?'':String(c))+'</td>'; }).join('')+'</tr>'; }).join(''):'<tr><td colspan="'+d.cols.length+'">موردی ثبت نشده است</td></tr>')+
+   '</tbody></table>'+
+   '<div class="sig"><div class="block">معاون عمران و پشتیبانی<div class="line">امضا</div></div><div class="block">امام جماعت<div class="line">تأیید</div></div></div>';
+}
+function omReportOut(kind,fmt){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const d=omReportData(kind);
+  const name='گزارش-'+d.t;
+  if(fmt==='pdf'){ openReportWin(name,omReportHtml(d),[d.cols].concat(d.rows)); }
+  else if(fmt==='xls'){ exportCsv(name,[d.cols].concat(d.rows)); }
+  else{ exportDoc(name,omReportHtml(d)); }
+}
+function omrRep(){
+  const cards=[['proj','گزارش پروژه‌های عمرانی','home','فهرست پروژه‌ها با وضعیت، پیشرفت و مبالغ'],
+   ['asset','گزارش اموال','inbox','فهرست کامل اقلام با کد اموال و ارزش'],
+   ['fix','گزارش تعمیرات','settings','سوابق تعمیرات با هزینه‌ها'],
+   ['sup','گزارش درخواست‌های پشتیبانی','bell','درخواست واحدها و وضعیت تحویل'],
+   ['ctr','گزارش قراردادها','file','قراردادها و پیمانکاران با سررسید'],
+   ['rent','گزارش اجاره مغازه‌ها','wallet','وضعیت ملک‌ها و دریافت اجاره'],
+   ['bill','گزارش قبوض','file','قبوض جاری و وضعیت پرداخت'],
+   ['mon','گزارش ماهانه','calendar','خلاصه عملکرد ماه جاری'],
+   ['year','گزارش سالانه','chart','خلاصه عملکرد سال جاری']];
+  return '<div class="page-head"><div><h3>گزارش‌های معاونت عمران و پشتیبانی</h3><p class="muted">هر گزارش با سه خروجی PDF (چاپ رسمی با امضا)، Excel (CSV) و Word (doc.) عرضه می‌شود</p></div></div>'+
+   '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">'+
+   cards.map(function(c){
+    return '<div class="card pad"><h3>'+icon(c[2],17)+' '+c[1]+'</h3><p class="tiny muted">'+c[3]+'</p>'+
+     '<div class="act-row no-print">'+
+      '<button class="btn btn-primary btn-sm" data-act="omRep" data-k="'+c[0]+'" data-f="pdf">PDF</button>'+
+      '<button class="btn btn-outline btn-sm" data-act="omRep" data-k="'+c[0]+'" data-f="xls">Excel</button>'+
+      '<button class="btn btn-outline btn-sm" data-act="omRep" data-k="'+c[0]+'" data-f="doc">Word</button>'+
+     '</div></div>';
+   }).join('')+'</div>';
+}
+/* ---------- حذف‌های پنل عمران ---------- */
+async function omDel(table,id,label){
+  if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; }
+  const r=one('SELECT * FROM '+table+' WHERE id=?',[id]); if(!r) return;
+  if(!await confirmDlg('حذف رکورد','«'+(r.title||r.name||r.party||r.program||label)+'» حذف شود؟',{danger:true,okText:'حذف'})) return;
+  run('DELETE FROM '+table+' WHERE id=?',[id]);
+  logActivity('حذف رکورد عمران','حذف رکورد از '+table);
+  markDirty(); saveNow(true); toast('حذف شد ✓'); renderView();
+}
+
 VIEWS.panel=function(root){
   let kind=panelKindOfUser();
   if(!kind&&session.username==='imam') kind=window._panelTab||'culture';
@@ -7237,6 +8228,7 @@ VIEWS.panel=function(root){
   if(kind==='culture'){ renderCultPanel(root); return; }
   if(kind==='education'){ renderEduPanel(root); return; }
   if(kind==='heyat'){ renderHeyatPanel(root); return; }
+  if(kind==='support'){ renderOmranPanel(root); return; }
   const cfg=PANEL_KIND[kind];
   const tabs=imamPanelTabs();
   root.innerHTML=
