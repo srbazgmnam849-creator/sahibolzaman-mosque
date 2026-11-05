@@ -682,7 +682,7 @@ tr.row-ov td{color:#8E2020}
     </form>
     <a class="apk-link" href="app/app.apk" download>📥 دانلود اپلیکیشن اندروید (APK)</a>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۷</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۸</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -734,7 +734,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۷ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۸ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -1547,7 +1547,16 @@ function ensureSchema(){
     "CREATE TABLE IF NOT EXISTS contacts(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, org TEXT DEFAULT '', phone TEXT DEFAULT '', email TEXT DEFAULT '', address TEXT DEFAULT '', note TEXT DEFAULT '')",
     "CREATE TABLE IF NOT EXISTS ext_letters(id INTEGER PRIMARY KEY AUTOINCREMENT, number TEXT UNIQUE, recipient TEXT NOT NULL, subject TEXT NOT NULL, body TEXT DEFAULT '', date_fa TEXT DEFAULT '', status TEXT DEFAULT 'پیش‌نویس', signed_imam INTEGER DEFAULT 0, tracking_no TEXT DEFAULT '', reply_note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
     "CREATE TABLE IF NOT EXISTS obstacles(id INTEGER PRIMARY KEY AUTOINCREMENT, subject TEXT NOT NULL, descr TEXT DEFAULT '', ref_txt TEXT DEFAULT '', resolved INTEGER DEFAULT 0, created_by TEXT DEFAULT '', created_at_fa TEXT)",
-    "CREATE TABLE IF NOT EXISTS cult_occasions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, kind TEXT DEFAULT 'مذهبی', date_iso TEXT DEFAULT '', note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)"
+    "CREATE TABLE IF NOT EXISTS cult_occasions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, kind TEXT DEFAULT 'مذهبی', date_iso TEXT DEFAULT '', note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    /* v2.8 — جداول پنل تخصصی تعلیم و تربیت (۸ بخش) */
+    "CREATE TABLE IF NOT EXISTS edu_classes(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, topic TEXT DEFAULT '', age_group TEXT DEFAULT '', coach TEXT DEFAULT '', days TEXT DEFAULT '', time_fa TEXT DEFAULT '', place TEXT DEFAULT '', capacity INTEGER DEFAULT 0, status TEXT DEFAULT 'فعال', members TEXT DEFAULT '[]', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS edu_sessions(id INTEGER PRIMARY KEY AUTOINCREMENT, class_id INTEGER NOT NULL, date_iso TEXT DEFAULT '', date_fa TEXT DEFAULT '', topic TEXT DEFAULT '', status TEXT DEFAULT 'برنامه‌ریزی‌شده', note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS edu_attendance(id INTEGER PRIMARY KEY AUTOINCREMENT, session_id INTEGER NOT NULL, class_id INTEGER DEFAULT 0, mname TEXT DEFAULT '', status TEXT DEFAULT 'حاضر', note TEXT DEFAULT '')",
+    "CREATE TABLE IF NOT EXISTS edu_coaches(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, expertise TEXT DEFAULT '', background TEXT DEFAULT '', schedule TEXT DEFAULT '', performance TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS edu_circles(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, leader TEXT DEFAULT '', members TEXT DEFAULT '', note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS edu_circle_sessions(id INTEGER PRIMARY KEY AUTOINCREMENT, circle_id INTEGER NOT NULL, date_iso TEXT DEFAULT '', topic TEXT DEFAULT '', report TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS edu_camps(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, date_iso TEXT DEFAULT '', place TEXT DEFAULT '', responsible TEXT DEFAULT '', companions TEXT DEFAULT '', participants TEXT DEFAULT '', needs TEXT DEFAULT '', permits TEXT DEFAULT '', report TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS edu_members(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, birth_info TEXT DEFAULT '', join_iso TEXT DEFAULT '', guardian_phone TEXT DEFAULT '', is_minor INTEGER DEFAULT 0, mentor TEXT DEFAULT '', links TEXT DEFAULT '', ind_belief TEXT DEFAULT '', ind_worship TEXT DEFAULT '', ind_ethics TEXT DEFAULT '', ind_social TEXT DEFAULT '', ind_talent TEXT DEFAULT '', history TEXT DEFAULT '', strengths TEXT DEFAULT '', talents TEXT DEFAULT '', weak TEXT DEFAULT '', progress_txt TEXT DEFAULT '', suggest TEXT DEFAULT '', goal_short TEXT DEFAULT '', goal_long TEXT DEFAULT '', follow_coach TEXT DEFAULT '', review_iso TEXT DEFAULT '', growth TEXT DEFAULT '', growth_log TEXT DEFAULT '', level TEXT DEFAULT 'در حال رشد', created_by TEXT DEFAULT '', created_at_fa TEXT)"
   ];
   try{
     const cols=t=>{ try{ return all("SELECT name FROM pragma_table_info('"+t+"')").map(x=>x.name); }catch(e){ return []; } };
@@ -1766,7 +1775,7 @@ const NAV=[
  {id:'orgfin',label:'گزارش مالی',icon:'wallet',min:1,group:'پنل عمومی — امکانات مشترک',desc:'هر واحد مسئول هزینه‌های خودش؛ کل مالی فقط در پنل اختصاصی معاونت مالی و امام جماعت'},
  {id:'reports',label:'گزارش‌ها',icon:'chart',min:1,group:'پنل عمومی — امکانات مشترک',desc:'نمودارها و گزارش‌های کلی'},
  {id:'anns',label:'اعلان‌ها',icon:'bell',min:1,group:'پنل عمومی — امکانات مشترک',desc:'تابلوی اعلان‌ها و پیام‌های دریافتی — انتشار فقط رسانه و امام'},
- {id:'panel',label:'پنل اختصاصی',icon:'inbox',roles:['secretary','culture','support','heyat','imam'],group:'پنل اختصاصی',desc:'بخش‌های تخصصی واحد شما'},
+ {id:'panel',label:'پنل اختصاصی',icon:'inbox',roles:['secretary','culture','support','heyat','imam','education'],group:'پنل اختصاصی',desc:'بخش‌های تخصصی واحد شما'},
  {id:'finance',label:'امور مالی (معاونت مالی)',icon:'wallet',roles:['finance','imam'],group:'پنل اختصاصی',desc:'پنل اختصاصی مالی: درآمد، هزینه، تراز و بررسی فاکتورها'},
  {id:'media',label:'رسانه و اطلاعیه‌ها',icon:'send',roles:['imam','media_admin'],group:'پنل اختصاصی',desc:'مدیریت محتوای رسانه'},
  {id:'meetings',label:'جلسات هیئت (داخلی)',icon:'users',roles:['heyat'],group:'پنل اختصاصی',desc:'صورت‌جلسه‌های داخلی هیئت فداییان؛ جلسات هیئت امنا فقط در پنل دبیر (§۳-۲)'}
@@ -1906,8 +1915,7 @@ VIEWS.letters=function(root){
   root.innerHTML=
    '<div class="page-head"><div><h2>'+hd.t+'</h2><p class="muted">'+hd.d+'</p></div>'+
    (canNew?'<button class="btn btn-primary no-print" data-act="letterNew">'+icon('plus')+' ثبت نامه جدید</button>':'')+'</div>'+
-   (session.username==='heyat'?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>دبیرخانه مستقل هیئت:</b> شماره‌گذاری، گردش و بایگانی نامه‌های هیئت کاملاً مستقل از دبیرخانه مرکزی است و دبیر هیئت امنا به‌صورت پیش‌فرض به این بخش دسترسی ندارد (سند مأموریت §۴-۱). انتقال نامه به دبیرخانه مرکزی فقط با دکمه «ارجاع به مرکز» و ثبت مرجع انجام می‌شود.</p></div>':'')+
-   ((myOrg()!=='center'&&session.username!=='heyat')?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>مکاتبات از طریق دبیرخانه مرکزی:</b> نامه‌های ثبت‌شده شما وارد صف بررسی دبیرخانه مرکزی مسجد می‌شود؛ فقط نامه‌های خودتان را می‌بینید و پاسخ زیر همان نامه نمایش داده می‌شود (گردش دوازده‌مرحله‌ای §۴-۲).</p></div>':'')+
+   ((myOrg()!=='center')?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>مکاتبات از طریق دبیرخانه مرکزی:</b> نامه‌های ثبت‌شده شما (از جمله نامه‌های هیئت) وارد صف بررسی دبیرخانه مرکزی مسجد می‌شود؛ فقط نامه‌های خودتان را می‌بینید و پاسخ زیر همان نامه نمایش داده می‌شود (گردش دوازده‌مرحله‌ای §۴-۲).</p></div>':'')+
    '<div class="card pad fbar no-print">'+
      '<div class="field grow"><label>جست‌وجو</label><input id="lfQ" class="inp" placeholder="موضوع، فرستنده یا شماره نامه…" value="'+esc(letterFilter.q)+'"></div>'+
      '<div class="field"><label>نوع</label><select id="lfType" class="inp"><option value="">همه</option>'+LETTER_TYPES.map(t=>'<option '+(letterFilter.type===t?'selected':'')+'>'+t+'</option>').join('')+'</select></div>'+
@@ -1943,7 +1951,6 @@ VIEWS.letters=function(root){
 
 function openLetterModal(preset){
   preset=preset||{};
-  const isHeyat=session.username==='heyat';
   const num=nextNumber('letters',letterPrefix());
   const draftKey='msz_draft_letter_'+session.username;
   let draft={}; try{ draft=JSON.parse(localStorage.getItem(draftKey)||'{}'); }catch(e){}
@@ -1985,7 +1992,7 @@ function openLetterModal(preset){
     if(!subj){ setErr(form.subject,'موضوع نامه الزامی است.'); ok=false; }
     if(!snd){ setErr(form.sender,'نام فرستنده الزامی است.'); ok=false; }
     if(!ok) return;
-    const org=isHeyat?'heyat':'center';
+    const org='center';
     run('INSERT INTO letters (number,subject,sender,type,summary,status,assigned_role,file_name,created_by,created_at,created_at_fa,org) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
       [num,subj,snd,form.type.value,form.summary.value.trim(),'ثبت‌شده',form.recv.value,$('#ltrFileTxt').value,session.username,todayIso(),faStamp(),org]);
     if(org==='center'&&myOrg()!=='center'){
@@ -2006,8 +2013,7 @@ function openLetterDetail(id){
   const comments=all('SELECT * FROM letter_comments WHERE letter_id=? ORDER BY id',[id]);
   const canMgr=pm('letters',3), canDec=pm('letters',4);
   const allowed=LETTER_STATUSES.filter(s=>canDec||!DECISION_ONLY.includes(s));
-  const isHeyatLtr=L.org==='heyat';
-  const orgTag=isHeyatLtr?' <span class="badge b-gold">دبیرخانه اختصاصی هیئت</span>':' <span class="badge b-neutral">دبیرخانه مرکزی</span>';
+  const orgTag=' <span class="badge b-neutral">دبیرخانه مرکزی</span>';
   const html=
    '<div class="detail-grid">'+
     '<div><small>شماره نامه</small><b class="ltr-num">'+esc(L.number)+'</b></div>'+
@@ -2020,8 +2026,6 @@ function openLetterDetail(id){
     (L.summary?'<div class="span2"><small>خلاصه</small><p>'+esc(L.summary)+'</p></div>':'')+
     (L.file_name?'<div class="span2"><small>فایل پیوست (شبیه‌سازی)</small><b style="display:flex;align-items:center;gap:6px">'+icon('file',15)+' '+esc(L.file_name)+'</b></div>':'')+
    '</div>'+
-   (session.username==='heyat'&&isHeyatLtr?
-   '<div class="divider"></div><button class="btn btn-outline btn-sm" data-act="letterToCenter" data-id="'+L.id+'">'+icon('send',15)+' ارجاع این نامه به دبیرخانه مرکزی (با ثبت مرجع)</button>':'')+
    (canMgr?
    '<div class="divider"></div>'+
    '<div class="act-row">'+
@@ -2063,7 +2067,7 @@ VIEWS.meetings=function(root){
   let hd,sub,canNew;
   if(un==='imam'||un==='secretary'){
     hd='جلسات و مصوبات';
-    sub='مدیریت جلسات هیئت امنا فقط از دبیرخانه مرکزی (و امام جماعت)؛ جلسات داخلی واحدها و تشکل‌ها نیز اینجا تفکیک می‌شود';
+    sub='بدون مرحلهٔ «تشکیل جلسه» — گزارش جلسهٔ هیئت امنا مستقیماً ثبت می‌شود: حاضران، غایبان، صورت‌جلسه و مصوبات با مسئول و مهلت انجام (§۳-۲)؛ جلسات داخلی واحدها و تشکل‌ها جدا ثبت می‌شود';
     canNew=pm('meetings',2)&&!session.isMedia;
   }else if(un==='board'){
     hd='جلسات هیئت امنا';
@@ -2081,7 +2085,7 @@ VIEWS.meetings=function(root){
   const showKind=(un==='imam'||un==='secretary');
   root.innerHTML=
    '<div class="page-head"><div><h2>'+hd+'</h2><p class="muted">'+sub+'</p></div>'+
-   (canNew?'<button class="btn btn-primary no-print" data-act="meetingNew">'+icon('plus')+' جلسه جدید</button>':'')+'</div>'+
+   (canNew?'<button class="btn btn-primary no-print" data-act="meetingNew">'+icon('plus')+' '+(un==='imam'||un==='secretary'?'ثبت گزارش جلسه هیئت امنا':'جلسه جدید')+'</button>':'')+'</div>'+
    (un==='board'?'<div class="card pad" style="border-right:4px solid var(--warning);margin-bottom:12px"><p class="tiny muted"><b>قاعده سند مأموریت:</b> مدیریت جلسات هیئت امنا فقط در اختیار دبیرخانه مرکزی و امام جماعت است؛ هیچ معاونت یا تشکلی منوی مستقل یا اختیار ثبت این جلسات را ندارد و شما به‌عنوان رئیس، صرفاً مشاهده‌کننده هستید.</p></div>':'')+
    '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>شماره جلسه</th><th>عنوان</th><th>نوع</th><th>تاریخ</th><th>وضعیت</th><th>تعداد مصوبات</th><th></th></tr></thead><tbody>'+
    (rows.length?rows.map(m=>'<tr>'+
@@ -2106,10 +2110,11 @@ function openMeetingModal(){
   if(un==='imam'||un==='secretary') kind='board';
   else if(myOrg()!=='center') kind='org';
   const needKindSel=(un==='imam'||un==='secretary');
-  const ov=openModal('ایجاد جلسه جدید',
+  /* v2.8 — جلسات هیئت امنا: بدون مرحلهٔ «تشکیل جلسه»؛ مستقیماً «ثبت گزارش جلسه» با حاضران، غایبان، دستور جلسه و صورت‌جلسه */
+  const ov=openModal(needKindSel?'ثبت گزارش جلسه هیئت امنا':'ایجاد جلسه داخلی',
    '<form id="mtForm" novalidate>'+
     '<div class="frow2">'+
-      fld('شماره جلسه (خودکار)','<input class="inp" value="…" readonly id="mtNum">')+
+      fld('شماره (خودکار)','<input class="inp" value="…" readonly id="mtNum">')+
       fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۳">')+
     '</div>'+
     fld('عنوان جلسه *','<input name="title" class="inp" placeholder="مثال: جلسه هیئت امنا — آبان">')+
@@ -2118,20 +2123,33 @@ function openMeetingModal(){
       fld('مکان','<input name="place" class="inp" placeholder="مثال: سالن اصلی">')+
     '</div>'+
     (needKindSel?
-      fld('نوع جلسه *','<select name="kind" class="inp" id="mtKind"><option value="board">جلسه هیئت امنا (تنها دبیرخانه مرکزی و امام)</option><option value="unit">جلسه داخلی واحد ('+esc(session.role)+')</option></select>')
+      fld('نوع جلسه *','<select name="kind" class="inp" id="mtKind"><option value="board">گزارش جلسه هیئت امنا (تنها دبیرخانه مرکزی و امام)</option><option value="unit">جلسه داخلی واحد ('+esc(session.role)+')</option></select>')
       :(kind==='org'?
         fld('نوع جلسه','<input class="inp" value="جلسه داخلی '+esc(ORG_LABELS[myOrg()])+' (مستقل از هیئت امنا)" readonly>')
         :fld('نوع جلسه','<input class="inp" value="جلسه داخلی '+esc(session.role)+' (مستقل از هیئت امنا)" readonly>')))+
-    fld('وضعیت','<select name="status" class="inp"><option>برنامه‌ریزی‌شده</option><option>برگزار شد</option><option>لغو شد</option></select>')+
-    '<button type="submit" class="btn btn-primary btn-block">ایجاد جلسه</button>'+
-   '</form>');
+    '<div id="boardRep" style="border:1.5px dashed var(--gold);border-radius:10px;padding:10px;margin:10px 0">'+
+      '<b style="font-size:12.5px;color:var(--primary-dark);display:block;margin-bottom:8px">محتوای گزارش جلسه</b>'+
+      fld('دستور جلسه','<textarea name="agenda" class="inp" rows="2" placeholder="موارد دستور جلسه…"></textarea>')+
+      fld('حاضران (نقش‌ها)','<div class="att-grid">'+ROLES.map(r=>'<label class="chk"><input type="checkbox" data-role="'+esc(r)+'"> '+esc(r)+'</label>').join('')+'</div>')+
+      fld('مدعوین — غایبان = مدعوین منهای حاضران','<div class="att-grid">'+ROLES.map(r=>'<label class="chk"><input type="checkbox" data-invrole="'+esc(r)+'"> '+esc(r)+'</label>').join('')+'</div>')+
+      fld('مذاکرات و صورت‌جلسه','<textarea name="minutes" class="inp" rows="3" placeholder="خلاصه مذاکرات و صورت‌جلسه…"></textarea>')+
+      '<p class="tiny muted">وضعیت این جلسه «برگزار شد» ذخیره می‌شود؛ پس از ثبت گزارش، مصوبات با «مسئول اجرا» و «مهلت انجام مصوبه» در صفحهٔ جلسه اضافه می‌گردد.</p>'+
+    '</div>'+
+    '<div id="unitPlan">'+
+      fld('وضعیت','<select name="status" class="inp"><option>برنامه‌ریزی‌شده</option><option>برگزار شد</option><option>لغو شد</option></select>')+
+    '</div>'+
+    '<button type="submit" class="btn btn-primary btn-block">'+(needKindSel?'ثبت گزارش جلسه':'ایجاد جلسه')+'</button>'+
+   '</form>',{width:'720px'});
   const form=ov.querySelector('#mtForm');
-  function syncNum(){
+  function syncKind(){
     const k=needKindSel?$('#mtKind').value:kind;
     $('#mtNum').value=nextNumber('meetings',meetingPrefix(k));
+    const b=$('#boardRep'),u2=$('#unitPlan');
+    if(b) b.style.display=(k==='board')?'':'none';
+    if(u2) u2.style.display=(k==='board')?'none':'';
   }
-  if(needKindSel) $('#mtKind').addEventListener('change',syncNum);
-  syncNum();
+  if(needKindSel) $('#mtKind').addEventListener('change',syncKind);
+  syncKind();
   form.addEventListener('submit',e=>{
     e.preventDefault(); clearErrs(form);
     let ok=true;
@@ -2144,13 +2162,22 @@ function openMeetingModal(){
     const iso=jToIso(jd.jy,jd.jm,jd.jd);
     const org=(k==='org')?myOrg():'center';
     const unit=(k==='unit')?session.role:'';
-    run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by,org,kind,unit,time_fa,place) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
-      [num,form.title.value.trim(),iso,faDate(iso),form.status.value,'[]',session.username,org,k,unit,form.timefa.value.trim(),form.place.value.trim()]);
-    if(k==='board') logActivity('ایجاد جلسه هیئت امنا','جلسه «'+form.title.value.trim()+'» با شماره '+num+' توسط دبیرخانه مرکزی ثبت شد.');
-    else logActivity('ایجاد جلسه داخلی','جلسه «'+form.title.value.trim()+'» ('+meetingKindLabel({kind:k,org:org})+') با شماره '+num+' ثبت شد.');
+    if(k==='board'){
+      const att=Array.from(ov.querySelectorAll('input[data-role]')).filter(x=>x.checked).map(x=>x.dataset.role);
+      const inv=Array.from(ov.querySelectorAll('input[data-invrole]')).filter(x=>x.checked).map(x=>x.dataset.invrole);
+      run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by,org,kind,unit,time_fa,place,invitees,agenda,minutes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        [num,form.title.value.trim(),iso,faDate(iso),'برگزار شد',JSON.stringify(att),session.username,org,k,unit,form.timefa.value.trim(),form.place.value.trim(),JSON.stringify(inv),form.agenda.value.trim(),form.minutes.value.trim()]);
+      logActivity('ثبت گزارش جلسه هیئت امنا','گزارش «'+form.title.value.trim()+'» با شماره '+num+' ثبت شد ('+faNum(att.length)+' حاضر).');
+      if(session.username!=='imam') addNotif('imam','گزارش جلسه هیئت امنا ثبت شد','گزارش «'+form.title.value.trim()+'» ('+num+') در دبیرخانه ثبت شد؛ ثبت مصوبات با مسئول و مهلت انجام از صفحهٔ جلسه انجام می‌شود.');
+      renderNotifBadge();
+    }else{
+      run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by,org,kind,unit,time_fa,place) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+        [num,form.title.value.trim(),iso,faDate(iso),form.status.value,'[]',session.username,org,k,unit,form.timefa.value.trim(),form.place.value.trim()]);
+      logActivity('ایجاد جلسه داخلی','جلسه «'+form.title.value.trim()+'» ('+meetingKindLabel({kind:k,org:org})+') با شماره '+num+' ثبت شد.');
+    }
     markDirty(); saveNow(true);
     closeModal();
-    toast('جلسه با شماره '+faNum(num)+' ایجاد شد ✓');
+    toast(k==='board'?'گزارش جلسه با شماره '+faNum(num)+' ثبت شد ✓':'جلسه با شماره '+faNum(num)+' ایجاد شد ✓');
     renderView();
   });
 }
@@ -2198,7 +2225,7 @@ function openMeetingDetail(id){
    '</div>':'')+
    '<div class="divider"></div>'+
    '<h4 style="font-size:13.5px;color:var(--primary-dark);margin-bottom:10px">مصوبات جلسه ('+faNum(decs.length)+')</h4>'+
-   (decs.length?'<div class="table-wrap"><table class="tbl" style="min-width:560px"><thead><tr><th>مصوبه</th><th>مسئول</th><th>ضرب‌الاجل</th><th>وضعیت وظیفه</th></tr></thead><tbody>'+
+   (decs.length?'<div class="table-wrap"><table class="tbl" style="min-width:560px"><thead><tr><th>مصوبه</th><th>مسئول اجرا</th><th>مهلت انجام مصوبه</th><th>وضعیت اجرا</th></tr></thead><tbody>'+
      decs.map((d,di)=>{
        const t=d.tid||d.task_id;
        let st=d.tstatus||'—';
@@ -2211,12 +2238,12 @@ function openMeetingDetail(id){
    :'<p class="muted tiny">مصوبه‌ای ثبت نشده است.</p>')+
    (canMng?
    '<div class="inline-box" style="margin-top:14px">'+
-     '<b style="font-size:12.5px;color:var(--primary-dark);display:block;margin-bottom:10px">افزودن مصوبه (وظیفه به‌صورت خودکار ایجاد می‌شود)</b>'+
+     '<b style="font-size:12.5px;color:var(--primary-dark);display:block;margin-bottom:10px">افزودن مصوبه (مسئول اجرا و مهلت انجام مصوبه — وظیفه به‌صورت خودکار ایجاد می‌شود)</b>'+
      '<form id="decForm" novalidate>'+
        fld('عنوان مصوبه *','<input name="title" class="inp" placeholder="عنوان مصوبه…">')+
        '<div class="frow2">'+
          fld('مسئول *','<select name="assignee" class="inp">'+users.map(u=>'<option value="'+u.username+'">'+esc(u.display_name)+'</option>').join('')+'</select>')+
-         fld('ضرب‌الاجل (شمسی) *','<input name="deadline" class="inp" placeholder="۱۴۰۵/۰۸/۲۰">')+
+         fld('مهلت انجام مصوبه (شمسی) *','<input name="deadline" class="inp" placeholder="۱۴۰۵/۰۸/۲۰">')+
        '</div>'+
        '<button type="submit" class="btn btn-primary btn-sm">ثبت مصوبه و ایجاد وظیفه</button>'+
      '</form>'+
@@ -3425,6 +3452,41 @@ const ACTIONS={
     markDirty(); saveNow(true); toast('ثبت شد'); renderView();
   },
   secTab:d=>{ window._secTab=d.k; renderView(); },
+  /* v2.8 — پنل تعلیم و تربیت */
+  eduTab:d=>{ window._eduTab=d.k; renderView(); },
+  eduClassNew:()=>openEduClassModal(null),
+  eduClassEdit:d=>openEduClassModal(+d.id),
+  eduClassDel:async d=>{
+    const C=one('SELECT * FROM edu_classes WHERE id=?',[+d.id]); if(!C) return;
+    if(!await confirmDlg('حذف کلاس','کلاس «'+C.title+'» و همهٔ جلسات و حضور و غیاب آن حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM edu_attendance WHERE class_id=?',[C.id]);
+    run('DELETE FROM edu_sessions WHERE class_id=?',[C.id]);
+    run('DELETE FROM edu_classes WHERE id=?',[C.id]);
+    logActivity('حذف کلاس','کلاس «'+C.title+'» حذف شد.');
+    markDirty(); saveNow(true); toast('کلاس حذف شد'); renderView();
+  },
+  eduClassDossier:d=>openEduClassDossier(+d.id),
+  eduAttOpen:d=>openEduAttModal(+d.id),
+  eduSessDel:async d=>{
+    if(!await confirmDlg('حذف جلسه','این جلسه و حضور و غیاب آن حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM edu_attendance WHERE session_id=?',[+d.id]);
+    run('DELETE FROM edu_sessions WHERE id=?',[+d.id]);
+    markDirty(); saveNow(true); toast('جلسه حذف شد'); renderView();
+  },
+  eduCircSess:d=>openEduCircSess(+d.id),
+  eduMemNew:()=>openEduMemModal(null),
+  eduMemEdit:d=>openEduMemModal(+d.id),
+  eduMemView:d=>openEduMemView(+d.id),
+  eduMemDel:async d=>{
+    const m=one('SELECT * FROM edu_members WHERE id=?',[+d.id]); if(!m) return;
+    if(!await confirmDlg('حذف پرونده تربیتی','پروندهٔ «'+m.name+'» حذف شود؟ این عمل بازگشت‌پذیر نیست.',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM edu_members WHERE id=?',[m.id]);
+    logActivity('حذف پرونده تربیتی','پرونده «'+m.name+'» حذف شد.');
+    markDirty(); saveNow(true); toast('پرونده حذف شد'); renderView();
+  },
+  eduMemPrint:d=>eduMemPrintAction(+d.id),
+  eduAttPrint:()=>eduAttPrint(),
+  eduPerfPrint:()=>eduPerfPrint(),
   adminOK:async d=>{
     const L=one('SELECT * FROM letters WHERE id=?',[+d.id]); if(!L) return;
     if(!isCentralSec()){ toast('بررسی اداری در صلاحیت دبیرخانه مرکزی است','error'); return; }
@@ -3742,8 +3804,8 @@ function isCentralSec(){ return !!session&&(session.username==='imam'||session.u
 function letterCanSee(L){
   const un=session.username;
   if(un==='imam') return true;
-  if(un==='secretary') return L.org!=='heyat';
-  if(un==='heyat') return L.org==='heyat'||L.created_by==='heyat';
+  /* v2.8 — مکاتبات هیئت هم مثل سایر واحدها در جریان دبیرخانه مرکزی است */
+  if(un==='secretary') return true;
   if(un==='board') return L.created_by==='board';
   if(myOrg()==='center') return L.org!=='heyat';
   return L.created_by===un;
@@ -3751,15 +3813,13 @@ function letterCanSee(L){
 function letterScope(){
   const un=session.username;
   if(un==='imam') return {sql:'1=1',p:[]};
-  if(un==='secretary') return {sql:"COALESCE(org,'center')<>'heyat'",p:[]};
-  if(un==='heyat') return {sql:"(COALESCE(org,'center')='heyat' OR created_by='heyat')",p:[]};
+  if(un==='secretary') return {sql:'1=1',p:[]};
   if(un==='board') return {sql:"created_by='board'",p:[]};
   if(myOrg()==='center') return {sql:"COALESCE(org,'center')<>'heyat'",p:[]};
   return {sql:'created_by=?',p:[un]};
 }
-function letterPrefix(){ const jy=isoToJ(todayIso()).jy; return session.username==='heyat'? jy+'/هیئت/' : jy+'/دب/'; }
+function letterPrefix(){ const jy=isoToJ(todayIso()).jy; return jy+'/دب/'; }
 function letterHeadInfo(){
-  if(session.username==='heyat') return {t:'دبیرخانه اختصاصی هیئت فداییان حضرت زینب (س)',d:'ثبت، شماره‌گذاری و بایگانی مستقل نامه‌های هیئت — مستقل از دبیرخانه مرکزی'};
   if(myOrg()!=='center') return {t:'مکاتبات واحد شما',d:'نامه‌های ثبت‌شده شما در صف بررسی دبیرخانه مرکزی مسجد'};
   return {t:'دبیرخانه — نامه‌ها',d:'ثبت، ارجاع و پیگیری نامه‌های وارده، صادره و داخلی'};
 }
@@ -4113,10 +4173,22 @@ const ENT={
   cols:[{k:'name',l:'عضو'},{k:'duty',l:'مسئولیت'},{k:'phone',l:'تماس'}]},
  heq:{table:'equipment',title:'تجهیزات اختصاصی هیئت',icon:'inbox',
   fields:[{k:'name',l:'نام تجهیزات *',t:'text'},{k:'qty',l:'تعداد',t:'num'},{k:'condition_txt',l:'وضعیت',t:'sel',opts:['سالم','نیاز به تعمیر','خراب']},{k:'holder',l:'تحویل‌گیرنده',t:'text'},{k:'note',l:'تحویل، بازگشت یا ملاحظات',t:'ta'}],
-  cols:[{k:'name',l:'تجهیزات'},{k:'qty',l:'تعداد'},{k:'condition_txt',l:'وضعیت',f:'badge'},{k:'holder',l:'تحویل‌گیرنده'}]}
+  cols:[{k:'name',l:'تجهیزات'},{k:'qty',l:'تعداد'},{k:'condition_txt',l:'وضعیت',f:'badge'},{k:'holder',l:'تحویل‌گیرنده'}]},
+ /* v2.8 — پنل تعلیم و تربیت */
+ ecoach:{table:'edu_coaches',title:'مربیان و استادان',icon:'users',
+  fields:[{k:'name',l:'نام مربی / استاد *',t:'text'},{k:'expertise',l:'تخصص',t:'text'},{k:'background',l:'سوابق',t:'ta'},{k:'schedule',l:'برنامه کاری',t:'ta'},{k:'performance',l:'گزارش عملکرد',t:'ta'}],
+  cols:[{k:'name',l:'نام'},{k:'expertise',l:'تخصص'},{k:'schedule',l:'برنامه کاری'},{k:'performance',l:'گزارش عملکرد'}]},
+ ecirc:{table:'edu_circles',title:'حلقه‌های تربیتی',icon:'users',
+  fields:[{k:'name',l:'نام حلقه *',t:'text'},{k:'leader',l:'مربی / سرگروه',t:'text'},{k:'members',l:'اعضا (با ویرگول جدا کنید)',t:'ta'},{k:'note',l:'موضوعات و گزارش‌ها',t:'ta'}],
+  cols:[{k:'name',l:'حلقه'},{k:'leader',l:'مربی / سرگروه'},{k:'members',l:'اعضا'},{k:'note',l:'موضوعات و گزارش‌ها'}]},
+ ecamp:{table:'edu_camps',title:'اردوها و برنامه‌های تربیتی',icon:'calendar',
+  fields:[{k:'title',l:'عنوان اردو / برنامه *',t:'text'},{k:'date_iso',l:'تاریخ (شمسی)',t:'date'},{k:'place',l:'مکان',t:'text'},{k:'responsible',l:'مسئول',t:'text'},{k:'companions',l:'مربیان همراه',t:'text'},{k:'participants',l:'شرکت‌کنندگان',t:'ta'},{k:'needs',l:'نیازهای مالی و پشتیبانی',t:'ta'},{k:'permits',l:'مجوزها',t:'ta'},{k:'report',l:'گزارش نهایی',t:'ta'}],
+  cols:[{k:'title',l:'عنوان'},{k:'date_iso',l:'تاریخ',f:'date'},{k:'responsible',l:'مسئول'},{k:'needs',l:'نیازها'},{k:'report',l:'گزارش نهایی'}]}
 };
 
 /* ============================================================
+   v2.8 — مکاتبات هیئت مثل سایر واحدها (دبیرخانه مرکزی) · جلسات هیئت امنا بدون مرحلهٔ تشکیل جلسه (ثبت گزارش جلسه: حاضران/غایبان/مصوبه با مسئول و مهلت انجام) · پنل تخصصی تعلیم و تربیت (۸ بخش)
+   ============================================================
    v2.6 — قالب رسمی نامه برون‌سازمانی (کادر سه‌خط + سربرگ + B Zar + امضای خودکار امام جماعت) · حذف بخش‌های تخصصی و مدیریت (آموزش، جلسات، وظایف) · گزارش مالی در پنل عمومی
    ============================================================
    v2.5 — پنل تخصصی دبیر هیئت امنا و دبیرخانه مرکزی (سند §۳-۲)
@@ -4206,7 +4278,8 @@ function extLetterHead(x){
 
 /* ---------- بخش ۱: دبیرخانه مرکزی — کارتابل بررسی اداری ---------- */
 function secScopeLetters(){
-  return all("SELECT * FROM letters WHERE COALESCE(org,'center')<>'heyat' ORDER BY id DESC");
+  /* v2.8 — مکاتبات هیئت هم در دبیرخانه مرکزی */
+  return all("SELECT * FROM letters ORDER BY id DESC");
 }
 function renderSecSec(){
   const L=secScopeLetters();
@@ -4238,7 +4311,7 @@ function renderSecSec(){
     '<div class="stat-card accent-danger"><span class="stat-label">بازگشت‌شده (ناقص)</span><b class="stat-num c-danger">'+faNum(back.length)+'</b><small class="muted">نیازمند تکمیل</small></div>'+
     '<div class="stat-card accent-gold"><span class="stat-label">بایگانی اسناد</span><b class="stat-num">'+faNum(arch.length)+'</b><small class="muted">اسناد رسمی مسجد</small></div>'+
    '</div>'+
-   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>چارچوب نقش دبیرخانه:</b> دبیرخانه فقط مسئول بررسی اداری (تکمیل اطلاعات و پیوست‌ها، شماره‌گذاری و ارجاع) است و به‌جای مقصد درباره محتوای تخصصی نامه تصمیم‌گیری نمی‌کند؛ نامهٔ وارده، صادره و داخلی با شماره‌گذاری خودکار ثبت و پاسخ‌ها پیگیری می‌شود. دبیرخانه اختصاصی هیئت مستقل است و در این تابلو نمایش داده نمی‌شود (§۳-۲).</p></div>'+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>چارچوب نقش دبیرخانه:</b> دبیرخانه فقط مسئول بررسی اداری (تکمیل اطلاعات و پیوست‌ها، شماره‌گذاری و ارجاع) است و به‌جای مقصد درباره محتوای تخصصی نامه تصمیم‌گیری نمی‌کند؛ نامهٔ وارده، صادره و داخلی با شماره‌گذاری خودکار ثبت و پاسخ‌ها پیگیری می‌شود. نامه‌های هیئت هم مثل سایر واحدها از «مکاتبات» پنل عمومی در همین جریان دبیرخانه مرکزی ثبت می‌شود (§۳-۲).</p></div>'+
    '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('inbox',17)+' صف بررسی اداری ('+faNum(pend.length)+')</h3>'+
     (pend.length?pend.map(function(x){return rowHtml(x,actBtns(x))}).join(''):emptyState('نامه‌ای در صف بررسی نیست'))+'</div>'+
    '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('send',17)+' نامه‌های ارجاع‌شده و پیگیری پاسخ ('+faNum(referred.length)+')</h3>'+
@@ -4426,24 +4499,24 @@ function renderSecMeet(){
   const rowHtml=function(m){
     return '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b>'+esc(m.title)+'</b>'+meetBadge(m.status)+
      '<span style="margin-right:auto;display:flex;gap:6px">'+
-     '<button class="btn btn-outline btn-sm" data-act="meetingView" data-id="'+m.id+'">مدیریت جلسه</button>'+
+     '<button class="btn btn-outline btn-sm" data-act="meetingView" data-id="'+m.id+'">مشاهده و مصوبات</button>'+
      '<button class="btn btn-outline btn-sm" data-act="minPrint" data-id="'+m.id+'">'+icon('printer',13)+' PDF</button>'+
      '<button class="btn btn-outline btn-sm" data-act="decSumPrint" data-id="'+m.id+'">'+icon('file',13)+' خلاصه مصوبات</button></span></div>'+
      '<p class="tiny muted">شماره: '+esc(m.number)+' · '+faDateLong(m.date_iso)+(m.time_fa?' · ساعت '+esc(m.time_fa):'')+(m.place?' · '+esc(m.place):'')+'</p></div>';
   };
   return ''+
-   '<div class="page-head"><div><h2>دبیر جلسات هیئت امنا</h2><p class="muted">ثبت جلسه (تاریخ، ساعت، مکان)، مدعوین/حاضران/غایبان، دستور جلسه، مذاکرات، صورت‌جلسه، مصوبات شماره‌گذاری‌شده با مسئول و مهلت، PDF رسمی و بایگانی</p></div>'+
-   '<button class="btn btn-primary no-print" data-act="meetingNew">'+icon('plus')+' ثبت جلسه هیئت امنا</button></div>'+
+   '<div class="page-head"><div><h2>ثبت گزارش جلسات هیئت امنا</h2><p class="muted">بدون مرحلهٔ «تشکیل جلسه» — گزارش هر جلسه مستقیماً ثبت می‌شود: اینکه چه کسانی حضور داشتند، غایبان، دستور جلسه و صورت‌جلسه؛ سپس مصوبات شماره‌گذاری‌شده با «مسئول اجرا» و «مهلت انجام مصوبه» و پیگیری تا اتمام</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="meetingNew">'+icon('plus')+' ثبت گزارش جلسه هیئت امنا</button></div>'+
    '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>قانون قطعی (§۳-۲):</b> مدیریت جلسات هیئت امنا فقط در اختیار دبیرخانه مرکزی و امام جماعت است؛ هیچ معاونت یا تشکل دیگری منوی مستقل یا حق ثبت/مدیریت این جلسات ندارد. معاونت‌ها فقط با دعوت حضور می‌یابند یا درباره مصوبات مرتبط گزارش می‌دهند و پیگیری اجرای مصوبات بر عهده دبیرخانه مرکزی است — حتی اگر مسئول اجرا یکی از معاونت‌ها باشد.</p></div>'+
    '<div class="grid-stats">'+
-    '<div class="stat-card"><span class="stat-label">برنامه‌ریزی‌شده</span><b class="stat-num">'+faNum(planned.length)+'</b><small class="muted">جلسات پیش‌رو</small></div>'+
-    '<div class="stat-card accent-success"><span class="stat-label">برگزار شده</span><b class="stat-num c-success">'+faNum(done.length)+'</b><small class="muted">در آرشیو جلسات</small></div>'+
-    '<div class="stat-card accent-gold"><span class="stat-label">کل مصوبات</span><b class="stat-num">'+faNum(all("SELECT COUNT(*) c FROM decisions d JOIN meetings m ON m.id=d.meeting_id WHERE m.kind='board'").map(function(r){return r.c})[0]||0)+'</b><small class="muted">در حال پیگیری دبیرخانه</small></div>'+
+    '<div class="stat-card accent-success"><span class="stat-label">گزارش‌های ثبت‌شده</span><b class="stat-num c-success">'+faNum(done.length)+'</b><small class="muted">بایگانی جلسات هیئت امنا</small></div>'+
+    '<div class="stat-card accent-gold"><span class="stat-label">کل مصوبات</span><b class="stat-num">'+faNum(all("SELECT COUNT(*) c FROM decisions d JOIN meetings m ON m.id=d.meeting_id WHERE m.kind='board'").map(function(r){return r.c})[0]||0)+'</b><small class="muted">با مسئول و مهلت انجام</small></div>'+
+    '<div class="stat-card"><span class="stat-label">مصوبات در جریان</span><b class="stat-num">'+faNum(all("SELECT COUNT(*) c FROM decisions d LEFT JOIN tasks t ON t.id=d.task_id JOIN meetings m ON m.id=d.meeting_id WHERE m.kind='board' AND (t.status IS NULL OR t.status!='انجام‌شده')").map(function(r){return r.c})[0]||0)+'</b><small class="muted">در حال پیگیری دبیرخانه</small></div>'+
    '</div>'+
-   '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('calendar',17)+' تقویم جلسات هیئت امنا ('+faNum(planned.length)+')</h3>'+
-    (planned.length?planned.map(rowHtml).join(''):emptyState('جلسه برنامه‌ریزی‌شده‌ای نیست'))+'</div>'+
-   '<div class="card pad"><h3>'+icon('inbox',17)+' بایگانی جلسات ('+faNum(done.length)+')</h3>'+
-    (done.length?done.map(rowHtml).join(''):emptyState('جلسه‌ای برگزار نشده است'))+'</div>';
+   (planned.length?'<div class="card pad" style="margin-bottom:14px"><h3>'+icon('calendar',17)+' ثبت‌های قدیمی برنامه‌ریزی‌شده ('+faNum(planned.length)+')</h3>'+
+    planned.map(rowHtml).join('')+'</div>':'')+
+   '<div class="card pad"><h3>'+icon('inbox',17)+' بایگانی گزارش جلسات ('+faNum(done.length)+')</h3>'+
+    (done.length?done.map(rowHtml).join(''):emptyState('هنوز گزارش جلسه‌ای ثبت نشده است — با دکمهٔ «ثبت گزارش جلسه هیئت امنا» شروع کنید'))+'</div>';
 }
 function meetingPrintHtml(m,mode){
   const decs=all('SELECT d.*, t.deadline_iso AS tdead, t.status AS tstatus FROM decisions d LEFT JOIN tasks t ON t.id=d.task_id WHERE d.meeting_id=? ORDER BY d.id',[m.id]);
@@ -4554,7 +4627,8 @@ function renderSecPanel(root){
 const PANEL_KIND={
  culture:{title:'پنل معاونت فرهنگی',desc:'کارگروه‌ها، برنامه‌ها و بانک ایده — طبق سند مأموریت §۳-۳ (بدون حق مدیریت جلسات هیئت امنا)',ents:['wg','cprog','occ','idea']},
  support:{title:'پنل عمران و پشتیبانی',desc:'پروژه‌ها، اموال، تعمیرات و املاک — طبق سند مأموریت §۳-۶',ents:['proj','asset','fix','prop']},
- heyat:{title:'پنل هیئت فداییان حضرت زینب (س)',desc:'مراسم، اعضا و تجهیزات اختصاصی — طبق سند مأموریت §۳-۷ (به‌همراه دبیرخانه مستقل در بخش دبیرخانه)',ents:['cer','hmem','heq']}
+ heyat:{title:'پنل هیئت فداییان حضرت زینب (س)',desc:'مراسم، اعضا و تجهیزات اختصاصی — طبق سند مأموریت §۳-۷ (مکاتبات هیئت مثل سایر واحدها از پنل عمومی)',ents:['cer','hmem','heq']},
+ education:{title:'پنل معاونت تعلیم و تربیت',desc:'کلاس‌ها، حضور و غیاب، مربیان، حلقه‌های تربیتی، اردوها و پرونده تربیتی اعضا',ents:['ecoach','ecirc','ecamp']}
 };
 
 /* ============================================================
@@ -4573,7 +4647,7 @@ const CULT_TABS=[
 ];
 function imamPanelTabs(){
   if(!session||session.username!=='imam') return '';
-  const tabDefs=[['secretary','دبیر هیئت امنا'],['culture','معاونت فرهنگی'],['support','عمران و پشتیبانی'],['heyat','هیئت فداییان (س)']];
+  const tabDefs=[['secretary','دبیر هیئت امنا'],['culture','معاونت فرهنگی'],['support','عمران و پشتیبانی'],['heyat','هیئت فداییان (س)'],['education','معاونت تعلیم و تربیت']];
   return '<div class="seg" style="margin-bottom:12px;flex-wrap:wrap">'+tabDefs.map(function(td){
     return '<button class="seg-btn '+((window._panelTab===td[0])||(!window._panelTab&&td[0]==='culture')?'on':'')+'" data-act="panelTab" data-k="'+td[0]+'">'+td[1]+'</button>';
   }).join('')+'</div>';
@@ -4737,6 +4811,663 @@ function renderCultPanel(root){
   else body=cultIdeas();
   root.innerHTML=imamPanelTabs()+head+tabs+body;
 }
+/* ============================================================
+   v2.8 — پنل تخصصی تعلیم و تربیت (۸ بخش طبق مشخصات کارفرما)
+   ۱) داشبورد  ۲) مدیریت کلاس‌ها  ۳) حضور و غیاب  ۴) مربیان و استادان
+   ۵) حلقه‌های تربیتی  ۶) اردوها و برنامه‌های تربیتی
+   ۷) پرونده تربیتی اعضا (محرمانه)  ۸) گزارش عملکرد
+   محرمانگی: مربی فقط افراد تحت مسئولیت خود؛ معاون دسترسی مدیریتی؛
+   سایر معاونت‌ها و تشکل‌ها هیچ دسترسی‌ای به پرونده‌ها ندارند.
+   ============================================================ */
+const EDU_TABS=[
+ {id:'dash',label:'داشبورد'},
+ {id:'cls',label:'مدیریت کلاس‌ها'},
+ {id:'att',label:'حضور و غیاب'},
+ {id:'coach',label:'مربیان و استادان'},
+ {id:'circ',label:'حلقه‌های تربیتی'},
+ {id:'camp',label:'اردوها و برنامه‌ها'},
+ {id:'mem',label:'پرونده تربیتی اعضا'},
+ {id:'perf',label:'گزارش عملکرد'}
+];
+const EDU_AGES=['خردسالان','کودکان','نوجوانان','جوانان','بزرگسالان','همه گروه‌های سنی'];
+const EDU_LVLS=['نیازمند توجه و تقویت','در حال رشد','مطلوب','توانمند و پیشرو'];
+const EDU_IND=[
+ {k:'ind_belief',t:'الف) رشد اعتقادی و معرفتی',items:['آشنایی با مبانی اعتقادی','آشنایی با قرآن و اهل‌بیت','مشارکت در جلسات معرفتی','علاقه‌مندی به مباحث معرفتی']},
+ {k:'ind_worship',t:'ب) رشد عبادی',items:['آشنایی با احکام','مشارکت در برنامه‌های عبادی','علاقه‌مندی به قرآن و معنویت']},
+ {k:'ind_ethics',t:'ج) رشد اخلاقی و رفتاری',items:['مسئولیت‌پذیری','نظم','احترام و اخلاق جمعی','امانت‌داری و صداقت','همکاری']},
+ {k:'ind_social',t:'د) رشد اجتماعی و تشکیلاتی',items:['همکاری گروهی','مشارکت جمعی','پذیرش مسئولیت','مهارت کار گروهی','فعالیت مسجد و محله']},
+ {k:'ind_talent',t:'هـ) استعدادها و توانمندی‌ها',items:['علمی و تحصیلی','قرآنی','فرهنگی و هنری','مدیریتی و اجرایی','مهارت‌های فردی و اجتماعی','علایق']}
+];
+function eduMembersOf(C){ try{ const m=JSON.parse(C.members||'[]'); return Array.isArray(m)?m:[]; }catch(e){ return []; } }
+function eduHeld(cid){ return all("SELECT * FROM edu_sessions WHERE class_id=? AND status='برگزارشده' ORDER BY date_iso",[cid]); }
+function eduAttPct(cid,mname){
+  const held=eduHeld(cid);
+  if(!held.length) return {ok:0,late:0,abs:0,pct:null};
+  const ids=held.map(s=>s.id);
+  const rows=all('SELECT * FROM edu_attendance WHERE class_id=? AND mname=?',[cid,mname]).filter(a=>ids.indexOf(a.session_id)>=0);
+  const ok=rows.filter(r=>r.status==='حاضر').length, late=rows.filter(r=>r.status==='تأخیر').length;
+  return {ok:ok,late:late,abs:held.length-ok-late,pct:Math.round((ok+late)*100/held.length)};
+}
+function renderEduPanel(root){
+  const tab=window._eduTab||'dash';
+  const tabs='<div class="seg" style="margin-bottom:14px;flex-wrap:wrap">'+EDU_TABS.map(t=>
+    '<button class="seg-btn '+(tab===t.id?'on':'')+'" data-act="eduTab" data-k="'+t.id+'">'+t.label+'</button>').join('')+'</div>';
+  const head='<div class="page-head"><div><h2>پنل معاونت تعلیم و تربیت</h2><p class="muted">داشبورد · مدیریت کلاس‌ها · حضور و غیاب · مربیان و استادان · حلقه‌های تربیتی · اردوها · پرونده تربیتی اعضا · گزارش عملکرد</p></div></div>';
+  let body;
+  if(tab==='dash') body=eduDash();
+  else if(tab==='cls') body=eduClasses();
+  else if(tab==='att') body=eduAtt();
+  else if(tab==='coach') body='<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>مربیان و استادان:</b> ثبت مشخصات، تخصص و سوابق، برنامه کاری و گزارش عملکرد. کلاس‌های تحت مسئولیت هر مربی به‌صورت خودکار از «مدیریت کلاس‌ها» محاسبه می‌شود.</p></div>'+entSection('ecoach')+eduCoachClasses();
+  else if(tab==='circ') body='<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>حلقه‌های تربیتی:</b> تعریف حلقه، تعیین مربی یا سرگروه، تعیین اعضا و ثبت جلسات با موضوعات و گزارش‌ها.</p></div>'+entSection('ecirc')+eduCircleSess();
+  else if(tab==='camp') body='<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>اردوها و برنامه‌های تربیتی:</b> ثبت اردو با مسئول، مربیان همراه، شرکت‌کنندگان، نیازهای مالی و پشتیبانی، مجوزها و گزارش نهایی.</p></div>'+entSection('ecamp');
+  else if(tab==='mem') body=eduMems();
+  else body=eduPerf();
+  root.innerHTML=imamPanelTabs()+head+tabs+body;
+  if(tab==='att') bindEduAtt();
+}
+/* ۱) داشبورد */
+function eduDash(){
+  const t=todayIso();
+  const cls=all('SELECT * FROM edu_classes ORDER BY id DESC');
+  const act=cls.filter(c=>c.status==='فعال');
+  const coaches=one('SELECT COUNT(*) c FROM edu_coaches').c;
+  const mems=one('SELECT COUNT(*) c FROM edu_members').c;
+  const heldTotal=one("SELECT COUNT(*) c FROM edu_sessions WHERE status='برگزارشده'").c;
+  const upc=all("SELECT s.*, c.title AS ctitle FROM edu_sessions s LEFT JOIN edu_classes c ON c.id=s.class_id WHERE s.status='برنامه‌ریزی‌شده' AND s.date_iso<>'' AND s.date_iso>=? ORDER BY s.date_iso LIMIT 6",[t]);
+  let sum=0,n=0;
+  cls.forEach(c=>{ eduMembersOf(c).forEach(m=>{ const p=eduAttPct(c.id,m); if(p.pct!=null){ sum+=p.pct; n++; } }); });
+  const avg=n?Math.round(sum/n):null;
+  const pastPlanned=all("SELECT s.*, c.title AS ctitle FROM edu_sessions s LEFT JOIN edu_classes c ON c.id=s.class_id WHERE s.status='برنامه‌ریزی‌شده' AND s.date_iso<>'' AND s.date_iso<?",[t]);
+  const noAtt=all("SELECT s.*, c.title AS ctitle FROM edu_sessions s LEFT JOIN edu_classes c ON c.id=s.class_id WHERE s.status='برگزارشده'").filter(s=>!one('SELECT COUNT(*) c FROM edu_attendance WHERE session_id=?',[s.id]).c);
+  const lateRev=all("SELECT name,review_iso FROM edu_members WHERE review_iso IS NOT NULL AND review_iso<>'' AND review_iso<?",[t]);
+  const campNoRep=all("SELECT * FROM edu_camps WHERE date_iso IS NOT NULL AND date_iso<>'' AND date_iso<? AND (report IS NULL OR report='')",[t]);
+  const followCount=pastPlanned.length+noAtt.length+lateRev.length+campNoRep.length;
+  return '<div class="grid-stats">'+
+   '<div class="stat-card accent-success"><span class="stat-label">کلاس‌های فعال</span><b class="stat-num c-success">'+faNum(act.length)+'</b><small class="muted">از '+faNum(cls.length)+' کلاس ثبت‌شده</small></div>'+
+   '<div class="stat-card"><span class="stat-label">مربیان</span><b class="stat-num">'+faNum(coaches)+'</b><small class="muted">مربیان و استادان ثبت‌شده</small></div>'+
+   '<div class="stat-card"><span class="stat-label">اعضا</span><b class="stat-num">'+faNum(mems)+'</b><small class="muted">پرونده تربیتی تشکیل‌شده</small></div>'+
+   '<div class="stat-card accent-gold"><span class="stat-label">جلسات برگزارشده</span><b class="stat-num">'+faNum(heldTotal)+'</b><small class="muted">کل کلاس‌ها</small></div>'+
+   '<div class="stat-card"><span class="stat-label">جلسات پیش‌رو</span><b class="stat-num">'+faNum(upc.length)+'</b><small class="muted">برنامه‌ریزی‌شده</small></div>'+
+   '<div class="stat-card"><span class="stat-label">وضعیت حضور و غیاب</span><b class="stat-num">'+(avg!=null?faNum(avg)+'٪':'—')+'</b><small class="muted">میانگین حضور اعضا</small></div>'+
+   '<div class="stat-card '+(followCount?'accent-danger':'')+'"><span class="stat-label">نیازمند پیگیری</span><b class="stat-num '+(followCount?'c-danger':'')+'">'+faNum(followCount)+'</b><small class="muted">موارد باز</small></div>'+
+  '</div>'+
+  '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px">'+
+   '<div class="card pad"><h3>'+icon('calendar',17)+' جلسات پیش‌رو</h3>'+(upc.length?upc.map(s=>'<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(s.ctitle||'—')+'</b><span class="badge b-warn">برنامه‌ریزی‌شده</span></div><small class="muted">'+faDateLong(s.date_iso)+(s.topic?' · '+esc(s.topic):'')+'</small></div>').join(''):emptyState('جلسه برنامه‌ریزی‌شده‌ای ندارید'))+'</div>'+
+   '<div class="card pad"><h3>'+icon('book',17)+' کلاس‌های فعال</h3>'+(act.length?act.slice(0,6).map(c=>'<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(c.title)+'</b><span class="badge b-neutral">'+faNum(eduMembersOf(c).length)+' عضو</span></div><small class="muted">'+esc(c.coach||'بی‌مربی')+' · '+esc((c.days||'')+(c.time_fa?' · '+c.time_fa:''))+'</small></div>').join(''):emptyState('کلاس فعالی ثبت نشده است'))+'</div>'+
+   '<div class="card pad"><h3>'+icon('alert',17)+' موارد نیازمند پیگیری</h3>'+
+    (followCount?
+     (pastPlanned.map(s=>'<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>جلسهٔ گذشته بدون ثبت برگزاری</b><span class="badge b-danger">پیگیری</span></div><small class="muted">'+esc(s.ctitle||'—')+' · '+faDateLong(s.date_iso)+'</small></div>').join('')+
+      noAtt.map(s=>'<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>جلسهٔ برگزارشده بدون حضور و غیاب</b><span class="badge b-warn">تکمیل شود</span></div><small class="muted">'+esc(s.ctitle||'—')+' · '+faDateLong(s.date_iso)+'</small></div>').join('')+
+      lateRev.map(m=>'<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>بازبینی معوق پرونده تربیتی</b><span class="badge b-warn">بازبینی</span></div><small class="muted">'+esc(m.name)+' · '+faDateLong(m.review_iso)+'</small></div>').join('')+
+      campNoRep.map(cp=>'<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>اردوی بدون گزارش نهایی</b><span class="badge b-warn">گزارش</span></div><small class="muted">'+esc(cp.title)+' · '+faDateLong(cp.date_iso)+'</small></div>').join(''))
+    :emptyState('مورد بازی وجود ندارد ✓'))+'</div>'+
+  '</div>';
+}
+/* ۲) مدیریت کلاس‌ها */
+function eduClasses(){
+  const cls=all('SELECT * FROM edu_classes ORDER BY id DESC');
+  const row=c=>{
+    const mem=eduMembersOf(c);
+    const held=eduHeld(c.id).length;
+    const planned=one("SELECT COUNT(*) c FROM edu_sessions WHERE class_id=? AND status='برنامه‌ریزی‌شده'",[c.id]).c;
+    return '<tr><td><b>'+esc(c.title)+'</b>'+(c.topic?'<small class="muted" style="display:block">'+esc(c.topic)+'</small>':'')+'</td>'+
+     '<td>'+esc(c.age_group||'—')+'</td><td>'+esc(c.coach||'—')+'</td>'+
+     '<td class="tiny">'+esc(c.days||'—')+(c.time_fa?' · '+esc(c.time_fa):'')+(c.place?' · '+esc(c.place):'')+'</td>'+
+     '<td>'+faNum(mem.length)+(c.capacity?' / '+faNum(c.capacity):'')+'</td>'+
+     '<td class="tiny">'+faNum(held)+' برگزارشده'+(planned?' · '+faNum(planned)+' پیش‌رو':'')+'</td>'+
+     '<td><span class="badge '+entBadgeCls(c.status)+'">'+esc(c.status)+'</span></td>'+
+     '<td><div style="display:flex;gap:4px;justify-content:center">'+
+      '<button class="btn btn-outline btn-sm" data-act="eduClassDossier" data-id="'+c.id+'">پرونده کلاس</button>'+
+      '<button class="icon-btn" data-act="eduClassEdit" data-id="'+c.id+'" title="ویرایش">'+icon('edit',15)+'</button>'+
+      '<button class="icon-btn danger" data-act="eduClassDel" data-id="'+c.id+'" title="حذف" style="color:var(--danger)">'+icon('trash',15)+'</button>'+
+     '</div></td></tr>';
+  };
+  return '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>گردش کلاس:</b> ایجاد کلاس (عنوان و موضوع، گروه سنی، مربی، روز و ساعت و مکان، ظرفیت) ← مدیریت اعضا ← ثبت جلسات برنامه‌ریزی‌شده ← ثبت جلسات برگزارشده و حضور و غیاب ← وضعیت فعال / غیرفعال. <b>برای هر کلاس یک پروندهٔ اختصاصی تشکیل می‌شود.</b></p></div>'+
+   '<div class="card pad"><h3 style="display:flex;align-items:center;gap:8px">'+icon('book',18)+' مدیریت کلاس‌ها'+
+    '<button class="btn btn-primary btn-sm" data-act="eduClassNew" style="margin-inline-start:auto">'+icon('plus',14)+' ایجاد کلاس</button></h3>'+
+    '<div style="margin-top:10px">'+(cls.length?'<div class="table-wrap"><table class="tbl" style="min-width:880px"><thead><tr><th>کلاس</th><th>گروه سنی</th><th>مربی</th><th>زمان و مکان</th><th>اعضا</th><th>جلسات</th><th>وضعیت</th><th></th></tr></thead><tbody>'+cls.map(row).join('')+'</tbody></table></div>':emptyState('کلاسی ثبت نشده است — با «ایجاد کلاس» شروع کنید'))+'</div></div>';
+}
+function openEduClassModal(id){
+  const r=id?one('SELECT * FROM edu_classes WHERE id=?',[id]):null;
+  const coaches=all('SELECT name FROM edu_coaches ORDER BY name');
+  const ov=openModal(r?'ویرایش کلاس':'ایجاد کلاس جدید',
+   '<form id="eduClsForm" novalidate>'+
+    fld('عنوان کلاس *','<input name="title" class="inp" value="'+esc(r?r.title:'')+'" placeholder="مثال: کلاس قرآن کریم — نوجوانان">')+
+    fld('موضوع','<input name="topic" class="inp" value="'+esc(r?r.topic:'')+'" placeholder="موضوع و محتوای کلاس…">')+
+    '<div class="frow2">'+
+     fld('گروه سنی','<select name="age" class="inp">'+EDU_AGES.map(a=>'<option '+((r&&r.age_group===a)?'selected':'')+'>'+a+'</option>').join('')+'</select>')+
+     fld('مربی','<input name="coach" class="inp" list="eduCoachList" value="'+esc(r?r.coach:'')+'" placeholder="نام مربی…"><datalist id="eduCoachList">'+coaches.map(c=>'<option value="'+esc(c.name)+'">').join('')+'</datalist>')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('روزهای برگزاری','<input name="days" class="inp" value="'+esc(r?r.days:'')+'" placeholder="مثال: شنبه و دوشنبه">')+
+     fld('ساعت','<input name="timefa" class="inp" value="'+esc(r?r.time_fa:'')+'" placeholder="مثال: ۱۶:۰۰">')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('مکان','<input name="place" class="inp" value="'+esc(r?r.place:'')+'" placeholder="مثال: سالن ۲">')+
+     fld('ظرفیت','<input name="cap" type="number" min="0" class="inp" value="'+(r?r.capacity:0)+'">')+
+    '</div>'+
+    fld('وضعیت کلاس','<select name="status" class="inp"><option '+((r&&r.status==='فعال')||!r?'selected':'')+'>فعال</option><option '+((r&&r.status==='غیرفعال')?'selected':'')+'>غیرفعال</option></select>')+
+    '<button type="submit" class="btn btn-primary btn-block">ذخیره کلاس</button>'+
+   '</form>');
+  ov.querySelector('#eduClsForm').addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(e.target);
+    const f=e.target;
+    if(!f.title.value.trim()){ setErr(f.title,'عنوان کلاس الزامی است.'); return; }
+    const vals=[f.title.value.trim(),f.topic.value.trim(),f.age.value,f.coach.value.trim(),f.days.value.trim(),f.timefa.value.trim(),f.place.value.trim(),+f.cap.value||0,f.status.value];
+    if(r){
+      run('UPDATE edu_classes SET title=?,topic=?,age_group=?,coach=?,days=?,time_fa=?,place=?,capacity=?,status=? WHERE id=?',vals.concat([r.id]));
+      logActivity('ویرایش کلاس','کلاس «'+vals[0]+'» ویرایش شد.');
+    }else{
+      run('INSERT INTO edu_classes (title,topic,age_group,coach,days,time_fa,place,capacity,status,members,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+        [vals[0],vals[1],vals[2],vals[3],vals[4],vals[5],vals[6],vals[7],vals[8],'[]',session.username,faStamp()]);
+      logActivity('ایجاد کلاس','کلاس «'+vals[0]+'» ایجاد شد.');
+    }
+    markDirty(); saveNow(true); closeModal(); toast('ذخیره شد ✓'); renderView();
+  });
+}
+function openEduClassDossier(cid){
+  const C=one('SELECT * FROM edu_classes WHERE id=?',[cid]); if(!C) return;
+  const mem=eduMembersOf(C);
+  const sess=all('SELECT * FROM edu_sessions WHERE class_id=? ORDER BY date_iso DESC, id DESC',[cid]);
+  const pool=all('SELECT name FROM edu_members ORDER BY name').map(x=>x.name).filter(n=>mem.indexOf(n)<0);
+  const attSum=s=>{
+    const rows=all('SELECT * FROM edu_attendance WHERE session_id=?',[s.id]);
+    return {ok:rows.filter(r=>r.status==='حاضر').length,ab:rows.filter(r=>r.status==='غایب').length,lt:rows.filter(r=>r.status==='تأخیر').length,n:rows.length};
+  };
+  const sessRow=s=>{
+    const a=attSum(s);
+    return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+faDateLong(s.date_iso)+'</b>'+
+     '<span class="badge '+entBadgeCls(s.status)+'">'+esc(s.status)+'</span>'+
+     '<span style="margin-right:auto;display:flex;gap:6px">'+
+     (s.status==='برنامه‌ریزی‌شده'
+      ?'<button class="btn btn-primary btn-sm" data-sess="'+s.id+'">ثبت برگزاری و حضور</button>'
+      :'<button class="btn btn-outline btn-sm" data-sess="'+s.id+'">ثبت / ویرایش حضور</button>')+
+     '<button class="icon-btn danger" data-sdel="'+s.id+'" style="color:var(--danger)" title="حذف جلسه">'+icon('trash',14)+'</button></span></div>'+
+     (s.topic?'<p class="tiny">موضوع: '+esc(s.topic)+'</p>':'')+
+     (s.status!=='برنامه‌ریزی‌شده'?'<p class="tiny muted">حاضر '+faNum(a.ok)+' · غایب '+faNum(a.ab)+' · تأخیر '+faNum(a.lt)+(a.n?'':' — هنوز حضور ثبت نشده')+'</p>':'')+
+     '</div>';
+  };
+  const html=
+   '<div class="detail-grid">'+
+    '<div><small>گروه سنی</small><b>'+esc(C.age_group||'—')+'</b></div>'+
+    '<div><small>مربی</small><b>'+esc(C.coach||'—')+'</b></div>'+
+    '<div><small>زمان</small><b>'+esc((C.days||'—')+(C.time_fa?' · '+C.time_fa:''))+'</b></div>'+
+    '<div><small>ظرفیت</small><b>'+faNum(mem.length)+(C.capacity?' / '+faNum(C.capacity):'')+'</b></div>'+
+   '</div>'+
+   '<div class="divider"></div>'+
+   '<h4 style="font-size:13.5px;color:var(--primary-dark);margin-bottom:8px">مدیریت اعضا ('+faNum(mem.length)+')</h4>'+
+   (mem.length?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'+mem.map(m=>'<span class="badge b-neutral" style="display:inline-flex;align-items:center;gap:6px">'+esc(m)+'<button class="icon-btn danger" data-mrm="'+esc(m)+'" title="حذف عضو" style="padding:0 2px;color:var(--danger)">'+icon('trash',12)+'</button></span>').join('')+'</div>':'<p class="tiny muted">عضوی ثبت نشده است.</p>')+
+   '<div class="frow2">'+
+    '<div class="field"><label>افزودن از پروندهٔ اعضا</label><select id="clsMemSel" class="inp"><option value="">— انتخاب عضو —</option>'+pool.map(n=>'<option>'+esc(n)+'</option>').join('')+'</select></div>'+
+    '<div class="field"><label>یا افزودن با نام آزاد</label><input id="clsMemTxt" class="inp" placeholder="نام و نام خانوادگی…"></div>'+
+   '</div>'+
+   '<button class="btn btn-outline btn-sm" id="clsMemAdd">'+icon('plus',14)+' افزودن عضو به کلاس</button>'+
+   '<div class="divider"></div>'+
+   '<h4 style="font-size:13.5px;color:var(--primary-dark);margin-bottom:8px">جلسات کلاس ('+faNum(sess.length)+')</h4>'+
+   '<div class="inline-box" style="margin-bottom:10px">'+
+    '<div class="frow2">'+
+     '<div class="field"><label>تاریخ جلسه جدید (شمسی)</label><input id="clsSessDate" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۵"></div>'+
+     '<div class="field"><label>موضوع جلسه</label><input id="clsSessTopic" class="inp" placeholder="موضوع…"></div>'+
+    '</div>'+
+    '<label class="chk"><input type="checkbox" id="clsSessHeld" checked> این جلسه برگزار شده است (ثبت حضور بلافاصله)</label>'+
+    '<div style="margin-top:8px"><button class="btn btn-primary btn-sm" id="clsSessAdd">'+icon('plus',14)+' ثبت جلسه</button></div>'+
+   '</div>'+
+   (sess.length?sess.map(sessRow).join(''):emptyState('جلسه‌ای ثبت نشده است'));
+  openModal('پرونده کلاس — '+C.title,html,{width:'880px'});
+  const ov=$('#modalOv');
+  const saveMem=arr=>{ run('UPDATE edu_classes SET members=? WHERE id=?',[JSON.stringify(arr),cid]); markDirty(); saveNow(true); };
+  ov.querySelectorAll('[data-mrm]').forEach(b=>b.addEventListener('click',()=>{
+    saveMem(mem.filter(x=>x!==b.dataset.mrm));
+    toast('عضو از کلاس حذف شد'); openEduClassDossier(cid);
+  }));
+  ov.querySelector('#clsMemAdd').addEventListener('click',()=>{
+    const sel=$('#clsMemSel').value, txt=$('#clsMemTxt').value.trim();
+    const nm=sel||txt;
+    if(!nm){ toast('نام عضو را انتخاب یا وارد کنید','error'); return; }
+    if(C.capacity&&mem.length>=C.capacity){ toast('ظرفیت کلاس ('+faNum(C.capacity)+') تکمیل است','error'); return; }
+    if(mem.indexOf(nm)>=0){ toast('این عضو قبلاً اضافه شده است','error'); return; }
+    saveMem(mem.concat([nm]));
+    toast('عضو اضافه شد ✓'); openEduClassDossier(cid);
+  });
+  ov.querySelector('#clsSessAdd').addEventListener('click',()=>{
+    const jd=parseJDate($('#clsSessDate').value);
+    if(!jd){ toast('تاریخ شمسی معتبر نیست (نمونه: ۱۴۰۵/۰۸/۱۵)','error'); return; }
+    const iso=jToIso(jd.jy,jd.jm,jd.jd);
+    const held=$('#clsSessHeld').checked;
+    run('INSERT INTO edu_sessions (class_id,date_iso,date_fa,topic,status,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?)',
+      [cid,iso,faDate(iso),$('#clsSessTopic').value.trim(),held?'برگزارشده':'برنامه‌ریزی‌شده',session.username,faStamp()]);
+    const sid=lastId();
+    logActivity('ثبت جلسه کلاس','جلسه کلاس «'+C.title+'» در '+faDateLong(iso)+' ثبت شد.');
+    markDirty(); saveNow(true);
+    if(held){ toast('جلسه ثبت شد — حضور و غیاب را تکمیل کنید'); window._eduFromDossier=cid; openEduAttModal(sid); }
+    else{ toast('جلسه برنامه‌ریزی‌شده ثبت شد ✓'); openEduClassDossier(cid); }
+  });
+  ov.querySelectorAll('[data-sess]').forEach(b=>b.addEventListener('click',()=>{
+    window._eduFromDossier=cid; openEduAttModal(+b.dataset.sess);
+  }));
+  ov.querySelectorAll('[data-sdel]').forEach(b=>b.addEventListener('click',async()=>{
+    if(!await confirmDlg('حذف جلسه','این جلسه و حضور و غیاب آن حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM edu_attendance WHERE session_id=?',[+b.dataset.sdel]);
+    run('DELETE FROM edu_sessions WHERE id=?',[+b.dataset.sdel]);
+    markDirty(); saveNow(true); toast('جلسه حذف شد'); openEduClassDossier(cid);
+  }));
+}
+/* ۳) حضور و غیاب */
+function eduAtt(){
+  const cls=all('SELECT * FROM edu_classes ORDER BY title');
+  if(!cls.length) return '<div class="card pad">'+emptyState('ابتدا از بخش «مدیریت کلاس‌ها» یک کلاس ایجاد کنید')+'</div>';
+  const cur=window._eduAttCls&&cls.some(c=>c.id===window._eduAttCls)?window._eduAttCls:cls[0].id;
+  window._eduAttCls=cur;
+  const C=one('SELECT * FROM edu_classes WHERE id=?',[cur]);
+  const mem=eduMembersOf(C);
+  const sess=all('SELECT * FROM edu_sessions WHERE class_id=? ORDER BY date_iso DESC, id DESC',[cur]);
+  const held=eduHeld(cur);
+  let sum=0,n=0;
+  const pctRows=mem.map(m=>{
+    const p=eduAttPct(cur,m);
+    if(p.pct!=null){ sum+=p.pct; n++; }
+    return '<tr><td>'+esc(m)+'</td><td>'+faNum(p.ok)+'</td><td>'+faNum(p.abs)+'</td><td>'+faNum(p.late)+'</td><td><b>'+(p.pct==null?'—':faNum(p.pct)+'٪')+'</b></td></tr>';
+  }).join('');
+  const avg=n?Math.round(sum/n):null;
+  const sessRow=s=>{
+    const rows=all('SELECT * FROM edu_attendance WHERE session_id=?',[s.id]);
+    const ok=rows.filter(r=>r.status==='حاضر').length, ab=rows.filter(r=>r.status==='غایب').length, lt=rows.filter(r=>r.status==='تأخیر').length;
+    return '<tr><td>'+faDateLong(s.date_iso)+'</td><td>'+esc(s.topic||'—')+'</td>'+
+     '<td><span class="badge '+entBadgeCls(s.status)+'">'+esc(s.status)+'</span></td>'+
+     (s.status==='برنامه‌ریزی‌شده'?'<td class="tiny muted">—</td>':'<td class="tiny">حاضر '+faNum(ok)+' · غایب '+faNum(ab)+' · تأخیر '+faNum(lt)+'</td>')+
+     '<td><div style="display:flex;gap:4px;justify-content:center">'+
+      '<button class="btn btn-outline btn-sm" data-act="eduAttOpen" data-id="'+s.id+'">'+(s.status==='برنامه‌ریزی‌شده'?'ثبت برگزاری و حضور':'ثبت / ویرایش حضور')+'</button>'+
+      '<button class="icon-btn danger" data-act="eduSessDel" data-id="'+s.id+'" title="حذف جلسه" style="color:var(--danger)">'+icon('trash',14)+'</button>'+
+     '</div></td></tr>';
+  };
+  return '<div class="card pad fbar no-print">'+
+    '<div class="field" style="min-width:280px"><label>کلاس</label><select id="eduAttCls" class="inp">'+
+     cls.map(c=>'<option value="'+c.id+'" '+(c.id===cur?'selected':'')+'>'+esc(c.title)+(c.status==='غیرفعال'?' (غیرفعال)':'')+'</option>').join('')+'</select></div>'+
+    '<button class="btn btn-outline" id="eduSessQuick">'+icon('plus',15)+' ثبت جلسه (برنامه‌ریزی‌شده / برگزارشده)</button></div>'+
+   '<div class="grid-stats">'+
+    '<div class="stat-card"><span class="stat-label">اعضای کلاس</span><b class="stat-num">'+faNum(mem.length)+'</b><small class="muted">'+esc(C.title)+'</small></div>'+
+    '<div class="stat-card accent-gold"><span class="stat-label">جلسات برگزارشده</span><b class="stat-num">'+faNum(held.length)+'</b><small class="muted">از '+faNum(sess.length)+' جلسه ثبت‌شده</small></div>'+
+    '<div class="stat-card accent-success"><span class="stat-label">میانگین حضور کلاس</span><b class="stat-num">'+(avg!=null?faNum(avg)+'٪':'—')+'</b><small class="muted">تأخیر = حضور</small></div>'+
+   '</div>'+
+   '<div class="card pad" style="margin:12px 0 14px"><h3>'+icon('calendar',17)+' جلسات کلاس «'+esc(C.title)+'»</h3>'+
+    '<div style="margin-top:10px">'+(sess.length?'<div class="table-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>تاریخ</th><th>موضوع</th><th>وضعیت</th><th>خلاصه حضور</th><th></th></tr></thead><tbody>'+sess.map(sessRow).join('')+'</tbody></table></div>':emptyState('جلسه‌ای ثبت نشده است'))+'</div></div>'+
+   '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('check',17)+' گزارش حضور و غیاب اعضا</h3>'+
+    '<p class="tiny muted" style="margin:6px 0 8px">درصد حضور هر عضو = (حاضر + تأخیر) ÷ جلسات برگزارشده. گزارش هر جلسه با تاریخ همان جلسه ثبت می‌شود و توضیحات هر عضو قابل ثبت است.</p>'+
+    (mem.length?'<div class="table-wrap"><table class="tbl" style="min-width:520px"><thead><tr><th>عضو</th><th>حاضر</th><th>غایب</th><th>تأخیر</th><th>درصد حضور</th></tr></thead><tbody>'+
+     pctRows+'<tr><td><b>میانگین حضور کلاس</b></td><td colspan="3"></td><td><b>'+(avg!=null?faNum(avg)+'٪':'—')+'</b></td></tr>'+
+     '</tbody></table></div>':emptyState('اعضای کلاس ثبت نشده است — از «پرونده کلاس» در مدیریت کلاس‌ها اضافه کنید'))+'</div>'+
+   '<button class="btn btn-outline" data-act="eduAttPrint">'+icon('printer',15)+' خروجی PDF گزارش کلاس</button>';
+}
+function bindEduAtt(){
+  const sel=$('#eduAttCls');
+  if(sel) sel.addEventListener('change',()=>{ window._eduAttCls=+sel.value; renderView(); });
+  const qb=$('#eduSessQuick');
+  if(qb) qb.addEventListener('click',()=>openEduSessModal(window._eduAttCls));
+}
+function openEduSessModal(cid){
+  const C=one('SELECT * FROM edu_classes WHERE id=?',[cid]); if(!C) return;
+  const ov=openModal('ثبت جلسه — '+C.title,
+   '<form id="eduSessForm" novalidate>'+
+    fld('تاریخ جلسه (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۵">')+
+    fld('موضوع جلسه','<input name="topic" class="inp" placeholder="موضوع جلسه…">')+
+    fld('وضعیت جلسه','<select name="status" class="inp"><option>برگزارشده</option><option>برنامه‌ریزی‌شده</option></select>')+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت جلسه</button>'+
+   '</form>');
+  ov.querySelector('#eduSessForm').addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(e.target);
+    const f=e.target;
+    const jd=parseJDate(f.date.value);
+    if(!jd){ setErr(f.date,'تاریخ شمسی معتبر نیست (نمونه: ۱۴۰۵/۰۸/۱۵).'); return; }
+    const iso=jToIso(jd.jy,jd.jm,jd.jd);
+    run('INSERT INTO edu_sessions (class_id,date_iso,date_fa,topic,status,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?)',
+      [cid,iso,faDate(iso),f.topic.value.trim(),f.status.value,session.username,faStamp()]);
+    const sid=lastId();
+    logActivity('ثبت جلسه کلاس','جلسه کلاس «'+C.title+'» در '+faDateLong(iso)+' ('+f.status.value+') ثبت شد.');
+    markDirty(); saveNow(true); closeModal();
+    if(f.status.value==='برگزارشده'){ toast('جلسه ثبت شد — حضور و غیاب را تکمیل کنید'); openEduAttModal(sid); }
+    else{ toast('جلسه برنامه‌ریزی‌شده ثبت شد ✓'); renderView(); }
+  });
+}
+function openEduAttModal(sid){
+  const S=one('SELECT * FROM edu_sessions WHERE id=?',[sid]); if(!S) return;
+  const C=one('SELECT * FROM edu_classes WHERE id=?',[S.class_id]); if(!C) return;
+  const mem=eduMembersOf(C);
+  const rows=all('SELECT * FROM edu_attendance WHERE session_id=?',[sid]);
+  const cur={}; rows.forEach(r=>{ cur[r.mname]=r; });
+  const html=
+   '<div class="detail-grid">'+
+    '<div><small>کلاس</small><b>'+esc(C.title)+'</b></div>'+
+    '<div><small>تاریخ جلسه</small><b>'+faDateLong(S.date_iso)+'</b></div>'+
+    '<div><small>موضوع</small><b>'+esc(S.topic||'—')+'</b></div>'+
+    '<div><small>وضعیت</small><span class="badge '+entBadgeCls(S.status)+'">'+esc(S.status)+'</span></div>'+
+   '</div>'+
+   (mem.length?
+    '<form id="attForm">'+
+     '<div class="table-wrap" style="margin:10px 0"><table class="tbl"><thead><tr><th>عضو</th><th>حضور (حاضر / غایب / تأخیر)</th><th>توضیحات</th></tr></thead><tbody>'+
+     mem.map((m,i)=>{
+       const st=cur[m]?cur[m].status:'حاضر';
+       return '<tr><td>'+esc(m)+'</td>'+
+        '<td><div style="display:flex;gap:12px;flex-wrap:wrap">'+
+         ['حاضر','غایب','تأخیر'].map(s=>'<label class="chk"><input type="radio" name="attst'+i+'" value="'+s+'" '+(st===s?'checked':'')+'> '+s+'</label>').join('')+
+        '</div></td>'+
+        '<td><input class="inp" data-note="'+esc(m)+'" value="'+esc(cur[m]?cur[m].note:'')+'" placeholder="توضیح…"></td></tr>';
+     }).join('')+'</tbody></table></div>'+
+     '<p class="tiny muted">با ذخیره، وضعیت جلسه «برگزارشده» می‌شود؛ تأخیر به‌عنوان حضور محاسبه می‌شود.</p>'+
+     '<button type="submit" class="btn btn-primary btn-block">ذخیره حضور و غیاب</button></form>'
+    :emptyState('ابتدا از «پرونده کلاس» عضو اضافه کنید'));
+  openModal('حضور و غیاب جلسه '+faDateLong(S.date_iso),html,{width:'840px'});
+  const f=$('#attForm'); if(!f) return;
+  f.addEventListener('submit',e=>{
+    e.preventDefault();
+    run('DELETE FROM edu_attendance WHERE session_id=?',[sid]);
+    mem.forEach((m,i)=>{
+      const el=f.querySelector('input[name="attst'+i+'"]:checked');
+      const note=f.querySelector('[data-note="'+m+'"]');
+      run('INSERT INTO edu_attendance (session_id,class_id,mname,status,note) VALUES (?,?,?,?,?)',[sid,S.class_id,m,el?el.value:'حاضر',note?note.value.trim():'']);
+    });
+    if(S.status!=='برگزارشده') run("UPDATE edu_sessions SET status='برگزارشده' WHERE id=?",[sid]);
+    logActivity('ثبت حضور و غیاب','حضور و غیاب جلسه '+faDateLong(S.date_iso)+' کلاس «'+C.title+'» ثبت شد ('+faNum(mem.length)+' عضو).');
+    markDirty(); saveNow(true); closeModal(); toast('حضور و غیاب ذخیره شد ✓');
+    renderView();
+    if(window._eduFromDossier){ const c2=window._eduFromDossier; window._eduFromDossier=null; setTimeout(()=>openEduClassDossier(c2),80); }
+  });
+}
+/* ۴) مربیان — کلاس‌های تحت مسئولیت (محاسبه خودکار) */
+function eduCoachClasses(){
+  const coaches=all('SELECT * FROM edu_coaches ORDER BY name');
+  if(!coaches.length) return '';
+  const rows=coaches.map(co=>{
+    const cs=all('SELECT * FROM edu_classes WHERE coach=? ORDER BY title',[co.name]);
+    const heldN=cs.reduce((s,c)=>s+eduHeld(c.id).length,0);
+    return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(co.name)+'</b><span class="badge b-neutral">'+faNum(cs.length)+' کلاس · '+faNum(heldN)+' جلسه برگزارشده</span></div>'+
+     (cs.length?'<p class="tiny muted">'+cs.map(c=>esc(c.title)).join(' · ')+'</p>':'<p class="tiny muted">کلاسی تحت مسئولیت این مربی ثبت نشده است.</p>')+'</div>';
+  }).join('');
+  return '<div class="card pad" style="margin-top:14px"><h3>'+icon('book',17)+' کلاس‌های تحت مسئولیت مربیان</h3><div style="margin-top:8px">'+rows+'</div></div>';
+}
+/* ۵) حلقه‌های تربیتی — جلسات و گزارش‌ها */
+function eduCircleSess(){
+  const circles=all('SELECT * FROM edu_circles ORDER BY id DESC');
+  if(!circles.length) return '';
+  return '<div class="card pad" style="margin-top:14px"><h3>'+icon('calendar',17)+' جلسات حلقه‌ها (موضوعات و گزارش‌ها)</h3><div style="margin-top:8px">'+
+   circles.map(c=>{
+     const n=one('SELECT COUNT(*) c FROM edu_circle_sessions WHERE circle_id=?',[c.id]).c;
+     return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(c.name)+'</b>'+(c.leader?'<span class="badge b-neutral">مربی / سرگروه: '+esc(c.leader)+'</span>':'')+
+      '<span style="margin-right:auto"><button class="btn btn-outline btn-sm" data-act="eduCircSess" data-id="'+c.id+'">جلسات و گزارش‌ها ('+faNum(n)+')</button></span></div></div>';
+   }).join('')+'</div></div>';
+}
+function openEduCircSess(cid){
+  const C=one('SELECT * FROM edu_circles WHERE id=?',[cid]); if(!C) return;
+  const rows=all('SELECT * FROM edu_circle_sessions WHERE circle_id=? ORDER BY date_iso DESC, id DESC',[cid]);
+  const html='<div class="inline-box" style="margin-bottom:12px">'+
+   '<div class="frow2">'+
+    '<div class="field"><label>تاریخ جلسه (شمسی)</label><input id="csDate" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۵"></div>'+
+    '<div class="field"><label>موضوع جلسه</label><input id="csTopic" class="inp" placeholder="موضوع…"></div>'+
+   '</div>'+
+   '<div class="field"><label>گزارش جلسه</label><textarea id="csRep" class="inp" rows="2" placeholder="خلاصه جلسه و گزارش…"></textarea></div>'+
+   '<button class="btn btn-primary btn-sm" id="csAdd">'+icon('plus',14)+' ثبت جلسه حلقه</button></div>'+
+   (rows.length?rows.map(r=>'<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+faDateLong(r.date_iso)+'</b><span class="badge b-neutral">'+esc(r.topic||'—')+'</span><span style="margin-right:auto"><button class="icon-btn danger" data-cdel="'+r.id+'" style="color:var(--danger)" title="حذف">'+icon('trash',13)+'</button></span></div>'+(r.report?'<p class="tiny">'+esc(r.report)+'</p>':'')+'</div>').join(''):emptyState('جلسه‌ای برای این حلقه ثبت نشده است'));
+  openModal('جلسات حلقه — '+C.name,html,{width:'720px'});
+  const ov=$('#modalOv');
+  const re=()=>openEduCircSess(cid);
+  ov.querySelector('#csAdd').addEventListener('click',()=>{
+    const jd=parseJDate($('#csDate').value);
+    if(!jd){ toast('تاریخ شمسی معتبر نیست','error'); return; }
+    const iso=jToIso(jd.jy,jd.jm,jd.jd);
+    run('INSERT INTO edu_circle_sessions (circle_id,date_iso,topic,report,created_by,created_at_fa) VALUES (?,?,?,?,?,?)',[cid,iso,$('#csTopic').value.trim(),$('#csRep').value.trim(),session.username,faStamp()]);
+    logActivity('ثبت جلسه حلقه تربیتی','جلسه حلقه «'+C.name+'» در '+faDateLong(iso)+' ثبت شد.');
+    markDirty(); saveNow(true); toast('ثبت شد ✓'); re();
+  });
+  ov.querySelectorAll('[data-cdel]').forEach(b=>b.addEventListener('click',async()=>{
+    if(!await confirmDlg('حذف جلسه حلقه','این جلسه حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM edu_circle_sessions WHERE id=?',[+b.dataset.cdel]);
+    markDirty(); saveNow(true); re();
+  }));
+}
+/* ۷) پرونده تربیتی اعضا (محرمانه) */
+function eduMems(){
+  const rows=all('SELECT * FROM edu_members ORDER BY name');
+  const row=m=>'<tr><td><b>'+esc(m.name)+'</b>'+(m.is_minor?' <span class="badge b-warn">زیر ۱۸ سال</span>':'')+'</td>'+
+   '<td>'+esc(m.birth_info||'—')+'</td><td>'+esc(m.mentor||'—')+'</td><td class="tiny">'+esc(m.links||'—')+'</td>'+
+   '<td><span class="badge '+entBadgeCls(m.level)+'">'+esc(m.level)+'</span></td>'+
+   '<td>'+(m.review_iso?faDate(m.review_iso):'—')+'</td>'+
+   '<td><div style="display:flex;gap:4px;justify-content:center">'+
+    '<button class="btn btn-outline btn-sm" data-act="eduMemView" data-id="'+m.id+'">مشاهده پرونده</button>'+
+    '<button class="icon-btn" data-act="eduMemEdit" data-id="'+m.id+'" title="ویرایش">'+icon('edit',15)+'</button>'+
+    '<button class="icon-btn danger" data-act="eduMemDel" data-id="'+m.id+'" title="حذف" style="color:var(--danger)">'+icon('trash',15)+'</button>'+
+   '</div></td></tr>';
+  return '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>محرمانگی پرونده تربیتی:</b> مربی فقط به افراد تحت مسئولیت خود دسترسی دارد؛ معاون تعلیم و تربیت دسترسی مدیریتی دارد و سایر معاونت‌ها و تشکل‌ها به این پرونده‌ها دسترسی ندارند. برای کودکان و نوجوانان، حریم خصوصی و ضوابط رضایت والدین رعایت شود. <b>ارزیابی‌ها مستند، دوره‌ای و مبتنی بر مشاهده است و از برچسب‌زنی و قضاوت شخصی پرهیز می‌شود.</b><br>سطوح ارزیابی: '+EDU_LVLS.join(' · ')+'</p></div>'+
+   '<div class="card pad"><h3 style="display:flex;align-items:center;gap:8px">'+icon('file',18)+' پرونده تربیتی اعضا'+
+    '<button class="btn btn-primary btn-sm" data-act="eduMemNew" style="margin-inline-start:auto">'+icon('plus',14)+' تشکیل پرونده جدید</button></h3>'+
+    '<div style="margin-top:10px">'+(rows.length?'<div class="table-wrap"><table class="tbl" style="min-width:920px"><thead><tr><th>عضو</th><th>تولد / گروه سنی</th><th>مربی مسئول</th><th>کلاس‌ها و حلقه‌ها</th><th>سطح ارزیابی</th><th>بازبینی بعدی</th><th></th></tr></thead><tbody>'+rows.map(row).join('')+'</tbody></table></div>':emptyState('پرونده‌ای تشکیل نشده است'))+'</div></div>';
+}
+function openEduMemModal(id){
+  const m=id?one('SELECT * FROM edu_members WHERE id=?',[id]):null;
+  const getInd=k=>{ try{ return JSON.parse(m?(m[k]||'{}'):'{}'); }catch(e){ return {}; } };
+  const ind={}; EDU_IND.forEach(c=>{ ind[c.k]=getInd(c.k); });
+  const coachList=all('SELECT name FROM edu_coaches ORDER BY name');
+  const fieldset=c=>'<div class="inline-box" style="margin:10px 0"><b style="font-size:12.5px;color:var(--primary-dark);display:block;margin-bottom:8px">'+c.t+'</b>'+
+   '<div class="table-wrap"><table class="tbl"><thead><tr><th>شاخص</th><th style="min-width:230px">سطح ارزیابی</th></tr></thead><tbody>'+
+   c.items.map(it=>'<tr><td>'+esc(it)+'</td><td><select class="inp" data-ind="'+c.k+'" data-item="'+esc(it)+'">'+
+    '<option value="">— بدون ارزیابی —</option>'+EDU_LVLS.map(l=>'<option '+(((ind[c.k]||{})[it]||'')===l?'selected':'')+'>'+l+'</option>').join('')+'</select></td></tr>').join('')+
+   '</tbody></table></div></div>';
+  const ov=openModal(m?'ویرایش پرونده تربیتی — '+m.name:'تشکیل پرونده تربیتی جدید',
+   '<form id="eduMemForm" novalidate>'+
+    '<div class="frow2">'+
+     fld('نام و مشخصات *','<input name="mname" class="inp" value="'+esc(m?m.name:'')+'" placeholder="نام و نام خانوادگی…">')+
+     fld('تاریخ تولد یا گروه سنی','<input name="birth" class="inp" value="'+esc(m?m.birth_info:'')+'" placeholder="مثال: ۱۳۹۲/۰۳/۱۴ یا نوجوانان">')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('تاریخ عضویت (شمسی)','<input name="join" class="inp" value="'+esc(m?faDate(m.join_iso):'')+'" placeholder="۱۴۰۵/۰۶/۰۱">')+
+     fld('مربی مسئول','<input name="mentor" class="inp" list="eduCoachList2" value="'+esc(m?m.mentor:'')+'" placeholder="نام مربی…"><datalist id="eduCoachList2">'+coachList.map(c=>'<option value="'+esc(c.name)+'">').join('')+'</datalist>')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('کلاس‌ها و حلقه‌های مرتبط','<input name="links" class="inp" value="'+esc(m?m.links:'')+'" placeholder="مثال: کلاس قرآن نوجوانان، حلقه توحید">')+
+     fld('تماس ولی / والدین','<input name="gphone" class="inp" value="'+esc(m?m.guardian_phone:'')+'" placeholder="برای اعضای زیر ۱۸ سال">')+
+    '</div>'+
+    '<label class="chk"><input type="checkbox" name="minor" '+(m&&m.is_minor?'checked':'')+'> عضو زیر ۱۸ سال است — رضایت والدین و حریم خصوصی رعایت شود</label>'+
+    '<div class="divider"></div>'+
+    '<b style="font-size:13px;color:var(--primary-dark)">شاخص‌های تربیتی — سطوح: '+EDU_LVLS.join(' · ')+'</b>'+
+    EDU_IND.map(fieldset).join('')+
+    fld('سطح کلی پرونده','<select name="level" class="inp">'+EDU_LVLS.map(l=>'<option '+((m?m.level:'در حال رشد')===l?'selected':'')+'>'+l+'</option>').join('')+'</select>')+
+    '<div class="divider"></div>'+
+    fld('سوابق تربیتی (کلاس‌ها، دوره‌ها، فعالیت‌ها و مسئولیت‌ها، اردوها، دستاوردها)','<textarea name="history" class="inp" rows="3" placeholder="…">'+esc(m?m.history:'')+'</textarea>')+
+    '<div class="frow2">'+
+     fld('نقاط قوت','<textarea name="strengths" class="inp" rows="2">'+esc(m?m.strengths:'')+'</textarea>')+
+     fld('استعدادها','<textarea name="talents" class="inp" rows="2">'+esc(m?m.talents:'')+'</textarea>')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('زمینه‌های نیازمند تقویت','<textarea name="weak" class="inp" rows="2">'+esc(m?m.weak:'')+'</textarea>')+
+     fld('پیشرفت نسبت به قبل','<textarea name="progress" class="inp" rows="2">'+esc(m?m.progress_txt:'')+'</textarea>')+
+    '</div>'+
+    fld('پیشنهاد تربیتی مربی','<textarea name="suggest" class="inp" rows="2">'+esc(m?m.suggest:'')+'</textarea>')+
+    '<div class="divider"></div>'+
+    '<b style="font-size:13px;color:var(--primary-dark)">برنامه رشد فردی</b>'+
+    '<div class="frow2">'+
+     fld('اهداف کوتاه‌مدت','<textarea name="gshort" class="inp" rows="2">'+esc(m?m.goal_short:'')+'</textarea>')+
+     fld('اهداف بلندمدت','<textarea name="glong" class="inp" rows="2">'+esc(m?m.goal_long:'')+'</textarea>')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('فعالیت‌های پیشنهادی','<textarea name="growth" class="inp" rows="2">'+esc(m?m.growth:'')+'</textarea>')+
+     fld('مربی پیگیر','<input name="fcoach" class="inp" value="'+esc(m?m.follow_coach:'')+'">')+
+    '</div>'+
+    '<div class="frow2">'+
+     fld('زمان بازبینی (شمسی)','<input name="review" class="inp" value="'+esc(m?faDate(m.review_iso):'')+'" placeholder="۱۴۰۶/۰۱/۱۵">')+
+     fld('ثبت پیشرفت دوره‌ای','<input name="glog" class="inp" value="'+esc(m?m.growth_log:'')+'" placeholder="خلاصه پیشرفت در آخرین بازبینی…">')+
+    '</div>'+
+    '<button type="submit" class="btn btn-primary btn-block">ذخیره پرونده تربیتی</button>'+
+   '</form>',{width:'900px'});
+  ov.querySelector('#eduMemForm').addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(e.target);
+    const f=e.target;
+    if(!f.mname.value.trim()){ setErr(f.mname,'نام عضو الزامی است.'); return; }
+    const j=f.join.value?parseJDate(f.join.value):null;
+    if(f.join.value&&!j){ setErr(f.join,'تاریخ شمسی معتبر نیست (نمونه: ۱۴۰۵/۰۶/۰۱).'); return; }
+    const rv=f.review.value?parseJDate(f.review.value):null;
+    if(f.review.value&&!rv){ setErr(f.review,'تاریخ شمسی معتبر نیست.'); return; }
+    const indVals={};
+    f.querySelectorAll('select[data-ind]').forEach(s=>{
+      if(s.value){ const k=s.dataset.ind; indVals[k]=indVals[k]||{}; indVals[k][s.dataset.item]=s.value; }
+    });
+    const vals=[
+      f.mname.value.trim(),f.birth.value.trim(),j?jToIso(j.jy,j.jm,j.jd):'',f.gphone.value.trim(),
+      f.minor.checked?1:0,f.mentor.value.trim(),f.links.value.trim(),
+      JSON.stringify(indVals.ind_belief||{}),JSON.stringify(indVals.ind_worship||{}),JSON.stringify(indVals.ind_ethics||{}),JSON.stringify(indVals.ind_social||{}),JSON.stringify(indVals.ind_talent||{}),
+      f.history.value.trim(),f.strengths.value.trim(),f.talents.value.trim(),f.weak.value.trim(),f.progress.value.trim(),f.suggest.value.trim(),
+      f.gshort.value.trim(),f.glong.value.trim(),f.fcoach.value.trim(),rv?jToIso(rv.jy,rv.jm,rv.jd):'',f.growth.value.trim(),f.glog.value.trim(),f.level.value
+    ];
+    if(m){
+      run('UPDATE edu_members SET name=?,birth_info=?,join_iso=?,guardian_phone=?,is_minor=?,mentor=?,links=?,ind_belief=?,ind_worship=?,ind_ethics=?,ind_social=?,ind_talent=?,history=?,strengths=?,talents=?,weak=?,progress_txt=?,suggest=?,goal_short=?,goal_long=?,follow_coach=?,review_iso=?,growth=?,growth_log=?,level=? WHERE id=?',vals.concat([m.id]));
+      logActivity('ویرایش پرونده تربیتی','پرونده «'+vals[0]+'» به‌روزرسانی شد.');
+    }else{
+      run('INSERT INTO edu_members (name,birth_info,join_iso,guardian_phone,is_minor,mentor,links,ind_belief,ind_worship,ind_ethics,ind_social,ind_talent,history,strengths,talents,weak,progress_txt,suggest,goal_short,goal_long,follow_coach,review_iso,growth,growth_log,level,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        vals.concat([session.username,faStamp()]));
+      logActivity('تشکیل پرونده تربیتی','پرونده تربیتی «'+vals[0]+'» ایجاد شد.');
+    }
+    markDirty(); saveNow(true); closeModal(); toast('پرونده تربیتی ذخیره شد ✓'); renderView();
+  });
+}
+function openEduMemView(id){
+  const m=one('SELECT * FROM edu_members WHERE id=?',[id]); if(!m) return;
+  const indBox=c=>{
+    let o={}; try{ o=JSON.parse(m[c.k]||'{}'); }catch(e){}
+    return '<div class="card pad" style="margin-bottom:10px"><b style="font-size:12.5px;color:var(--primary-dark)">'+c.t+'</b>'+
+     '<div style="margin-top:6px">'+c.items.map(it=>'<div class="comment" style="margin-bottom:6px"><div class="c-head"><span>'+esc(it)+'</span>'+(o[it]?'<span class="badge '+entBadgeCls(o[it])+'">'+esc(o[it])+'</span>':'<span class="badge b-neutral">بدون ارزیابی</span>')+'</div></div>').join('')+'</div></div>';
+  };
+  const kv=(l,v)=>v?'<div class="span2"><small>'+l+'</small><p>'+esc(v)+'</p></div>':'';
+  const html='<div class="detail-grid">'+
+   '<div><small>نام</small><b>'+esc(m.name)+'</b></div>'+
+   '<div><small>تولد / گروه سنی</small><b>'+esc(m.birth_info||'—')+'</b></div>'+
+   '<div><small>عضویت</small><b>'+(m.join_iso?faDate(m.join_iso):'—')+'</b></div>'+
+   '<div><small>مربی مسئول</small><b>'+esc(m.mentor||'—')+'</b></div>'+
+   '<div><small>کلاس‌ها و حلقه‌ها</small><b>'+esc(m.links||'—')+'</b></div>'+
+   '<div><small>سطح کلی</small><span class="badge '+entBadgeCls(m.level)+'">'+esc(m.level)+'</span></div>'+
+   (m.is_minor?'<div class="span2"><small>ملاحظات</small><span class="badge b-warn">زیر ۱۸ سال — حریم خصوصی و رضایت والدین رعایت شود</span></div>':'')+
+  '</div><div class="divider"></div>'+
+  EDU_IND.map(indBox).join('')+
+  '<div class="detail-grid">'+
+   kv('سوابق تربیتی',m.history)+kv('نقاط قوت',m.strengths)+kv('استعدادها',m.talents)+kv('زمینه‌های نیازمند تقویت',m.weak)+
+   kv('پیشرفت نسبت به قبل',m.progress_txt)+kv('پیشنهاد تربیتی',m.suggest)+kv('اهداف کوتاه‌مدت',m.goal_short)+
+   kv('اهداف بلندمدت',m.goal_long)+kv('فعالیت‌های پیشنهادی',m.growth)+kv('مربی پیگیر',m.follow_coach)+kv('ثبت پیشرفت دوره‌ای',m.growth_log)+
+  '</div>'+
+  '<div class="detail-grid"><div><small>زمان بازبینی بعدی</small><b>'+(m.review_iso?faDate(m.review_iso):'—')+'</b></div></div>'+
+  '<div style="display:flex;gap:8px;margin-top:10px">'+
+   '<button class="btn btn-outline btn-sm" data-act="eduMemPrint" data-id="'+m.id+'">'+icon('printer',14)+' چاپ پرونده (محرمانه)</button>'+
+   '<button class="btn btn-primary btn-sm" data-act="eduMemEdit" data-id="'+m.id+'">ویرایش</button></div>';
+  openModal('پرونده تربیتی — '+m.name,html,{width:'840px'});
+}
+/* ۸) گزارش عملکرد */
+function eduPerf(){
+  const cls=all('SELECT * FROM edu_classes ORDER BY title');
+  const heldTotal=one("SELECT COUNT(*) c FROM edu_sessions WHERE status='برگزارشده'").c;
+  const mems=one('SELECT COUNT(*) c FROM edu_members').c;
+  let sum=0,n=0;
+  const clsRows=cls.map(c=>{
+    const mem=eduMembersOf(c); let s2=0,n2=0;
+    mem.forEach(m=>{ const p=eduAttPct(c.id,m); if(p.pct!=null){ s2+=p.pct; n2++; } });
+    const avg=n2?Math.round(s2/n2):null;
+    if(avg!=null){ sum+=avg; n++; }
+    return '<tr><td>'+esc(c.title)+'</td><td>'+esc(c.coach||'—')+'</td><td>'+faNum(mem.length)+'</td><td>'+faNum(eduHeld(c.id).length)+'</td><td>'+(avg==null?'—':'<b>'+faNum(avg)+'٪</b>')+'</td><td><span class="badge '+entBadgeCls(c.status)+'">'+esc(c.status)+'</span></td></tr>';
+  }).join('');
+  const coachRows=all('SELECT * FROM edu_coaches ORDER BY name').map(co=>{
+    const cs=all('SELECT * FROM edu_classes WHERE coach=?',[co.name]);
+    const heldN=cs.reduce((s,c)=>s+eduHeld(c.id).length,0);
+    return '<tr><td>'+esc(co.name)+'</td><td>'+esc(co.expertise||'—')+'</td><td>'+faNum(cs.length)+'</td><td>'+faNum(heldN)+'</td><td class="tiny">'+esc(cs.map(c=>c.title).join('، ')||'—')+'</td></tr>';
+  }).join('');
+  const lvlRows=EDU_LVLS.map(l=>'<tr><td><span class="badge '+entBadgeCls(l)+'">'+l+'</span></td><td>'+faNum(one('SELECT COUNT(*) c FROM edu_members WHERE level=?',[l]).c)+'</td></tr>').join('');
+  const byM={};
+  all("SELECT date_iso FROM edu_sessions WHERE status='برگزارشده' AND date_iso<>''").forEach(r=>{
+    const j=isoToJ(r.date_iso); const k=j.jy+'/'+('0'+j.jm).slice(-2); byM[k]=(byM[k]||0)+1;
+  });
+  const months=Object.keys(byM).sort().reverse();
+  return '<div class="grid-stats">'+
+   '<div class="stat-card accent-success"><span class="stat-label">کلاس‌های فعال</span><b class="stat-num c-success">'+faNum(cls.filter(c=>c.status==='فعال').length)+'</b><small class="muted">از '+faNum(cls.length)+' کلاس</small></div>'+
+   '<div class="stat-card"><span class="stat-label">جلسات برگزارشده</span><b class="stat-num">'+faNum(heldTotal)+'</b><small class="muted">کل کلاس‌ها</small></div>'+
+   '<div class="stat-card accent-gold"><span class="stat-label">میانگین حضور کل</span><b class="stat-num">'+(n?faNum(Math.round(sum/n))+'٪':'—')+'</b><small class="muted">وضعیت حضور و غیاب</small></div>'+
+   '<div class="stat-card"><span class="stat-label">اعضای پرونده‌دار</span><b class="stat-num">'+faNum(mems)+'</b><small class="muted">پرونده تربیتی</small></div>'+
+  '</div>'+
+  '<div class="card pad" style="margin:12px 0 14px"><h3 style="display:flex;align-items:center;gap:8px">'+icon('chart',18)+' عملکرد کلاس‌ها'+
+   '<button class="btn btn-outline btn-sm no-print" data-act="eduPerfPrint" style="margin-inline-start:auto">'+icon('printer',14)+' چاپ گزارش عملکرد</button></h3>'+
+   (clsRows?'<div class="table-wrap"><table class="tbl" style="min-width:680px"><thead><tr><th>کلاس</th><th>مربی</th><th>اعضا</th><th>جلسات برگزارشده</th><th>میانگین حضور</th><th>وضعیت</th></tr></thead><tbody>'+clsRows+'</tbody></table></div>':emptyState('کلاسی ثبت نشده است'))+'</div>'+
+  '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('users',17)+' عملکرد مربیان</h3>'+
+   (coachRows?'<div class="table-wrap"><table class="tbl" style="min-width:560px"><thead><tr><th>مربی</th><th>تخصص</th><th>تعداد کلاس</th><th>جلسات برگزارشده</th><th>کلاس‌های تحت مسئولیت</th></tr></thead><tbody>'+coachRows+'</tbody></table></div>':emptyState('مربی‌ای ثبت نشده است'))+'</div>'+
+  '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">'+
+   '<div class="card pad"><h3>'+icon('file',17)+' وضعیت اعضا (سطوح ارزیابی)</h3>'+
+    (mems?'<table class="tbl" style="margin-top:8px"><tbody>'+lvlRows+'</tbody></table>':emptyState('پرونده‌ای ثبت نشده است'))+'</div>'+
+   '<div class="card pad"><h3>'+icon('calendar',17)+' گزارش ماهانه و سالانه جلسات</h3>'+
+    (months.length?'<div class="table-wrap"><table class="tbl" style="margin-top:8px"><thead><tr><th>ماه</th><th>جلسات برگزارشده</th></tr></thead><tbody>'+
+     months.map(m=>{ const p2=m.split('/'); return '<tr><td><b>'+faNum(p2[0])+'/'+faNum(+p2[1])+'</b></td><td>'+faNum(byM[m])+'</td></tr>'; }).join('')+
+     '</tbody></table></div>':emptyState('پس از ثبت جلسات برگزارشده تشکیل می‌شود'))+'</div>'+
+  '</div>';
+}
+/* خروجی‌های رسمی PDF */
+function eduAttPrint(){
+  const cur=window._eduAttCls;
+  if(!cur){ toast('کلاسی انتخاب نشده است','error'); return; }
+  const C=one('SELECT * FROM edu_classes WHERE id=?',[cur]); if(!C) return;
+  const mem=eduMembersOf(C);
+  const held=eduHeld(cur);
+  let sum=0,n=0;
+  const mrows=mem.map(m=>{
+    const p=eduAttPct(cur,m);
+    if(p.pct!=null){ sum+=p.pct; n++; }
+    return '<tr><td>'+esc(m)+'</td><td>'+faNum(p.ok)+'</td><td>'+faNum(p.abs)+'</td><td>'+faNum(p.late)+'</td><td>'+(p.pct==null?'—':faNum(p.pct)+'٪')+'</td></tr>';
+  }).join('');
+  const srows=held.map(s=>{
+    const rows=all('SELECT * FROM edu_attendance WHERE session_id=?',[s.id]);
+    const ok=rows.filter(r=>r.status==='حاضر').length, lt=rows.filter(r=>r.status==='تأخیر').length, ab=rows.filter(r=>r.status==='غایب').length;
+    return '<tr><td>'+faDateLong(s.date_iso)+'</td><td>'+esc(s.topic||'—')+'</td><td>'+faNum(ok)+'</td><td>'+faNum(ab)+'</td><td>'+faNum(lt)+'</td></tr>';
+  }).join('');
+  const avg=n?Math.round(sum/n):null;
+  const h=secLetterhead('گزارش-'+faNum(C.id),faStamp(),'معاونت تعلیم و تربیت')+
+   '<h3 style="text-align:center;margin:6mm 0">گزارش حضور و غیاب کلاس «'+esc(C.title)+'»</h3>'+
+   '<div class="meta"><span>مربی: '+esc(C.coach||'—')+'</span><span>گروه سنی: '+esc(C.age_group||'—')+'</span><span>زمان: '+esc((C.days||'—')+(C.time_fa?' · '+C.time_fa:''))+'</span></div>'+
+   '<h4>جلسات برگزارشده ('+faNum(held.length)+')</h4>'+
+   '<table class="min"><thead><tr><th>تاریخ</th><th>موضوع</th><th>حاضر</th><th>غایب</th><th>تأخیر</th></tr></thead><tbody>'+(srows||'<tr><td colspan="5">جلسه‌ای برگزار نشده است</td></tr>')+'</tbody></table>'+
+   '<h4>وضعیت حضور اعضا ('+faNum(mem.length)+' عضو'+(avg!=null?' — میانگین حضور کلاس: '+faNum(avg)+'٪':'')+')</h4>'+
+   '<table class="min"><thead><tr><th>عضو</th><th>حاضر</th><th>غایب</th><th>تأخیر</th><th>درصد حضور</th></tr></thead><tbody>'+(mrows||'<tr><td colspan="5">عضوی ثبت نشده است</td></tr>')+'</tbody></table>'+
+   '<p style="font-size:10.5pt">توضیح: تأخیر به‌عنوان حضور محاسبه شده است؛ ثبت هر جلسه مبتنی بر تاریخ همان جلسه و همراه با توضیحات مربی است.</p>'+
+   '<div class="sig"><div class="block">مربی کلاس<div class="line">امضا</div></div><div class="block">معاونت تعلیم و تربیت<div class="line">امضا و مهر</div></div></div>';
+  openOfficialDoc('گزارش حضور و غیاب — '+C.title,h);
+}
+function eduMemPrintAction(id){
+  const m=one('SELECT * FROM edu_members WHERE id=?',[id]); if(!m) return;
+  let h=secLetterhead('پرونده-'+faNum(m.id),faStamp(),'معاونت تعلیم و تربیت — محرمانه')+
+   '<h3 style="text-align:center;margin:6mm 0">پرونده تربیتی — '+esc(m.name)+'</h3>'+
+   '<div class="meta"><span>تولد / گروه سنی: '+esc(m.birth_info||'—')+'</span><span>مربی مسئول: '+esc(m.mentor||'—')+'</span><span>سطح کلی: '+esc(m.level)+'</span></div>'+
+   (m.is_minor?'<p><b>ملاحظات:</b> عضو زیر ۱۸ سال است؛ حریم خصوصی و ضوابط رضایت والدین رعایت شود.</p>':'');
+  EDU_IND.forEach(c=>{
+    let o={}; try{ o=JSON.parse(m[c.k]||'{}'); }catch(e){}
+    h+='<table class="min"><thead><tr><th colspan="2">'+c.t+'</th></tr><tr><th>شاخص</th><th style="width:160px">سطح</th></tr></thead><tbody>'+
+     c.items.map(it=>'<tr><td>'+esc(it)+'</td><td>'+esc(o[it]||'—')+'</td></tr>').join('')+'</tbody></table>';
+  });
+  const sec=(t,v)=>v?'<p><b>'+t+':</b><br>'+esc(v).replace(/\n/g,'<br>')+'</p>':'';
+  h+=sec('سوابق تربیتی',m.history)+sec('نقاط قوت',m.strengths)+sec('استعدادها',m.talents)+
+   sec('زمینه‌های نیازمند تقویت',m.weak)+sec('پیشرفت نسبت به قبل',m.progress_txt)+sec('پیشنهاد تربیتی',m.suggest)+
+   sec('اهداف کوتاه‌مدت',m.goal_short)+sec('اهداف بلندمدت',m.goal_long)+sec('فعالیت‌های پیشنهادی',m.growth)+
+   (m.follow_coach?'<p><b>مربی پیگیر:</b> '+esc(m.follow_coach)+'</p>':'')+
+   (m.review_iso?'<p><b>زمان بازبینی بعدی:</b> '+faDate(m.review_iso)+'</p>':'')+
+   '<div class="sig"><div class="block">مربی مسئول<div class="line">امضا</div></div><div class="block">معاونت تعلیم و تربیت<div class="line">امضا و مهر</div></div></div>'+
+   '<p class="trk">این پرونده محرمانه است؛ دسترسی فقط برای مربی مسئول، معاونت تعلیم و تربیت و امام جماعت مجاز است. سایر معاونت‌ها و تشکل‌ها به این پرونده دسترسی ندارند.</p>';
+  openOfficialDoc('پرونده تربیتی — '+m.name,h);
+}
+function eduPerfPrint(){
+  const cls=all('SELECT * FROM edu_classes ORDER BY title');
+  let sum=0,n=0;
+  const rows=cls.map(c=>{
+    const mem=eduMembersOf(c); let s2=0,n2=0;
+    mem.forEach(m=>{ const p=eduAttPct(c.id,m); if(p.pct!=null){ s2+=p.pct; n2++; } });
+    const avg=n2?Math.round(s2/n2):null;
+    if(avg!=null){ sum+=avg; n++; }
+    return '<tr><td>'+esc(c.title)+'</td><td>'+esc(c.coach||'—')+'</td><td>'+faNum(mem.length)+'</td><td>'+faNum(eduHeld(c.id).length)+'</td><td>'+(avg==null?'—':faNum(avg)+'٪')+'</td></tr>';
+  }).join('');
+  const heldTotal=one("SELECT COUNT(*) c FROM edu_sessions WHERE status='برگزارشده'").c;
+  const h=secLetterhead('گزارش-'+faNum(heldTotal),faStamp(),'معاونت تعلیم و تربیت')+
+   '<h3 style="text-align:center;margin:6mm 0">گزارش عملکرد معاونت تعلیم و تربیت</h3>'+
+   '<p>تعداد کلاس‌ها: <b>'+faNum(cls.length)+'</b> (فعال: '+faNum(cls.filter(c=>c.status==='فعال').length)+') · جلسات برگزارشده: <b>'+faNum(heldTotal)+'</b> · میانگین حضور کل: <b>'+(n?faNum(Math.round(sum/n))+'٪':'—')+'</b> · اعضای پرونده‌دار: <b>'+faNum(one('SELECT COUNT(*) c FROM edu_members').c)+'</b></p>'+
+   '<table class="min"><thead><tr><th>کلاس</th><th>مربی</th><th>اعضا</th><th>جلسات برگزارشده</th><th>میانگین حضور</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5">کلاسی ثبت نشده است</td></tr>')+'</tbody></table>'+
+   '<div class="sig"><div class="block">معاونت تعلیم و تربیت<div class="line">امضا</div></div><div class="block">امام جماعت<div class="line">تأیید</div></div></div>';
+  openOfficialDoc('گزارش عملکرد معاونت تعلیم و تربیت',h);
+}
 function panelKindOfUser(){
   if(!session) return null;
   if(session.username==='secretary') return 'secretary';
@@ -4750,10 +5481,10 @@ function entAllowed(k){
   return !!pk&&PANEL_KIND[pk].ents.includes(k);
 }
 function entBadgeCls(v){
-  if(['تأییدشده','اجراشده','سالم','فعال','انجام‌شد','بایگانی','تحویل نهایی','تکمیل‌شده','تحویل‌شده','توانمند و پیشرو','تبدیل به برنامه','تأییدشده — تقویم کل مسجد'].includes(v)) return 'b-success';
+  if(['تأییدشده','اجراشده','سالم','فعال','انجام‌شد','بایگانی','تحویل نهایی','تکمیل‌شده','تحویل‌شده','توانمند و پیشرو','تبدیل به برنامه','تأییدشده — تقویم کل مسجد','برگزارشده','برگزار شد','حاضر'].includes(v)) return 'b-success';
   if(['در حال اجرا','در حال بررسی','در حال تعمیر','در بررسی','مطلوب','تمدید‌شده'].includes(v)) return 'b-info';
-  if(['نیاز به تعمیر','مهم','فوری','نزدیک به پایان','متوقف‌شده','لغوشده','ردشده','خراب','اسقاطی','تخلیه‌شده','نیازمند توجه و تقویت'].includes(v)) return 'b-danger';
-  if(['برنامه‌ریزی‌شده','پیشنهادی','ثبت‌شده','عادی','درخواست به دبیرخانه'].includes(v)) return 'b-warn';
+  if(['نیاز به تعمیر','مهم','فوری','نزدیک به پایان','متوقف‌شده','لغوشده','ردشده','خراب','اسقاطی','تخلیه‌شده','نیازمند توجه و تقویت','غایب','غیرفعال'].includes(v)) return 'b-danger';
+  if(['برنامه‌ریزی‌شده','پیشنهادی','ثبت‌شده','عادی','درخواست به دبیرخانه','تأخیر'].includes(v)) return 'b-warn';
   return 'b-neutral';
 }
 function entCell(cfg,c,r){
@@ -4787,12 +5518,13 @@ VIEWS.panel=function(root){
   if(!kind){ root.innerHTML='<div class="card pad"><p class="muted">پنل اختصاصی برای حساب شما تعریف نشده است.</p></div>'; return; }
   if(kind==='secretary'){ renderSecPanel(root); return; }
   if(kind==='culture'){ renderCultPanel(root); return; }
+  if(kind==='education'){ renderEduPanel(root); return; }
   const cfg=PANEL_KIND[kind];
   const tabs=imamPanelTabs();
   root.innerHTML=
    '<div class="page-head"><div><h2>'+cfg.title+'</h2><p class="muted">'+cfg.desc+'</p></div></div>'+
    tabs+
-   (kind==='heyat'?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><p class="tiny muted"><b>استقلال تشکیلاتی:</b> این پنل مستقل از معاونت‌هاست؛ جلسات داخلی هیئت در منوی «جلسات هیئت (داخلی)» و نامه‌ها در دبیرخانه اختصاصی (بخش دبیرخانه) مدیریت می‌شود. برای هیئت دبیرخانه و پنل مالی جداگانه‌ای از مرکز ایجاد نمی‌شود (§۳-۷).</p></div>':'')+
+   (kind==='heyat'?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><p class="tiny muted"><b>ساختار هیئت:</b> این پنل مستقل از معاونت‌هاست؛ مکاتبات هیئت مثل سایر معاونت‌ها از «مکاتبات» پنل عمومی (با بررسی اداری دبیرخانه مرکزی) انجام می‌شود، جلسات داخلی هیئت در منوی «جلسات هیئت (داخلی)» ثبت می‌گردد و گزارش جلسات هیئت امنا و مصوبات آن در پنل دبیر هیئت امنا ثبت می‌شود (§۳-۷).</p></div>':'')+
    cfg.ents.map(entSection).join('');
 };
 function entOpen(k,id){
