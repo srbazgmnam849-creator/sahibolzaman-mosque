@@ -682,7 +682,7 @@ tr.row-ov td{color:#8E2020}
     </form>
     <a class="apk-link" href="app/app.apk" download>📥 دانلود اپلیکیشن اندروید (APK)</a>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۸</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۹</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -734,7 +734,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۸ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۲.۹ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -1635,6 +1635,17 @@ function ensureSchema(){
     try{ addCol('culture_programs','docs',"TEXT DEFAULT ''"); }catch(e){}
     try{ addCol('culture_programs','problems',"TEXT DEFAULT ''"); }catch(e){}
     try{ addCol('culture_programs','official',"TEXT DEFAULT 'خیر'"); }catch(e){}
+    /* v2.9 — ادغام کامل مکاتبات هیئت در دبیرخانه مرکزی: نامه‌های قدیمی org='heyat' یک‌بار به مرکز منتقل می‌شود */
+    try{
+      const hflag=one('SELECT value FROM sys_flags WHERE name=?',['heyatltr_1405_v1']);
+      if(!hflag){
+        run("UPDATE letters SET org='center' WHERE org='heyat'");
+        run('INSERT OR REPLACE INTO sys_flags(name,value) VALUES (?,?)',['heyatltr_1405_v1',faStamp()]);
+        markDirty();
+      }
+    }catch(e){ console.warn('heyatltr migrate',e); }
+    /* v2.9 — تصاویر جلسات */
+    try{ addCol('meetings','photos',"TEXT DEFAULT '[]'"); }catch(e){}
   }catch(e){ console.warn('ensureSchema migrate',e); }
   try{ run("CREATE TABLE IF NOT EXISTS user_perms(username TEXT NOT NULL, module TEXT NOT NULL, lvl INTEGER NOT NULL, updated_at_fa TEXT DEFAULT '', PRIMARY KEY(username,module))"); }catch(e){}
   try{
@@ -1915,7 +1926,7 @@ VIEWS.letters=function(root){
   root.innerHTML=
    '<div class="page-head"><div><h2>'+hd.t+'</h2><p class="muted">'+hd.d+'</p></div>'+
    (canNew?'<button class="btn btn-primary no-print" data-act="letterNew">'+icon('plus')+' ثبت نامه جدید</button>':'')+'</div>'+
-   ((myOrg()!=='center')?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>مکاتبات از طریق دبیرخانه مرکزی:</b> نامه‌های ثبت‌شده شما (از جمله نامه‌های هیئت) وارد صف بررسی دبیرخانه مرکزی مسجد می‌شود؛ فقط نامه‌های خودتان را می‌بینید و پاسخ زیر همان نامه نمایش داده می‌شود (گردش دوازده‌مرحله‌ای §۴-۲).</p></div>':'')+
+   ((myOrg()!=='center'&&session.username!=='heyat')?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>مکاتبات از طریق دبیرخانه مرکزی:</b> نامه‌های ثبت‌شده شما (از جمله نامه‌های هیئت) وارد صف بررسی دبیرخانه مرکزی مسجد می‌شود؛ فقط نامه‌های خودتان را می‌بینید و پاسخ زیر همان نامه نمایش داده می‌شود (گردش دوازده‌مرحله‌ای §۴-۲).</p></div>':'')+
    '<div class="card pad fbar no-print">'+
      '<div class="field grow"><label>جست‌وجو</label><input id="lfQ" class="inp" placeholder="موضوع، فرستنده یا شماره نامه…" value="'+esc(letterFilter.q)+'"></div>'+
      '<div class="field"><label>نوع</label><select id="lfType" class="inp"><option value="">همه</option>'+LETTER_TYPES.map(t=>'<option '+(letterFilter.type===t?'selected':'')+'>'+t+'</option>').join('')+'</select></div>'+
@@ -2189,6 +2200,7 @@ function openMeetingDetail(id){
   const decs=all('SELECT d.*, t.status AS tstatus, t.deadline_iso AS tdead FROM decisions d LEFT JOIN tasks t ON t.id=d.task_id WHERE d.meeting_id=? ORDER BY d.id',[id]);
   let att=[]; try{ att=JSON.parse(M.attendees||'[]'); }catch(e){}
   let inv=[]; try{ inv=JSON.parse(M.invitees||'[]'); }catch(e){}
+  let mtPhotos=[]; try{ mtPhotos=JSON.parse(M.photos||'[]'); }catch(e){}
   const users=all('SELECT username,display_name FROM users WHERE active=1 ORDER BY display_name');
   const isBoard=(M.kind||'board')==='board';
   const html=
@@ -2219,7 +2231,14 @@ function openMeetingDetail(id){
    fld('دستور جلسه','<textarea id="agTxt" class="inp" rows="2" '+(canMng?'':'disabled')+' placeholder="موارد دستور جلسه…">'+esc(M.agenda||'')+'</textarea>')+
    fld('مذاکرات و صورت‌جلسه','<textarea id="minTxt" class="inp" rows="4" '+(canMng?'':'disabled')+' placeholder="خلاصه مذاکرات و صورت‌جلسه…">'+esc(M.minutes||'')+'</textarea>')+
    (canMng?'<button class="btn btn-outline btn-sm" data-act="secSaveMeet" data-id="'+M.id+'" style="margin:6px 0 12px">'+icon('save',15)+' ذخیره دستور جلسه و صورت‌جلسه</button>':'')+
-   (isBoard?'<div class="act-row" style="margin-bottom:10px">'+
+   '<div class="divider"></div>'+
+   '<h4 style="font-size:13.5px;color:var(--primary-dark);margin-bottom:8px">تصاویر جلسه ('+faNum(mtPhotos.length)+')</h4>'+
+   (mtPhotos.length?'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">'+mtPhotos.map(function(p,i){
+     return '<div style="position:relative"><img src="'+p.d+'" alt="'+esc(p.n||'تصویر جلسه')+'" style="height:92px;max-width:150px;object-fit:cover;border-radius:8px;border:1px solid #ddd">'+
+      (canMng?'<button class="icon-btn danger" data-phdel="'+i+'" title="حذف تصویر" style="position:absolute;top:-6px;left:-6px;background:#fff;color:var(--danger)">'+icon('trash',13)+'</button>':'')+'</div>';
+   }).join('')+'</div>':'<p class="tiny muted">تصویری برای این جلسه ثبت نشده است.</p>')+
+   (canMng?'<label class="btn btn-outline btn-sm" style="cursor:pointer">'+icon('plus',14)+' افزودن تصویر جلسه<input type="file" id="mtPhoto" accept="image/*" multiple hidden></label>':'')+
+   (isBoard?'<div class="act-row" style="margin:10px 0">'+
      '<button class="btn btn-outline btn-sm" data-act="minPrint" data-id="'+M.id+'">'+icon('printer',15)+' PDF رسمی صورت‌جلسه</button>'+
      '<button class="btn btn-outline btn-sm" data-act="decSumPrint" data-id="'+M.id+'">'+icon('file',15)+' خلاصه مصوبات</button>'+
    '</div>':'')+
@@ -2290,6 +2309,46 @@ function openMeetingDetail(id){
       openMeetingDetail(id);
     });
   }
+  /* v2.9 — تصاویر جلسه: بارگذاری (با فشرده‌سازی) و حذف */
+  function mtSavePhotos(arr){
+    run('UPDATE meetings SET photos=? WHERE id=?',[JSON.stringify(arr),id]);
+    logActivity('تصاویر جلسه','تصاویر جلسه '+M.number+' به‌روزرسانی شد ('+faNum(arr.length)+' تصویر).');
+    markDirty(); saveNow(true);
+  }
+  const phInp=ov.querySelector('#mtPhoto');
+  if(phInp){
+    phInp.addEventListener('change',()=>{
+      const files=Array.from(phInp.files||[]);
+      if(!files.length) return;
+      let pending=files.length;
+      files.forEach(f=>{
+        const rd=new FileReader();
+        rd.onload=()=>{
+          const img=new Image();
+          img.onload=()=>{
+            const MAX=1280;
+            let w=img.width,h=img.height;
+            if(w>MAX||h>MAX){ const r=Math.min(MAX/w,MAX/h); w=Math.round(w*r); h=Math.round(h*r); }
+            const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+            cv.getContext('2d').drawImage(img,0,0,w,h);
+            let d; try{ d=cv.toDataURL('image/jpeg',0.82); }catch(e){ d=rd.result; }
+            mtPhotos.push({n:f.name,d:d});
+            if(--pending===0){ mtSavePhotos(mtPhotos); toast('تصاویر جلسه ذخیره شد ✓'); openMeetingDetail(id); }
+          };
+          img.onerror=()=>{ mtPhotos.push({n:f.name,d:rd.result}); if(--pending===0){ mtSavePhotos(mtPhotos); toast('تصاویر جلسه ذخیره شد ✓'); openMeetingDetail(id); } };
+          img.src=rd.result;
+        };
+        rd.readAsDataURL(f);
+      });
+    });
+  }
+  ov.querySelectorAll('[data-phdel]').forEach(b=>b.addEventListener('click',()=>{
+    const i=+b.dataset.phdel;
+    mtPhotos.splice(i,1);
+    mtSavePhotos(mtPhotos);
+    toast('تصویر حذف شد');
+    openMeetingDetail(id);
+  }));
 }
 
 /* ============================================================
@@ -3452,6 +3511,38 @@ const ACTIONS={
     markDirty(); saveNow(true); toast('ثبت شد'); renderView();
   },
   secTab:d=>{ window._secTab=d.k; renderView(); },
+  /* v2.9 — جلسات هیئت فداییان در پنل هیئت + خروجی جلسات هیئت امنا */
+  heyatMeetNew:()=>openHeyatReportModal(),
+  meetDel:async d=>{
+    const M=one('SELECT * FROM meetings WHERE id=?',[+d.id]); if(!M) return;
+    if(!meetingCanManage(M)){ toast('مدیریت این جلسه در اختیار شما نیست','error'); return; }
+    if(!await confirmDlg('حذف جلسه','جلسه «'+M.title+'» با همهٔ مصوبات و وظایف آن حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM tasks WHERE meeting_id=?',[M.id]);
+    run('DELETE FROM decisions WHERE meeting_id=?',[M.id]);
+    run('DELETE FROM meetings WHERE id=?',[M.id]);
+    logActivity('حذف جلسه','جلسه '+M.number+' حذف شد.');
+    markDirty(); saveNow(true); toast('جلسه حذف شد'); renderView();
+  },
+  heyMeetExportSel:()=>{
+    const ids=Array.from(document.querySelectorAll('.heyMeetChk:checked')).map(x=>+x.dataset.mid);
+    if(!ids.length){ toast('حداقل یک جلسه را علامت بزنید','error'); return; }
+    meetExportIds(ids);
+  },
+  heyMeetExportAll:()=>{
+    const ids=Array.from(document.querySelectorAll('.heyMeetChk')).map(x=>+x.dataset.mid);
+    if(!ids.length){ toast('جلسه‌ای برای خروجی ثبت نشده است','error'); return; }
+    meetExportIds(ids);
+  },
+  meetExportSel:()=>{
+    const ids=Array.from(document.querySelectorAll('.meetChkBoard:checked')).map(x=>+x.dataset.mid);
+    if(!ids.length){ toast('حداقل یک جلسه را علامت بزنید','error'); return; }
+    meetExportIds(ids);
+  },
+  meetExportAll:()=>{
+    const ids=Array.from(document.querySelectorAll('.meetChkBoard')).map(x=>+x.dataset.mid);
+    if(!ids.length){ toast('جلسه‌ای برای خروجی ثبت نشده است','error'); return; }
+    meetExportIds(ids);
+  },
   /* v2.8 — پنل تعلیم و تربیت */
   eduTab:d=>{ window._eduTab=d.k; renderView(); },
   eduClassNew:()=>openEduClassModal(null),
@@ -3733,23 +3824,6 @@ const ACTIONS={
   cloudPushBtn:async()=>{ const ok=await confirmDlg('ارسال به فضای ابری','دیتابیس فعلی این دستگاه به‌صورت رمزنگاری‌شده در فضای ابری ذخیره و مبنای همه دستگاه‌ها می‌شود. ادامه می‌دهید؟'); if(ok){ const r=await cloudPush('manual',true); toast(r?'ارسال به ابر انجام شد ✓':'ارسال ناموفق بود — بعداً تلاش کنید',r?'success':'error'); const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText(); } },
   cloudPullBtn:async()=>{ const ok=await confirmDlg('دریافت از فضای ابری','آخرین نسخه ابری جایگزین داده‌های این دستگاه می‌شود (نسخه فعلی به‌صورت خودکار پشتیبان گرفته می‌شود). ادامه می‌دهید؟'); if(ok){ const r=await cloudPull(true); const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText(); if(r!==null) toast('دریافت از ابر انجام شد ✓'); } },
   /* v2.3 — سند مأموریت */
-  letterToCenter:async d=>{
-    const L=one('SELECT * FROM letters WHERE id=?',[+d.id]);
-    if(!L) return;
-    if(session.username!=='heyat'||L.org!=='heyat'){ toast('این اقدام فقط برای نامه‌های دبیرخانه هیئت مجاز است','error'); return; }
-    if(!await confirmDlg('ارجاع به دبیرخانه مرکزی','با این کار رونوشتی از نامه «'+L.subject+'» با شماره‌گذاری دبیرخانه مرکزی ثبت و وارد صف بررسی مرکزی می‌شود. ادامه می‌دهید؟')) return;
-    const num=nextNumber('letters',letterPrefix());
-    run('INSERT INTO letters (number,subject,sender,type,summary,status,assigned_role,file_name,created_by,created_at,created_at_fa,org) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
-      [num,'(ارجاع از دبیرخانه هیئت — '+L.number+') '+L.subject,'هیئت فداییان حضرت زینب (س)',L.type,'مرجع اصلی: '+L.number+' — '+(L.summary||''),'ثبت‌شده','',L.file_name||'','heyat',todayIso(),faStamp(),'center']);
-    const newNum=num;
-    run('INSERT INTO letter_comments (letter_id,author,role,body,created_at_fa) VALUES (?,?,?,?,?)',[L.id,session.name,session.role,'(ارجاع به دبیرخانه مرکزی با شماره '+newNum+')',faStamp()]);
-    addNotif('secretary','نامه ارجاعی از دبیرخانه هیئت','نامه «'+L.subject+'» از دبیرخانه اختصاصی هیئت با شماره '+newNum+' به دبیرخانه مرکزی ارجاع شد.');
-    logActivity('ارجاع نامه هیئت به مرکز','نامه '+L.number+' با شماره '+newNum+' به دبیرخانه مرکزی ارجاع شد.');
-    renderNotifBadge(); markDirty(); saveNow(true);
-    closeModal();
-    toast('نامه به دبیرخانه مرکزی ارجاع شد ('+newNum+') ✓');
-    renderView();
-  },
   eventAppro:d=>{
     const e=one('SELECT * FROM events WHERE id=?',[+d.id]);
     if(!e||!eventCanApprove(e)){ toast('اجازه تأیید ندارید','error'); return; }
@@ -3800,14 +3874,13 @@ const FINANCE_FULL=['imam','finance'];
 function myOrg(){ if(!session) return 'center'; return session.org||'center'; }
 function isCentralSec(){ return !!session&&(session.username==='imam'||session.username==='secretary'); }
 
-/* ---------- نامه‌ها: تفکیک دو دبیرخانه (§۴-۱) ---------- */
+/* ---------- نامه‌ها: دبیرخانه مرکزی یکسان برای همه واحدها — مکاتبات هیئت دقیقاً مثل معاونت فرهنگی (v2.9) ---------- */
 function letterCanSee(L){
   const un=session.username;
   if(un==='imam') return true;
-  /* v2.8 — مکاتبات هیئت هم مثل سایر واحدها در جریان دبیرخانه مرکزی است */
   if(un==='secretary') return true;
   if(un==='board') return L.created_by==='board';
-  if(myOrg()==='center') return L.org!=='heyat';
+  if(un==='heyat'||myOrg()==='center') return L.org!=='heyat';
   return L.created_by===un;
 }
 function letterScope(){
@@ -3815,11 +3888,12 @@ function letterScope(){
   if(un==='imam') return {sql:'1=1',p:[]};
   if(un==='secretary') return {sql:'1=1',p:[]};
   if(un==='board') return {sql:"created_by='board'",p:[]};
-  if(myOrg()==='center') return {sql:"COALESCE(org,'center')<>'heyat'",p:[]};
+  if(un==='heyat'||myOrg()==='center') return {sql:"COALESCE(org,'center')<>'heyat'",p:[]};
   return {sql:'created_by=?',p:[un]};
 }
 function letterPrefix(){ const jy=isoToJ(todayIso()).jy; return jy+'/دب/'; }
 function letterHeadInfo(){
+  if(session.username==='heyat') return {t:'دبیرخانه — نامه‌ها',d:'ثبت، ارجاع و پیگیری نامه‌های وارده، صادره و داخلی — در جریان دبیرخانه مرکزی مسجد'};
   if(myOrg()!=='center') return {t:'مکاتبات واحد شما',d:'نامه‌های ثبت‌شده شما در صف بررسی دبیرخانه مرکزی مسجد'};
   return {t:'دبیرخانه — نامه‌ها',d:'ثبت، ارجاع و پیگیری نامه‌های وارده، صادره و داخلی'};
 }
@@ -4187,7 +4261,7 @@ const ENT={
 };
 
 /* ============================================================
-   v2.8 — مکاتبات هیئت مثل سایر واحدها (دبیرخانه مرکزی) · جلسات هیئت امنا بدون مرحلهٔ تشکیل جلسه (ثبت گزارش جلسه: حاضران/غایبان/مصوبه با مسئول و مهلت انجام) · پنل تخصصی تعلیم و تربیت (۸ بخش)
+   v2.9 — مکاتبات هیئت دقیقاً مثل معاونت فرهنگی (دید کامل دبیرخانه مرکزی) + جلسات هیئت فداییان در پنل هیئت (ثبت گزارش جلسه، تصاویر جلسه، خروجی تک/چند/همه) + خروجی جلسات هیئت امنا\n   ============================================================\n   v2.8 — مکاتبات هیئت مثل سایر واحدها (دبیرخانه مرکزی) · جلسات هیئت امنا بدون مرحلهٔ تشکیل جلسه (ثبت گزارش جلسه: حاضران/غایبان/مصوبه با مسئول و مهلت انجام) · پنل تخصصی تعلیم و تربیت (۸ بخش)
    ============================================================
    v2.6 — قالب رسمی نامه برون‌سازمانی (کادر سه‌خط + سربرگ + B Zar + امضای خودکار امام جماعت) · حذف بخش‌های تخصصی و مدیریت (آموزش، جلسات، وظایف) · گزارش مالی در پنل عمومی
    ============================================================
@@ -4222,7 +4296,9 @@ function vazirFaceCss(){
   }catch(e){}
   _vazirFace=css; return css;
 }
-function openOfficialDoc(docTitle,bodyHtml){
+function openOfficialDoc(docTitle,bodyHtml){ return openOfficialMulti(docTitle,[bodyHtml]); }
+/* v2.9 — خروجی چند جلسه: هر جلسه در برگهٔ A4 مستقل (شکست صفحه خودکار) */
+function openOfficialMulti(docTitle,parts){
   const w=window.open('','_blank');
   if(!w){ toast('پنجرهٔ چاپ مرورگر مسدود است؛ لطفاً اجازه پاپ‌آپ دهید','error'); return; }
   const faces='@font-face{font-family:"B Zar";src:url('+BZAR_WOFF+') format("woff");font-weight:normal;font-style:normal}\n'+vazirFaceCss();
@@ -4257,8 +4333,11 @@ function openOfficialDoc(docTitle,bodyHtml){
    '.draftmark{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:44pt;color:rgba(180,20,20,.13);font-weight:bold;border:5px solid rgba(180,20,20,.13);padding:6px 26px;border-radius:12px;white-space:nowrap;z-index:5}'+
    '.sig-img-note{font-size:9.5pt;color:#777}'+
    'table.min{width:100%;border-collapse:collapse;margin:5mm 0} table.min th,table.min td{border:1px solid #666;padding:7px 9px;font-size:11.5pt;text-align:right} table.min th{background:#f0ece1}'+
-   '@media print{ body{background:#fff} .sheet{margin:0;box-shadow:none} }</style></head><body>'+
-   '<div class="sheet"><div class="fr fr1"></div><div class="fr fr2"></div><div class="fr fr3"></div>'+bodyHtml+'</div>'+
+   '@media print{ body{background:#fff} .sheet{margin:0;box-shadow:none} }'+
+   '.sheet{page-break-after:always} .sheet:last-child{page-break-after:auto}'+
+   '.mphoto{width:58mm;height:42mm;object-fit:cover;border:1px solid #999;border-radius:2mm}'+
+   '</style></head><body>'+
+   parts.map(function(p){ return '<div class="sheet"><div class="fr fr1"></div><div class="fr fr2"></div><div class="fr fr3"></div>'+p+'</div>'; }).join('')+
    '<script>setTimeout(function(){window.print()},700)<\/script></body></html>');
   w.document.close();
 }
@@ -4506,7 +4585,7 @@ function renderSecMeet(){
   };
   return ''+
    '<div class="page-head"><div><h2>ثبت گزارش جلسات هیئت امنا</h2><p class="muted">بدون مرحلهٔ «تشکیل جلسه» — گزارش هر جلسه مستقیماً ثبت می‌شود: اینکه چه کسانی حضور داشتند، غایبان، دستور جلسه و صورت‌جلسه؛ سپس مصوبات شماره‌گذاری‌شده با «مسئول اجرا» و «مهلت انجام مصوبه» و پیگیری تا اتمام</p></div>'+
-   '<button class="btn btn-primary no-print" data-act="meetingNew">'+icon('plus')+' ثبت گزارش جلسه هیئت امنا</button></div>'+
+   '<button class="btn btn-primary no-print" data-act="meetingNew">'+icon('plus')+' ثبت گزارش جلسات هیئت امنا</button></div>'+
    '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>قانون قطعی (§۳-۲):</b> مدیریت جلسات هیئت امنا فقط در اختیار دبیرخانه مرکزی و امام جماعت است؛ هیچ معاونت یا تشکل دیگری منوی مستقل یا حق ثبت/مدیریت این جلسات ندارد. معاونت‌ها فقط با دعوت حضور می‌یابند یا درباره مصوبات مرتبط گزارش می‌دهند و پیگیری اجرای مصوبات بر عهده دبیرخانه مرکزی است — حتی اگر مسئول اجرا یکی از معاونت‌ها باشد.</p></div>'+
    '<div class="grid-stats">'+
     '<div class="stat-card accent-success"><span class="stat-label">گزارش‌های ثبت‌شده</span><b class="stat-num c-success">'+faNum(done.length)+'</b><small class="muted">بایگانی جلسات هیئت امنا</small></div>'+
@@ -4516,7 +4595,15 @@ function renderSecMeet(){
    (planned.length?'<div class="card pad" style="margin-bottom:14px"><h3>'+icon('calendar',17)+' ثبت‌های قدیمی برنامه‌ریزی‌شده ('+faNum(planned.length)+')</h3>'+
     planned.map(rowHtml).join('')+'</div>':'')+
    '<div class="card pad"><h3>'+icon('inbox',17)+' بایگانی گزارش جلسات ('+faNum(done.length)+')</h3>'+
-    (done.length?done.map(rowHtml).join(''):emptyState('هنوز گزارش جلسه‌ای ثبت نشده است — با دکمهٔ «ثبت گزارش جلسه هیئت امنا» شروع کنید'))+'</div>';
+    (done.length?done.map(rowHtml).join(''):emptyState('هنوز گزارش جلسه‌ای ثبت نشده است — با دکمهٔ «ثبت گزارش جلسه هیئت امنا» شروع کنید'))+'</div>'+
+   /* v2.9 — خروجی جلسات: تک جلسه / جلسات انتخابی / همه */
+   '<div class="card pad" style="margin-top:14px"><h3>'+icon('printer',17)+' خروجی جلسات هیئت امنا</h3>'+
+    '<p class="tiny muted" style="margin:6px 0 8px">خروجی PDF رسمی: یک جلسه (دکمهٔ PDF هر جلسه)، چند جلسهٔ انتخابی یا همهٔ جلسات — هر جلسه در برگهٔ A4 مستقل با حاضران، غایبان، مصوبات و تصاویر جلسه.</p>'+
+    (rows.length?'<div class="att-grid" style="margin-bottom:10px">'+rows.map(m=>'<label class="chk"><input type="checkbox" class="meetChkBoard" data-mid="'+m.id+'"> '+esc(m.number)+' — '+esc(m.title)+' ('+faDate(m.date_iso)+')</label>').join('')+'</div>'+
+     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn btn-primary btn-sm" data-act="meetExportSel">'+icon('printer',14)+' خروجی جلسات انتخابی</button>'+
+      '<button class="btn btn-outline btn-sm" data-act="meetExportAll">'+icon('file',14)+' خروجی همه جلسات</button>'+
+     '</div>':emptyState('جلسه‌ای برای خروجی ثبت نشده است'))+'</div>';
 }
 function meetingPrintHtml(m,mode){
   const decs=all('SELECT d.*, t.deadline_iso AS tdead, t.status AS tstatus FROM decisions d LEFT JOIN tasks t ON t.id=d.task_id WHERE d.meeting_id=? ORDER BY d.id',[m.id]);
@@ -4526,21 +4613,117 @@ function meetingPrintHtml(m,mode){
   const abs=inv.filter(function(r){return !att.includes(r)});
   let h=secLetterhead(m.number,m.date_fa||faDate(m.date_iso))+
    '<div class="subj" style="text-align:center"><b>'+(mode==='summary'?'خلاصه مصوبات':'صورت‌جلسه رسمی')+' — '+esc(m.title)+'</b></div>'+
-   '<div class="meta"><span>نوع: جلسه هیئت امنا</span><span>تاریخ: '+esc(m.date_fa||faDate(m.date_iso))+(m.time_fa?' — ساعت '+esc(m.time_fa):'')+'</span><span>مکان: '+esc(m.place||'—')+'</span></div>';
+   '<div class="meta"><span>نوع: '+meetingKindLabel(m)+'</span><span>تاریخ: '+esc(m.date_fa||faDate(m.date_iso))+(m.time_fa?' — ساعت '+esc(m.time_fa):'')+'</span><span>مکان: '+esc(m.place||'—')+'</span></div>';
   if(mode!=='summary'){
     h+='<p><b>حاضران:</b> '+(att.length?att.map(esc).join('، '):'—')+'</p>'+
      (inv.length?'<p><b>مدعوین:</b> '+inv.map(esc).join('، ')+'</p><p><b>غایبان:</b> '+(abs.length?abs.map(esc).join('، '):'—')+'</p>':'')+
      (m.agenda?'<p><b>دستور جلسه:</b> '+esc(m.agenda)+'</p>':'')+
      (m.minutes?'<p><b>مذاکرات و صورت‌جلسه:</b><br>'+esc(m.minutes).replace(/\n/g,'<br>')+'</p>':'');
   }
-  h+='<table class="min"><thead><tr><th style="width:60px">شماره</th><th>مصوبه</th><th style="width:150px">مسئول اجرا</th><th style="width:110px">مهلت اجرا</th><th style="width:100px">وضعیت</th></tr></thead><tbody>'+
+  h+='<table class="min"><thead><tr><th style="width:60px">شماره</th><th>مصوبه</th><th style="width:150px">مسئول اجرا</th><th style="width:110px">مهلت انجام مصوبه</th><th style="width:100px">وضعیت</th></tr></thead><tbody>'+
    (decs.length?decs.map(function(d,i){
      const done=d.tstatus==='انجام‌شده', late=d.tdead&&d.tstatus!=='انجام‌شده'&&d.tdead<todayIso();
      return '<tr><td>'+faNum(i+1)+'</td><td>'+esc(d.title)+'</td><td>'+esc(d.assignee||'—')+'</td><td>'+(d.tdead?faDate(d.tdead):'—')+'</td><td>'+(done?'انجام‌شده':(late?'عقب‌افتاده':esc(d.tstatus||'در انتظار')))+'</td></tr>';
    }).join(''):'<tr><td colspan="5" style="text-align:center">مصوبه‌ای ثبت نشده</td></tr>')+
    '</tbody></table>'+
-   '<div class="sig"><div class="block">دبیر جلسات هیئت امنا<div class="line">امضا</div></div><div class="block">رئیس جلسه / امام جماعت<div class="line">امضا و مهر</div></div></div>';
+   (mode!=='summary'?(function(){ let ph=[]; try{ ph=JSON.parse(m.photos||'[]'); }catch(e){}
+     if(!ph.length) return '';
+     return '<h4 style="margin:4mm 0 1mm">تصاویر جلسه ('+faNum(ph.length)+')</h4><div style="display:flex;flex-wrap:wrap;gap:3mm">'+ph.map(function(p){ return '<img class="mphoto" src="'+p.d+'">'; }).join('')+'</div>'; })():'')+
+   '<div class="sig"><div class="block">'+((m.kind||'board')==='board'?'دبیر جلسات هیئت امنا':'مسئول '+(ORG_LABELS[m.org]||'جلسه'))+'<div class="line">امضا</div></div><div class="block">رئیس جلسه / امام جماعت<div class="line">امضا و مهر</div></div></div>';
   return h;
+}
+
+/* ============================================================
+   v2.9 — جلسات هیئت فداییان در پنل اختصاصی هیئت
+   ثبت گزارش جلسه (بدون تشکیل جلسه): حاضران/غایبان، مصوبات با مسئول اجرا و مهلت انجام،
+   تصاویر جلسه و خروجی تک جلسه / جلسات انتخابی / همه جلسات
+   ============================================================ */
+function heyatMeetSection(){
+  const rows=all("SELECT m.*, (SELECT COUNT(*) FROM decisions dd WHERE dd.meeting_id=m.id) AS dcount FROM meetings m WHERE m.org='heyat' ORDER BY m.date_iso DESC, m.id DESC");
+  const done=rows.filter(function(m){return m.status==='برگزار شد'});
+  const pendDec=one("SELECT COUNT(*) c FROM decisions d LEFT JOIN tasks t ON t.id=d.task_id JOIN meetings m ON m.id=d.meeting_id WHERE m.org='heyat' AND (t.status IS NULL OR t.status!='انجام‌شده')").c;
+  const rowHtml=function(m){
+    return '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b>'+esc(m.title)+'</b>'+meetBadge(m.status)+
+     '<span style="margin-right:auto;display:flex;gap:6px">'+
+     '<button class="btn btn-outline btn-sm" data-act="meetingView" data-id="'+m.id+'">مشاهده، مصوبات و تصاویر</button>'+
+     '<button class="btn btn-outline btn-sm" data-act="minPrint" data-id="'+m.id+'">'+icon('printer',13)+' PDF جلسه</button>'+
+     '<button class="icon-btn danger" data-act="meetDel" data-id="'+m.id+'" title="حذف جلسه" style="color:var(--danger)">'+icon('trash',13)+'</button>'+
+     '</span></div>'+
+     '<p class="tiny muted">شماره: '+esc(m.number)+' · '+faDateLong(m.date_iso)+(m.time_fa?' · ساعت '+esc(m.time_fa):'')+(m.place?' · '+esc(m.place):'')+' · '+faNum(m.dcount)+' مصوبه</p></div>';
+  };
+  return '<div class="card pad" style="margin-bottom:14px">'+
+   '<div class="page-head" style="margin-bottom:8px"><div><h2 style="font-size:17px">گزارش جلسات هیئت فداییان</h2><p class="muted tiny">بدون مرحلهٔ «تشکیل جلسه» — ثبت گزارش جلسه: چه کسانی حضور داشتند، غایبان، مصوبات با «مسئول اجرا» و «مهلت انجام مصوبه»، تصاویر جلسه و خروجی تک جلسه / جلسات انتخابی / همه</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="heyatMeetNew">'+icon('plus')+' ثبت گزارش جلسه هیئت فداییان</button></div>'+
+   '<div class="grid-stats">'+
+    '<div class="stat-card accent-success"><span class="stat-label">گزارش‌های ثبت‌شده</span><b class="stat-num c-success">'+faNum(done.length)+'</b><small class="muted">بایگانی جلسات هیئت</small></div>'+
+    '<div class="stat-card accent-gold"><span class="stat-label">کل مصوبات</span><b class="stat-num">'+faNum(one("SELECT COUNT(*) c FROM decisions d JOIN meetings m ON m.id=d.meeting_id WHERE m.org='heyat'").c)+'</b><small class="muted">با مسئول و مهلت انجام</small></div>'+
+    '<div class="stat-card"><span class="stat-label">مصوبات در جریان</span><b class="stat-num">'+faNum(pendDec)+'</b><small class="muted">در حال پیگیری</small></div>'+
+   '</div>'+
+   '<div style="margin-top:12px">'+(rows.length?rows.map(rowHtml).join(''):emptyState('هنوز گزارش جلسه‌ای ثبت نشده است — با دکمهٔ «ثبت گزارش جلسه هیئت فداییان» شروع کنید'))+'</div>'+
+   (rows.length?'<div class="divider"></div><h4 style="font-size:13.5px;color:var(--primary-dark);margin:10px 0 8px">خروجی جلسات</h4>'+
+    '<p class="tiny muted" style="margin:0 0 8px">جلسات موردنظر را علامت بزنید؛ هر جلسه در برگهٔ A4 مستقل با حاضران، غایبان، مصوبات و تصاویر جلسه چاپ می‌شود. خروجی تک جلسه از دکمهٔ «PDF جلسه» همان جلسه انجام می‌شود.</p>'+
+    '<div class="att-grid">'+rows.map(m=>'<label class="chk"><input type="checkbox" class="heyMeetChk" data-mid="'+m.id+'"> '+esc(m.number)+' — '+esc(m.title)+' ('+faDate(m.date_iso)+')</label>').join('')+'</div>'+
+    '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'+
+     '<button class="btn btn-primary btn-sm" data-act="heyMeetExportSel">'+icon('printer',14)+' خروجی جلسات انتخابی</button>'+
+     '<button class="btn btn-outline btn-sm" data-act="heyMeetExportAll">'+icon('file',14)+' خروجی همه جلسات</button>'+
+    '</div>':'')+
+   '</div>';
+}
+function openHeyatReportModal(){
+  const num=nextNumber('meetings',meetingPrefix('org'));
+  const ov=openModal('ثبت گزارش جلسه هیئت فداییان',
+   '<form id="hyMtForm" novalidate>'+
+    '<div class="frow2">'+
+     fld('شماره جلسه (خودکار)','<input class="inp" value="'+num+'" readonly>')+
+     fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۳">')+
+    '</div>'+
+    fld('عنوان جلسه *','<input name="title" class="inp" placeholder="مثال: جلسه هفتگی هیئت فداییان">')+
+    '<div class="frow2">'+
+     fld('ساعت','<input name="timefa" class="inp" placeholder="مثال: ۱۹:۰۰">')+
+     fld('مکان','<input name="place" class="inp" placeholder="مثال: سالن هیئت">')+
+    '</div>'+
+    fld('دستور جلسه','<textarea name="agenda" class="inp" rows="2" placeholder="موارد دستور جلسه…"></textarea>')+
+    fld('حاضران (نقش‌ها)','<div class="att-grid">'+ROLES.map(r=>'<label class="chk"><input type="checkbox" data-role="'+esc(r)+'"> '+esc(r)+'</label>').join('')+'</div>')+
+    fld('مدعوین — غایبان = مدعوین منهای حاضران','<div class="att-grid">'+ROLES.map(r=>'<label class="chk"><input type="checkbox" data-invrole="'+esc(r)+'"> '+esc(r)+'</label>').join('')+'</div>')+
+    fld('مذاکرات و صورت‌جلسه','<textarea name="minutes" class="inp" rows="3" placeholder="خلاصه مذاکرات و صورت‌جلسه…"></textarea>')+
+    '<p class="tiny muted">وضعیت «برگزار شد» ذخیره می‌شود؛ پس از ثبت، مصوبات با «مسئول اجرا» و «مهلت انجام مصوبه» و همچنین تصاویر جلسه در صفحهٔ جلسه اضافه می‌شود.</p>'+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت گزارش جلسه</button>'+
+   '</form>',{width:'720px'});
+  const form=ov.querySelector('#hyMtForm');
+  form.addEventListener('submit',e=>{
+    e.preventDefault(); clearErrs(form);
+    let ok=true;
+    if(!form.title.value.trim()){ setErr(form.title,'عنوان جلسه الزامی است.'); ok=false; }
+    const jd=parseJDate(form.date.value);
+    if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست (نمونه: ۱۴۰۵/۰۸/۱۳).'); ok=false; }
+    if(!ok) return;
+    const iso=jToIso(jd.jy,jd.jm,jd.jd);
+    const att=Array.from(ov.querySelectorAll('input[data-role]')).filter(x=>x.checked).map(x=>x.dataset.role);
+    const inv=Array.from(ov.querySelectorAll('input[data-invrole]')).filter(x=>x.checked).map(x=>x.dataset.invrole);
+    run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by,org,kind,unit,time_fa,place,invitees,agenda,minutes,photos) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [num,form.title.value.trim(),iso,faDate(iso),'برگزار شد',JSON.stringify(att),session.username,'heyat','org','',form.timefa.value.trim(),form.place.value.trim(),JSON.stringify(inv),form.agenda.value.trim(),form.minutes.value.trim(),'[]']);
+    logActivity('ثبت گزارش جلسه هیئت فداییان','گزارش «'+form.title.value.trim()+'» با شماره '+num+' ثبت شد ('+faNum(att.length)+' حاضر).');
+    markDirty(); saveNow(true);
+    closeModal();
+    toast('گزارش جلسه با شماره '+faNum(num)+' ثبت شد ✓');
+    renderView();
+  });
+}
+/* v2.9 — خروجی رسمی چند جلسه (هر جلسه یک برگهٔ A4 مستقل) */
+function meetExportIds(ids){
+  const ms=ids.map(function(id){ return one('SELECT * FROM meetings WHERE id=?',[id]); }).filter(Boolean)
+   .sort(function(a,b){ return (a.date_iso||'')<(b.date_iso||'')?-1:1; });
+  if(!ms.length){ toast('جلسه‌ای یافت نشد','error'); return; }
+  openOfficialMulti('صورت‌جلسه‌های رسمی — '+faNum(ms.length)+' جلسه',ms.map(function(m){ return meetingPrintHtml(m,'full'); }));
+  logActivity('خروجی جلسات','خروجی رسمی '+faNum(ms.length)+' جلسه تهیه شد.');
+}
+function renderHeyatPanel(root){
+  const cfg=PANEL_KIND.heyat;
+  root.innerHTML=imamPanelTabs()+
+   '<div class="page-head"><div><h2>'+cfg.title+'</h2><p class="muted">'+cfg.desc+'</p></div></div>'+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><p class="tiny muted"><b>ساختار هیئت:</b> مکاتبات هیئت دقیقاً مثل سایر معاونت‌ها (مثل معاونت فرهنگی) از «مکاتبات» پنل عمومی و در جریان دبیرخانه مرکزی انجام می‌شود؛ گزارش جلسات هیئت فداییان در همین پنل و گزارش جلسات هیئت امنا در پنل دبیر هیئت امنا ثبت می‌شود (§۳-۷).</p></div>'+
+   heyatMeetSection()+
+   cfg.ents.map(entSection).join('');
 }
 
 /* ---------- بخش ۴: هماهنگی و پیگیری امور اداری ---------- */
@@ -5519,12 +5702,12 @@ VIEWS.panel=function(root){
   if(kind==='secretary'){ renderSecPanel(root); return; }
   if(kind==='culture'){ renderCultPanel(root); return; }
   if(kind==='education'){ renderEduPanel(root); return; }
+  if(kind==='heyat'){ renderHeyatPanel(root); return; }
   const cfg=PANEL_KIND[kind];
   const tabs=imamPanelTabs();
   root.innerHTML=
    '<div class="page-head"><div><h2>'+cfg.title+'</h2><p class="muted">'+cfg.desc+'</p></div></div>'+
    tabs+
-   (kind==='heyat'?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><p class="tiny muted"><b>ساختار هیئت:</b> این پنل مستقل از معاونت‌هاست؛ مکاتبات هیئت مثل سایر معاونت‌ها از «مکاتبات» پنل عمومی (با بررسی اداری دبیرخانه مرکزی) انجام می‌شود، جلسات داخلی هیئت در منوی «جلسات هیئت (داخلی)» ثبت می‌گردد و گزارش جلسات هیئت امنا و مصوبات آن در پنل دبیر هیئت امنا ثبت می‌شود (§۳-۷).</p></div>':'')+
    cfg.ents.map(entSection).join('');
 };
 function entOpen(k,id){
