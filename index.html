@@ -1363,6 +1363,10 @@ async function buildSeed(){
    Icons / Toast / Confirm / Modal / Form helpers
    ============================================================ */
 const ICONS={
+ archive:'<path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/>',
+ lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+ image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
+ bank:'<line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
  cloud:'<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>',
  home:'<path d="M3 9.5 12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22v-8h6v8"/>',
  mail:'<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22,6 12,13 2,6"/>',
@@ -1556,7 +1560,22 @@ function ensureSchema(){
     "CREATE TABLE IF NOT EXISTS edu_circles(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, leader TEXT DEFAULT '', members TEXT DEFAULT '', note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
     "CREATE TABLE IF NOT EXISTS edu_circle_sessions(id INTEGER PRIMARY KEY AUTOINCREMENT, circle_id INTEGER NOT NULL, date_iso TEXT DEFAULT '', topic TEXT DEFAULT '', report TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
     "CREATE TABLE IF NOT EXISTS edu_camps(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, date_iso TEXT DEFAULT '', place TEXT DEFAULT '', responsible TEXT DEFAULT '', companions TEXT DEFAULT '', participants TEXT DEFAULT '', needs TEXT DEFAULT '', permits TEXT DEFAULT '', report TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
-    "CREATE TABLE IF NOT EXISTS edu_members(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, birth_info TEXT DEFAULT '', join_iso TEXT DEFAULT '', guardian_phone TEXT DEFAULT '', is_minor INTEGER DEFAULT 0, mentor TEXT DEFAULT '', links TEXT DEFAULT '', ind_belief TEXT DEFAULT '', ind_worship TEXT DEFAULT '', ind_ethics TEXT DEFAULT '', ind_social TEXT DEFAULT '', ind_talent TEXT DEFAULT '', history TEXT DEFAULT '', strengths TEXT DEFAULT '', talents TEXT DEFAULT '', weak TEXT DEFAULT '', progress_txt TEXT DEFAULT '', suggest TEXT DEFAULT '', goal_short TEXT DEFAULT '', goal_long TEXT DEFAULT '', follow_coach TEXT DEFAULT '', review_iso TEXT DEFAULT '', growth TEXT DEFAULT '', growth_log TEXT DEFAULT '', level TEXT DEFAULT 'در حال رشد', created_by TEXT DEFAULT '', created_at_fa TEXT)"
+    "CREATE TABLE IF NOT EXISTS edu_members(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, birth_info TEXT DEFAULT '', join_iso TEXT DEFAULT '', guardian_phone TEXT DEFAULT '', is_minor INTEGER DEFAULT 0, mentor TEXT DEFAULT '', links TEXT DEFAULT '', ind_belief TEXT DEFAULT '', ind_worship TEXT DEFAULT '', ind_ethics TEXT DEFAULT '', ind_social TEXT DEFAULT '', ind_talent TEXT DEFAULT '', history TEXT DEFAULT '', strengths TEXT DEFAULT '', talents TEXT DEFAULT '', weak TEXT DEFAULT '', progress_txt TEXT DEFAULT '', suggest TEXT DEFAULT '', goal_short TEXT DEFAULT '', goal_long TEXT DEFAULT '', follow_coach TEXT DEFAULT '', review_iso TEXT DEFAULT '', growth TEXT DEFAULT '', growth_log TEXT DEFAULT '', level TEXT DEFAULT 'در حال رشد', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    /* v3.0 — پنل تخصصی مالی (۹ بخش طبق مشخصات کارفرما) */
+    "CREATE TABLE IF NOT EXISTS fin_accounts(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, kind TEXT DEFAULT 'صندوق', bank_name TEXT DEFAULT '', account_no TEXT DEFAULT '', opening INTEGER DEFAULT 0, note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS fin_atx(id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, kind TEXT DEFAULT 'دریافت', amount INTEGER DEFAULT 0, date_iso TEXT DEFAULT '', date_fa TEXT DEFAULT '', descr TEXT DEFAULT '', doc_no TEXT DEFAULT '', ref_txt TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS fin_budget(id INTEGER PRIMARY KEY AUTOINCREMENT, year INTEGER DEFAULT 1405, unit TEXT DEFAULT '', title TEXT DEFAULT '', proposed INTEGER DEFAULT 0, approved INTEGER DEFAULT 0, allocated INTEGER DEFAULT 0, status TEXT DEFAULT 'پیشنهادی', approved_by TEXT DEFAULT '', note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS fin_debts(id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT DEFAULT 'بدهی', party TEXT DEFAULT '', amount INTEGER DEFAULT 0, paid INTEGER DEFAULT 0, due_iso TEXT DEFAULT '', due_fa TEXT DEFAULT '', installments INTEGER DEFAULT 1, status TEXT DEFAULT 'تسویه‌نشده', note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS fin_docs(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, doc_kind TEXT DEFAULT 'سند خرید', amount INTEGER DEFAULT 0, date_fa TEXT DEFAULT '', images TEXT DEFAULT '[]', note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS fin_rentals(id INTEGER PRIMARY KEY AUTOINCREMENT, shop_name TEXT NOT NULL, tenant TEXT DEFAULT '', monthly_rent INTEGER DEFAULT 0, due_day INTEGER DEFAULT 5, start_fa TEXT DEFAULT '', end_fa TEXT DEFAULT '', status TEXT DEFAULT 'فعال', imported INTEGER DEFAULT 0, note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS fin_rent_pay(id INTEGER PRIMARY KEY AUTOINCREMENT, rental_id INTEGER NOT NULL, month_fa TEXT DEFAULT '', amount INTEGER DEFAULT 0, st TEXT DEFAULT 'پرداخت‌شده', date_iso TEXT DEFAULT '', note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS fin_salaries(id INTEGER PRIMARY KEY AUTOINCREMENT, who TEXT DEFAULT 'امام جماعت', monthly INTEGER DEFAULT 0, due_day INTEGER DEFAULT 25, note TEXT DEFAULT '', updated_by TEXT DEFAULT '', updated_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS fin_salary_pay(id INTEGER PRIMARY KEY AUTOINCREMENT, who TEXT DEFAULT 'امام جماعت', month_fa TEXT DEFAULT '', amount INTEGER DEFAULT 0, date_iso TEXT DEFAULT '', note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS fin_codes(id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL, name TEXT NOT NULL, kind TEXT DEFAULT 'هزینه')",
+    "CREATE TABLE IF NOT EXISTS fin_corr(id INTEGER PRIMARY KEY AUTOINCREMENT, tx_table TEXT DEFAULT 'transactions', row_id INTEGER DEFAULT 0, old_vals TEXT DEFAULT '', new_vals TEXT DEFAULT '', reason TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)",
+    "CREATE TABLE IF NOT EXISTS fin_periods(id INTEGER PRIMARY KEY AUTOINCREMENT, year INTEGER, closed INTEGER DEFAULT 0, closed_by TEXT DEFAULT '', closed_at_fa TEXT)",
+    /* v3.0 — بایگانی مدارک دبیرخانه (آپلود تصویر + نامه‌های نهایی‌شده) */
+    "CREATE TABLE IF NOT EXISTS arch_docs(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, cat TEXT DEFAULT 'سند اداری', letter_id INTEGER DEFAULT 0, ext_letter_id INTEGER DEFAULT 0, images TEXT DEFAULT '[]', note TEXT DEFAULT '', date_fa TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)"
   ];
   try{
     const cols=t=>{ try{ return all("SELECT name FROM pragma_table_info('"+t+"')").map(x=>x.name); }catch(e){ return []; } };
@@ -1646,6 +1665,12 @@ function ensureSchema(){
     }catch(e){ console.warn('heyatltr migrate',e); }
     /* v2.9 — تصاویر جلسات */
     try{ addCol('meetings','photos',"TEXT DEFAULT '[]'"); }catch(e){}
+    /* v3.0 — ستون‌های مالی و بایگانی */
+    try{ addCol('transactions','pay_method',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('transactions','doc_no',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('transactions','party',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('transactions','receipt',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('ext_letters','archived',"INTEGER DEFAULT 0"); }catch(e){}
   }catch(e){ console.warn('ensureSchema migrate',e); }
   try{ run("CREATE TABLE IF NOT EXISTS user_perms(username TEXT NOT NULL, module TEXT NOT NULL, lvl INTEGER NOT NULL, updated_at_fa TEXT DEFAULT '', PRIMARY KEY(username,module))"); }catch(e){}
   try{
@@ -1787,7 +1812,7 @@ const NAV=[
  {id:'reports',label:'گزارش‌ها',icon:'chart',min:1,group:'پنل عمومی — امکانات مشترک',desc:'نمودارها و گزارش‌های کلی'},
  {id:'anns',label:'اعلان‌ها',icon:'bell',min:1,group:'پنل عمومی — امکانات مشترک',desc:'تابلوی اعلان‌ها و پیام‌های دریافتی — انتشار فقط رسانه و امام'},
  {id:'panel',label:'پنل اختصاصی',icon:'inbox',roles:['secretary','culture','support','heyat','imam','education'],group:'پنل اختصاصی',desc:'بخش‌های تخصصی واحد شما'},
- {id:'finance',label:'امور مالی (معاونت مالی)',icon:'wallet',roles:['finance','imam'],group:'پنل اختصاصی',desc:'پنل اختصاصی مالی: درآمد، هزینه، تراز و بررسی فاکتورها'},
+ {id:'finance',label:'پنل تخصصی مالی',icon:'wallet',roles:['finance','imam'],group:'پنل اختصاصی',desc:'پنل تخصصی مالی: داشبورد، درآمد، هزینه، بودجه، حساب‌ها، اسناد، بدهی‌ها، حسابداری و قالب‌ها'},
  {id:'media',label:'رسانه و اطلاعیه‌ها',icon:'send',roles:['imam','media_admin'],group:'پنل اختصاصی',desc:'مدیریت محتوای رسانه'},
  {id:'meetings',label:'جلسات هیئت (داخلی)',icon:'users',roles:['heyat'],group:'پنل اختصاصی',desc:'صورت‌جلسه‌های داخلی هیئت فداییان؛ جلسات هیئت امنا فقط در پنل دبیر (§۳-۲)'}
 ];
@@ -2712,57 +2737,578 @@ function openCourseModal(){
 /* ============================================================
    Module 7: امور مالی
    ============================================================ */
-VIEWS.finance=function(root){
-  if(!FINANCE_FULL.includes(session.username)){ VIEWS.myexp(root); return; }
-  const tj=isoToJ(todayIso());
-  const mStart=jToIso(tj.jy,tj.jm,1), mEnd=jToIso(tj.jy,tj.jm,jalaaliMonthLength(tj.jy,tj.jm));
-  const inc=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='درآمد' AND date_iso BETWEEN ? AND ?",[mStart,mEnd]).s;
-  const exp=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='هزینه' AND date_iso BETWEEN ? AND ?",[mStart,mEnd]).s;
-  const bal=inc-exp;
-  const pend=all("SELECT * FROM transactions WHERE tx_status='در انتظار بررسی' ORDER BY id DESC");
-  const rows=all('SELECT * FROM transactions ORDER BY date_iso DESC, id DESC');
-  const yStart=jToIso(tj.jy,1,1), yEnd=jToIso(tj.jy,12,jalaaliMonthLength(tj.jy,12));
-  const cats=all('SELECT category, kind, SUM(amount) AS s FROM transactions WHERE date_iso BETWEEN ? AND ? GROUP BY category, kind',[yStart,yEnd])
-    .filter(c=>c.category);
-  const maxCat=Math.max.apply(null,cats.map(c=>c.s).concat([1]));
-  const TXST={'تأییدشده':'b-success','در انتظار بررسی':'b-warn','ردشده':'b-danger','بازگشت برای اصلاح':'b-danger'};
-  const usersById={}; all('SELECT username,display_name FROM users').forEach(u=>{ usersById[u.username]=u.display_name; });
-  root.innerHTML=
-   '<div class="page-head"><div><h2>امور مالی</h2><p class="muted">سامانه مالی مسجد — دسترسی کامل فقط معاون امور مالی و امام جماعت (قاعده قطعی سند مأموریت §۳-۵)</p></div>'+
-   '<button class="btn btn-primary no-print" data-act="txNew">'+icon('plus')+' ثبت تراکنش</button></div>'+
-   '<div class="card pad" style="border-right:4px solid var(--danger);margin-bottom:12px"><p class="tiny muted"><b>محرمانگی مالی:</b> سایر کاربران فقط هزینه‌های ثبت‌شده خود را از بخش «هزینه‌های من» ثبت و پیگیری می‌کنند و به مجموع درآمدها، موجودی، گردش و تراکنش‌های دیگران دسترسی ندارند. هزینه‌های ارسالی مسئولان در صف بررسی زیر نمایش داده می‌شود.</p></div>'+
-   (pend.length?'<div class="card pad" style="border:1.5px solid #E4D9BC;margin-bottom:12px"><h3 style="font-size:14px;color:var(--primary-dark)">'+icon('clock',17)+' هزینه‌های در انتظار بررسی ('+faNum(pend.length)+')</h3>'+
-     pend.map(t=>
-      '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(t.description)+'</b><span class="badge b-warn">در انتظار بررسی</span>'+
-      '<span style="margin-right:auto"><button class="btn btn-primary btn-sm" data-act="txReview" data-id="'+t.id+'">بررسی فاکتور و تصمیم</button></span></div>'+
-      '<small class="muted">'+faMoney(t.amount)+' تومان · '+faDate(t.date_iso)+' · ثبت‌کننده: '+esc(usersById[t.created_by]||t.created_by||'—')+'</small></div>'
-     ).join('')+'</div>':'')+
-   '<div class="grid-stats">'+
-     '<div class="stat-card accent-success"><span class="stat-label">درآمد '+J_MONTHS[tj.jm-1]+'</span><b class="stat-num c-success">'+faMoney(inc)+'</b></div>'+
-     '<div class="stat-card accent-danger"><span class="stat-label">هزینه '+J_MONTHS[tj.jm-1]+'</span><b class="stat-num c-danger">'+faMoney(exp)+'</b></div>'+
-     '<div class="stat-card accent-gold"><span class="stat-label">تراز '+J_MONTHS[tj.jm-1]+'</span><b class="stat-num '+(bal>=0?'c-success':'c-danger')+'">'+faMoney(bal)+'</b></div>'+
-   '</div>'+
-   '<div class="grid-2">'+
-    '<div class="card"><div style="padding:14px 18px 4px"><h3>'+icon('wallet')+' تراکنش‌ها</h3></div><div class="table-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>نوع</th><th>شرح</th><th>مبلغ (تومان)</th><th>تاریخ</th><th>دسته</th><th>ثبت‌کننده</th><th>وضعیت</th></tr></thead><tbody>'+
-      (rows.length?rows.map(r=>
-        '<tr><td>'+(r.kind==='درآمد'?'<span class="badge b-success">درآمد</span>':'<span class="badge b-danger">هزینه</span>')+'</td>'+
-        '<td>'+esc(r.description)+'</td>'+
-        '<td><b>'+faMoney(r.amount)+'</b></td>'+
-        '<td>'+faDate(r.date_iso)+'</td>'+
-        '<td>'+esc(r.category)+'</td>'+
-        '<td>'+esc(usersById[r.created_by]||'دبیرخانه')+'</td>'+
-        '<td><span class="badge '+(TXST[r.tx_status]||'b-success')+'">'+esc(r.tx_status||'تأییدشده')+'</span></td></tr>'
-      ).join(''):'<tr><td colspan="7">'+emptyState('تراکنشی ثبت نشده است')+'</td></tr>')+
-    '</tbody></table></div></div>'+
-    '<div class="card pad"><h3>'+icon('chart')+' نمودار دسته‌ها (سال '+faNum(tj.jy)+')</h3>'+
-      '<div class="legend"><span><i style="background:var(--primary)"></i>درآمد</span><span><i style="background:var(--danger)"></i>هزینه</span></div>'+
-      (cats.length?cats.sort((a,b)=>b.s-a.s).map(c=>
-        '<div class="bar-row"><span class="bl">'+esc(c.category)+'</span><div class="bar-track"><div class="bar-fill '+(c.kind==='هزینه'?'red':'')+'" style="width:'+Math.max(3,Math.round(c.s*100/maxCat))+'%"></div></div><span class="bv">'+faMoney(c.s)+'</span></div>'
-      ).join(''):emptyState('داده‌ای برای نمودار وجود ندارد'))+
+/* ============================================================
+   v3.0 — پنل تخصصی مالی (۹ بخش طبق مشخصات کارفرما)
+   ۱) داشبورد مالی  ۲) مدیریت درآمدها  ۳) مدیریت هزینه‌ها  ۴) مدیریت بودجه
+   ۵) حساب‌ها و صندوق‌ها  ۶) مدیریت اسناد و اموال  ۷) بدهی‌ها و مطالبات
+   ۸) حسابداری و گزارش‌ها  ۹) قالب‌ها و فرم‌های مالی
+   محرمانگی (§۳-۵): دسترسی کامل فقط معاون امور مالی و امام جماعت؛
+   سایر کاربران فقط هزینه‌های شخصی خود را ثبت و مشاهده می‌کنند (VIEWS.myexp).
+   اعمال کنترل در لایهٔ داده: همهٔ ACTIONS مالی با finGuard() محافظت می‌شوند
+   و کوئری‌های سایر نماها فقط ردیف‌های خود کاربر/واحد را برمی‌گردانند.
+   حاکمیت بودجه: تأیید بودجه و بستن دوره فقط امام جماعت.
+   ============================================================ */
+const FIN_INC_CATS=['کمک‌های مردمی','نذورات و صدقات','کمک خیرین','موقوفات و درآمدهای مرتبط','کمک‌های سازمانی','درآمد فعالیت‌ها','اجاره مغازه‌های مسجد','سایر درآمدها'];
+const FIN_EXP_CATS=['فرهنگی','آموزشی و تربیتی','عمرانی و تعمیرات','جاری','خدماتی و پشتیبانی','مراسم و مناسبت‌ها','حقوق و دستمزد','حمایتی و خیریه','سایر'];
+const FIN_PAY=['نقد','کارت‌خوان','حواله بانکی','چک'];
+const FIN_TABS=[
+ {id:'dash',label:'داشبورد مالی'},
+ {id:'inc',label:'مدیریت درآمدها'},
+ {id:'exp',label:'مدیریت هزینه‌ها'},
+ {id:'bud',label:'مدیریت بودجه'},
+ {id:'acc',label:'حساب‌ها و صندوق‌ها'},
+ {id:'docs',label:'اسناد و اموال'},
+ {id:'debt',label:'بدهی‌ها و مطالبات'},
+ {id:'acct',label:'حسابداری و گزارش‌ها'},
+ {id:'forms',label:'قالب‌ها و فرم‌های مالی'}
+];
+function finDebtModal(id){
+  const r=id?one('SELECT * FROM fin_debts WHERE id=?',[id]):null;
+  const ov=openModal(r?'ویرایش '+(r.kind||'بدهی'):'ثبت بدهی / طلب',
+   '<form id="fdmForm" novalidate>'+
+    '<div class="frow2">'+
+      fld('نوع *','<select name="kind" class="inp"><option '+(r&&r.kind==='بدهی'?'selected':'')+'>بدهی</option><option '+(r&&r.kind==='طلب'?'selected':'')+'>طلب</option></select>')+
+      fld('طرف حساب *','<input name="party" class="inp" value="'+esc(r?r.party:'')+'" placeholder="مثال: مغازهٔ شرقی — آقای کریمی">')+
     '</div>'+
-   '</div>';
+    '<div class="frow2">'+
+      fld('مبلغ کل (تومان) *','<input name="amt" type="number" min="1" class="inp" value="'+(r?r.amount:'')+'">')+
+      fld('پرداخت‌شده تاکنون (تومان)','<input name="paid" type="number" min="0" class="inp" value="'+(r?(r.paid||0):0)+'">')+
+    '</div>'+
+    '<div class="frow2">'+
+      fld('سررسید (شمسی) *','<input name="due" class="inp" value="'+(r&&r.due_iso?faDate(r.due_iso):faDate(addDaysIso(todayIso(),30)))+'" placeholder="۱۴۰۵/۰۹/۱۵">')+
+      fld('تعداد اقساط','<input name="ins" type="number" min="1" max="60" class="inp" value="'+(r?(r.installments||1):1)+'">')+
+    '</div>'+
+    fld('وضعیت','<select name="st" class="inp"><option '+(r&&r.status==='تسویه‌شده'?'':'selected')+'>تسویه‌نشده</option><option '+(r&&r.status==='تسویه‌شده'?'selected':'')+'>تسویه‌شده</option></select>')+
+    fld('یادداشت','<input name="note" class="inp" value="'+esc(r?r.note||'':'')+'" placeholder="مثال: قسط ماهانه ۵۰۰ هزار تومانی">')+
+    '<button type="submit" class="btn btn-primary btn-block">'+(r?'ذخیره تغییرات':'ثبت')+'</button></form>');
+  const form=ov.querySelector('#fdmForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    let ok=true;
+    if(!form.party.value.trim()){ setErr(form.party,'طرف حساب الزامی است.'); ok=false; }
+    if(+form.amt.value<=0){ setErr(form.amt,'مبلغ معتبر وارد کنید.'); ok=false; }
+    const jd=parseJDate(form.due.value); if(!jd){ setErr(form.due,'تاریخ شمسی معتبر نیست.'); ok=false; }
+    if(!ok) return;
+    const iso=jToIso(jd.jy,jd.jm,jd.jd);
+    const vals=[form.kind.value,form.party.value.trim(),+form.amt.value,Math.max(0,+form.paid.value||0),iso,form.due.value.trim(),Math.max(1,+form.ins.value||1),form.st.value,form.note.value.trim()];
+    if(r){ run('UPDATE fin_debts SET kind=?,party=?,amount=?,paid=?,due_iso=?,due_fa=?,installments=?,status=?,note=? WHERE id=?',vals.concat([r.id])); }
+    else{ run('INSERT INTO fin_debts (kind,party,amount,paid,due_iso,due_fa,installments,status,note,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?)',vals.concat([session.username,faStamp()])); }
+    logActivity('بدهی و مطالبات',(r?'ویرایش ':'ثبت ')+form.kind.value+' '+form.party.value.trim());
+    markDirty(); saveNow(true); closeModal(); toast('ثبت شد ✓'); renderView();
+  });
+}
+function openReportWin(title,body,csvRows){
+  openOfficialDoc(title,body,{size:'A4'});
+  if(csvRows) window._lastRepCsv={t:title,rows:csvRows};
+}
+function finGuard(){ return FINANCE_FULL.includes(session.username); }
+function finYearClosed(y){ try{ const r=one('SELECT closed FROM fin_periods WHERE year=?',[y]); return !!(r&&r.closed); }catch(e){ return false; } }
+function finAccBal(id){
+  const a=one('SELECT opening FROM fin_accounts WHERE id=?',[id]); if(!a) return 0;
+  const r=one("SELECT COALESCE(SUM(CASE WHEN kind='دریافت' THEN amount WHEN kind='پرداخت' THEN -amount ELSE 0 END),0) AS s FROM fin_atx WHERE account_id=?",[id]);
+  return (a.opening||0)+(r?r.s:0);
+}
+function finAccName(id){ const a=one('SELECT name FROM fin_accounts WHERE id=?',[id]); return a?a.name:'—'; }
+function finCodeOf(cat){
+  const c=one('SELECT code FROM fin_codes WHERE name=?',[cat]); return c?c.code:'';
+}
+function finUnitOptions(){
+  const opts=[]; const seen={};
+  Object.keys(UNIT_LABELS).forEach(function(u){ opts.push({id:u,label:UNIT_LABELS[u]}); seen[u]=1; });
+  return opts;
+}
+function finSpentUnit(unit,yStart,yEnd){
+  return one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='هزینه' AND unit=? AND date_iso BETWEEN ? AND ?",[unit,yStart,yEnd]).s||0;
+}
+function finImgList(d){ try{ return JSON.parse(d||'[]'); }catch(e){ return []; } }
+function renderFinPanel(root){
+  const tab=window._finTab||'dash';
+  const tabs='<div class="seg" style="margin-bottom:14px;flex-wrap:wrap">'+FIN_TABS.map(function(t){
+    return '<button class="seg-btn '+(tab===t.id?'on':'')+'" data-act="finTab" data-k="'+t.id+'">'+t.label+'</button>';
+  }).join('')+'</div>';
+  const head='<div class="page-head"><div><h2>پنل تخصصی مالی</h2><p class="muted">داشبورد مالی · درآمدها · هزینه‌ها · بودجه · حساب‌ها و صندوق · اسناد و اموال · بدهی و مطالبات · حسابداری · قالب‌های مالی (§۳-۵) — دسترسی کامل: معاون امور مالی و امام جماعت</p></div></div>';
+  let body;
+  if(tab==='dash') body=finDash();
+  else if(tab==='inc') body=finInc();
+  else if(tab==='exp') body=finExp();
+  else if(tab==='bud') body=finBud();
+  else if(tab==='acc') body=finAcc();
+  else if(tab==='docs') body=finDocs();
+  else if(tab==='debt') body=finDebts();
+  else if(tab==='acct') body=finAcct();
+  else body=finForms();
+  root.innerHTML=head+tabs+body;
+  const fy=root.querySelector('#finYr');
+  if(fy) fy.addEventListener('change',function(){ window._finYear=+fy.value||window._finYear; renderView(); });
+}
+/* ---------- ۱) داشبورد مالی ---------- */
+function finDash(){
+  const tj=isoToJ(todayIso());
+  const yStart=jToIso(tj.jy,1,1), yEnd=jToIso(tj.jy,12,jalaaliMonthLength(tj.jy,12));
+  const incY=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='درآمد' AND tx_status='تأییدشده' AND date_iso BETWEEN ? AND ?",[yStart,yEnd]).s||0;
+  const expY=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='هزینه' AND tx_status='تأییدشده' AND date_iso BETWEEN ? AND ?",[yStart,yEnd]).s||0;
+  const acs=all('SELECT * FROM fin_accounts ORDER BY id');
+  let bankBal=0,cashBal=0;
+  acs.forEach(function(a){ const b=finAccBal(a.id); if(a.kind==='بانک') bankBal+=b; else cashBal+=b; });
+  const pend=all("SELECT * FROM transactions WHERE tx_status='در انتظار بررسی' ORDER BY id DESC");
+  const debts=all("SELECT * FROM fin_debts WHERE kind='بدهی' AND status<>'تسویه‌شده'");
+  const claims=all("SELECT * FROM fin_debts WHERE kind='طلب' AND status<>'تسویه‌شده'");
+  const debtSum=debts.reduce(function(a,d){return a+Math.max(0,(d.amount||0)-(d.paid||0))},0);
+  const claimSum=claims.reduce(function(a,d){return a+Math.max(0,(d.amount||0)-(d.paid||0))},0);
+  /* نمودار ۶ ماه اخیر */
+  const months=[]; for(let k=5;k>=0;k--){ let m=tj.jm-k,y=tj.jy; while(m<1){m+=12;y--;} months.push({y:y,m:m}); }
+  const chart=months.map(function(mo){
+    const s1=jToIso(mo.y,mo.m,1), e1=jToIso(mo.y,mo.m,jalaaliMonthLength(mo.y,mo.m));
+    const i1=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='درآمد' AND tx_status='تأییدشده' AND date_iso BETWEEN ? AND ?",[s1,e1]).s||0;
+    const e2=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='هزینه' AND tx_status='تأییدشده' AND date_iso BETWEEN ? AND ?",[s1,e1]).s||0;
+    return {label:J_MONTHS[mo.m-1],inc:i1,exp:e2};
+  });
+  const mx=Math.max.apply(null,chart.map(function(c){return Math.max(c.inc,c.exp)}).concat([1]));
+  /* هشدار سررسیدها */
+  const in7=addDaysIso(todayIso(),7);
+  const dueDebts=all("SELECT * FROM fin_debts WHERE status<>'تسویه‌شده' AND due_iso<>'' AND due_iso<=? ORDER BY due_iso",[in7]);
+  const rentWarn=[];
+  all("SELECT * FROM fin_rentals WHERE status='فعال'").forEach(function(r){
+    const paid=one("SELECT COUNT(*) AS c FROM fin_rent_pay WHERE rental_id=? AND month_fa=?",[r.id,tj.jy+'/'+(tj.jm<10?'0':'')+tj.jm]).c;
+    if(!paid&&tj.jd>=r.due_day) rentWarn.push(r);
+  });
+  const salWarn=[];
+  all('SELECT * FROM fin_salaries').forEach(function(sr){
+    const paid=one("SELECT COUNT(*) AS c FROM fin_salary_pay WHERE who=? AND month_fa=?",[sr.who,tj.jy+'/'+(tj.jm<10?'0':'')+tj.jm]).c;
+    if(!paid&&tj.jd>=sr.due_day) salWarn.push(sr);
+  });
+  const warnHtml=[];
+  if(dueDebts.length) warnHtml.push('<div class="card pad" style="border-right:4px solid var(--danger);margin-bottom:12px"><h3>'+icon('alert',17)+' بدهی/مطالبات نزدیک یا گذشته از سررسید ('+faNum(dueDebts.length)+')</h3>'+
+    dueDebts.map(function(d){ return '<div class="comment" style="margin-bottom:6px"><b>'+esc(d.party)+'</b> <span class="badge '+(d.kind==='بدهی'?'b-danger':'b-info')+'">'+esc(d.kind)+'</span> <span class="badge b-warn">سررسید: '+faDateLong(d.due_iso)+'</span> <b>'+faMoney(Math.max(0,(d.amount||0)-(d.paid||0)))+' تومان مانده</b></div>'; }).join('')+'</div>');
+  if(rentWarn.length) warnHtml.push('<div class="card pad" style="border-right:4px solid var(--warning);margin-bottom:12px"><h3>'+icon('alert',17)+' اجارهٔ پرداخت‌نشدهٔ '+(J_MONTHS[tj.jm-1])+' ('+faNum(rentWarn.length)+')</h3>'+
+    rentWarn.map(function(r){ return '<div class="comment" style="margin-bottom:6px"><b>'+esc(r.shop_name)+'</b> — مستأجر: '+esc(r.tenant||'—')+' · سررسید: روز '+faNum(r.due_day)+' هر ماه · <b>'+faMoney(r.monthly_rent)+' تومان</b> <button class="btn btn-primary btn-sm" data-act="finRentPay" data-id="'+r.id+'">ثبت دریافت</button></div>'; }).join('')+'</div>');
+  if(salWarn.length) warnHtml.push('<div class="card pad" style="border-right:4px solid var(--warning);margin-bottom:12px"><h3>'+icon('alert',17)+' حقوق پرداخت‌نشدهٔ '+(J_MONTHS[tj.jm-1])+' ('+faNum(salWarn.length)+')</h3>'+
+    salWarn.map(function(sr){ return '<div class="comment" style="margin-bottom:6px"><b>حقوق '+esc(sr.who)+'</b> · سررسید: روز '+faNum(sr.due_day)+' · <b>'+faMoney(sr.monthly)+' تومان</b> <button class="btn btn-primary btn-sm" data-act="finSalPay" data-k="'+esc(sr.who)+'">ثبت پرداخت</button></div>'; }).join('')+'</div>');
+  return ''+
+   '<div class="grid-stats">'+
+    '<div class="stat-card accent-success"><span class="stat-label">مجموع درآمدها '+faNum(tj.jy)+'</span><b class="stat-num c-success">'+faMoney(incY)+'</b><small class="muted">تومان — تراکنش‌های تأییدشده</small></div>'+
+    '<div class="stat-card accent-danger"><span class="stat-label">مجموع هزینه‌ها '+faNum(tj.jy)+'</span><b class="stat-num c-danger">'+faMoney(expY)+'</b><small class="muted">تومان — تراکنش‌های تأییدشده</small></div>'+
+    '<div class="stat-card accent-gold"><span class="stat-label">موجودی حساب‌های بانکی</span><b class="stat-num">'+faMoney(bankBal)+'</b><small class="muted">'+faNum(acs.filter(function(a){return a.kind==='بانک'}).length)+' حساب بانکی</small></div>'+
+    '<div class="stat-card accent-gold"><span class="stat-label">موجودی صندوق</span><b class="stat-num">'+faMoney(cashBal)+'</b><small class="muted">'+faNum(acs.filter(function(a){return a.kind==='صندوق'}).length)+' صندوق</small></div>'+
+    '<div class="stat-card '+(pend.length?'accent-danger':'')+'"><span class="stat-label">هزینه‌های در انتظار بررسی</span><b class="stat-num">'+faNum(pend.length)+'</b><small class="muted">'+faMoney(pend.reduce(function(a,t){return a+(t.amount||0)},0))+' تومان</small></div>'+
+    '<div class="stat-card"><span class="stat-label">بدهی‌ها / مطالبات</span><b class="stat-num" style="font-size:15px;line-height:2.2">'+faMoney(debtSum)+' / '+faMoney(claimSum)+'</b><small class="muted">تومان مانده</small></div>'+
+   '</div>'+
+   warnHtml.join('')+
+   '<div class="card pad" style="margin-bottom:12px"><h3>'+icon('chart',17)+' نمودار درآمد و هزینه — ۶ ماه اخیر</h3>'+
+    '<div class="legend"><span><i style="background:var(--primary)"></i>درآمد</span><span><i style="background:var(--danger)"></i>هزینه</span></div>'+
+    chart.map(function(c){
+      return '<div class="bar-row"><span class="bl">'+c.label+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.max(2,Math.round(c.inc*100/mx))+'%"></div></div><span class="bv">'+faMoney(c.inc)+'</span></div>'+
+             '<div class="bar-row"><span class="bl">'+c.label+'</span><div class="bar-track"><div class="bar-fill red" style="width:'+Math.max(2,Math.round(c.exp*100/mx))+'%"></div></div><span class="bv">'+faMoney(c.exp)+'</span></div>';
+    }).join('')+'</div>'+
+   '<div class="card pad"><h3>'+icon('clock',17)+' صف بررسی فاکتورها ('+faNum(pend.length)+')</h3>'+
+    (pend.length?pend.slice(0,6).map(function(t){
+      return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(t.description)+'</b><span class="badge b-warn">در انتظار بررسی</span><span style="margin-right:auto"><button class="btn btn-primary btn-sm" data-act="finReview" data-id="'+t.id+'">بررسی فاکتور</button></span></div><small class="muted">'+faMoney(t.amount)+' تومان · '+faDate(t.date_iso)+'</small></div>';
+    }).join(''):emptyState('فاکتوری در انتظار بررسی نیست'))+'</div>';
+}
+/* ---------- ۲) مدیریت درآمدها ---------- */
+function finInc(){
+  const cat=window._finIncCat||'';
+  let rows=all("SELECT * FROM transactions WHERE kind='درآمد' ORDER BY date_iso DESC, id DESC");
+  if(cat) rows=rows.filter(function(t){return t.category===cat});
+  const usersById={}; all('SELECT username,display_name FROM users').forEach(function(u){ usersById[u.username]=u.display_name; });
+  const tot=rows.reduce(function(a,t){return a+(t.amount||0)},0);
+  const rentals=all("SELECT * FROM fin_rentals ORDER BY id DESC");
+  const rentPays=all('SELECT * FROM fin_rent_pay ORDER BY id DESC LIMIT 12');
+  const rentState=function(r){
+    const tj=isoToJ(todayIso()); const mf=tj.jy+'/'+(tj.jm<10?'0':'')+tj.jm;
+    const paid=one("SELECT COUNT(*) AS c FROM fin_rent_pay WHERE rental_id=? AND month_fa=?",[r.id,mf]).c;
+    if(paid) return '<span class="badge b-success">پرداخت‌شده ('+J_MONTHS[tj.jm-1]+')</span>';
+    if(tj.jd>=r.due_day) return '<span class="badge b-danger">معوق ('+J_MONTHS[tj.jm-1]+')</span>';
+    return '<span class="badge b-warn">پرداخت‌نشده ('+J_MONTHS[tj.jm-1]+')</span>';
+  };
+  return ''+
+   '<div class="page-head"><div><h2>مدیریت درآمدها</h2><p class="muted">ثبت درآمد با مبلغ، تاریخ، نوع، طرف حساب، رسید و بایگانی — دسته‌بندی‌های مصوب §۳-۵</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="finNewInc">'+icon('plus')+' ثبت درآمد</button></div>'+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>دسته‌بندی درآمدها:</b> '+FIN_INC_CATS.map(function(c){return '<span class="badge b-neutral" style="cursor:pointer" data-act="finIncCat" data-k="'+esc(c)+'">'+esc(c)+'</span>'}).join(' ')+(cat?' <button class="btn btn-outline btn-sm" data-act="finIncCat" data-k="">حذف فیلتر</button>':'')+' — جمع نمایش‌داده‌شده: <b>'+faMoney(tot)+' تومان</b></p></div>'+
+   '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('wallet',17)+' فهرست درآمدها ('+faNum(rows.length)+')</h3>'+
+    (rows.length?'<div class="table-wrap"><table class="tbl" style="min-width:760px"><thead><tr><th>تاریخ</th><th>شرح</th><th>دسته</th><th>طرف حساب</th><th>شماره سند</th><th>مبلغ (تومان)</th><th>رسید</th><th>ثبت‌کننده</th><th></th></tr></thead><tbody>'+
+    rows.map(function(t){
+      return '<tr><td>'+faDate(t.date_iso)+'</td><td>'+esc(t.description)+'</td><td><span class="badge b-gold">'+esc(t.category)+'</span></td><td>'+esc(t.party||'—')+'</td><td>'+esc(t.doc_no||'—')+'</td><td><b>'+faMoney(t.amount)+'</b></td>'+
+       '<td>'+(t.receipt?'<button class="btn btn-outline btn-sm" data-act="finReceipt" data-id="'+t.id+'">'+icon('eye',12)+' رسید</button>':'—')+'</td><td>'+esc(usersById[t.created_by]||'دبیرخانه')+'</td>'+
+       '<td><button class="icon-btn danger" data-act="finTxDel" data-id="'+t.id+'" style="color:var(--danger)">'+icon('trash',13)+'</button></td></tr>';
+    }).join('')+'</tbody></table></div>':emptyState('درآمدی ثبت نشده است'))+'</div>'+
+   '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('home',17)+' اجارهٔ مغازه‌های مسجد ('+faNum(rentals.length)+')</h3>'+
+    '<p class="tiny muted" style="margin:4px 0 10px">اطلاعات قرارداد از پنل عمران و پشتیبانی دریافت و سند حسابداری و دریافت اجاره فقط در همین‌جا ثبت می‌شود. وضعیت هر ماه: پرداخت‌شده / پرداخت‌نشده / معوق.</p>'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><button class="btn btn-outline btn-sm" data-act="finRentNew">'+icon('plus',13)+' تعریف مغازه/قرارداد</button>'+
+    '<button class="btn btn-outline btn-sm" data-act="finRentImport">'+icon('download',13)+' دریافت قراردادها از پنل عمران</button>'+
+    '<button class="btn btn-outline btn-sm" data-act="finRentReport">'+icon('printer',13)+' گزارش اجاره‌ها (PDF)</button>'+
+    '<button class="btn btn-outline btn-sm" data-act="finRentExcel">'+icon('download',13)+' خروجی Excel</button></div>'+
+    (rentals.length?'<div class="table-wrap"><table class="tbl" style="min-width:700px"><thead><tr><th>مغازه</th><th>مستأجر</th><th>اجارهٔ ماهانه</th><th>سررسید</th><th>قرارداد</th><th>وضعیت ماه جاری</th><th></th></tr></thead><tbody>'+
+     rentals.map(function(r){
+       return '<tr><td><b>'+esc(r.shop_name)+'</b></td><td>'+esc(r.tenant||'—')+'</td><td>'+faMoney(r.monthly_rent)+'</td><td>روز '+faNum(r.due_day)+'</td><td class="tiny">'+esc(r.start_fa||'—')+' تا '+esc(r.end_fa||'—')+'</td><td>'+rentState(r)+'</td>'+
+        '<td style="white-space:nowrap"><button class="btn btn-primary btn-sm" data-act="finRentPay" data-id="'+r.id+'">ثبت دریافت</button> <button class="icon-btn danger" data-act="finRentDel" data-id="'+r.id+'" style="color:var(--danger)">'+icon('trash',13)+'</button></td></tr>';
+     }).join('')+'</tbody></table></div>':emptyState('قرارداد اجاره‌ای ثبت نشده است'))+
+    (rentPays.length?'<h4 style="font-size:13px;margin:14px 0 8px">آخرین دریافت‌های اجاره</h4>'+rentPays.map(function(p){
+       const r=all('SELECT * FROM fin_rentals WHERE id=?',[p.rental_id])[0];
+       return '<div class="comment" style="margin-bottom:6px"><b>'+esc(r?r.shop_name:'—')+'</b> — ماه '+esc(p.month_fa)+' · <b>'+faMoney(p.amount)+' تومان</b> <span class="badge b-success">'+esc(p.st)+'</span> <small class="muted">'+faDate(p.date_iso)+'</small></div>';
+     }).join(''):'')+'</div>';
+}
+/* ---------- ۳) مدیریت هزینه‌ها ---------- */
+function finExp(){
+  const cat=window._finExpCat||'';
+  let rows=all("SELECT * FROM transactions WHERE kind='هزینه' ORDER BY date_iso DESC, id DESC");
+  if(cat) rows=rows.filter(function(t){return t.category===cat});
+  const pend=rows.filter(function(t){return (t.tx_status||'تأییدشده')==='در انتظار بررسی'});
+  const usersById={}; all('SELECT username,display_name FROM users').forEach(function(u){ usersById[u.username]=u.display_name; });
+  const sals=all('SELECT * FROM fin_salaries ORDER BY who');
+  const salPays=all('SELECT * FROM fin_salary_pay ORDER BY id DESC LIMIT 10');
+  return ''+
+   '<div class="page-head"><div><h2>مدیریت هزینه‌ها</h2><p class="muted">بررسی فاکتورهای مسئولان (تأیید، رد یا بازگشت برای اصلاح)، ثبت هزینهٔ مستقیم با روش پرداخت و شماره سند، سوابق کامل</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="finNewExp">'+icon('plus')+' ثبت هزینهٔ مستقیم</button></div>'+
+   (pend.length?'<div class="card pad" style="border:1.5px solid #E4D9BC;margin-bottom:12px"><h3 style="font-size:14px;color:var(--primary-dark)">'+icon('clock',17)+' هزینه‌های ثبت‌شده توسط مسئولان — در انتظار بررسی ('+faNum(pend.length)+')</h3>'+
+     pend.map(function(t){
+       return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(t.description)+'</b><span class="badge b-warn">در انتظار بررسی</span>'+
+        '<span style="margin-right:auto"><button class="btn btn-primary btn-sm" data-act="finReview" data-id="'+t.id+'">بررسی فاکتور و رسید</button></span></div>'+
+        '<small class="muted">'+faMoney(t.amount)+' تومان · '+faDate(t.date_iso)+' · ثبت‌کننده: '+esc(usersById[t.created_by]||t.created_by||'—')+(t.receipt?' · <button class="btn btn-outline btn-sm" data-act="finReceipt" data-id="'+t.id+'">'+icon('eye',12)+' رسید</button>':'')+'</small></div>';
+     }).join('')+'</div>':'')+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>دسته‌بندی هزینه‌ها:</b> '+FIN_EXP_CATS.map(function(c){return '<span class="badge b-neutral" style="cursor:pointer" data-act="finExpCat" data-k="'+esc(c)+'">'+esc(c)+'</span>'}).join(' ')+(cat?' <button class="btn btn-outline btn-sm" data-act="finExpCat" data-k="">حذف فیلتر</button>':'')+' — جمع نمایش‌داده‌شده: <b>'+faMoney(rows.reduce(function(a,t){return a+(t.amount||0)},0))+' تومان</b></p></div>'+
+   '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('wallet',17)+' سوابق هزینه‌ها ('+faNum(rows.length)+')</h3>'+
+    (rows.length?'<div class="table-wrap"><table class="tbl" style="min-width:820px"><thead><tr><th>تاریخ</th><th>شرح</th><th>دسته</th><th>روش پرداخت</th><th>شماره سند</th><th>واحد</th><th>مبلغ (تومان)</th><th>وضعیت</th><th></th></tr></thead><tbody>'+
+     rows.map(function(t){
+       return '<tr><td>'+faDate(t.date_iso)+'</td><td>'+esc(t.description)+'</td><td><span class="badge b-gold">'+esc(t.category)+'</span></td><td>'+esc(t.pay_method||'—')+'</td><td>'+esc(t.doc_no||'—')+'</td><td class="tiny">'+esc(UNIT_LABELS[t.unit]||'ستاد مسجد')+'</td><td><b>'+faMoney(t.amount)+'</b></td>'+
+        '<td><span class="badge '+({'تأییدشده':'b-success','در انتظار بررسی':'b-warn','ردشده':'b-danger','بازگشت برای اصلاح':'b-danger'}[t.tx_status||'تأییدشده']||'b-success')+'">'+esc(t.tx_status||'تأییدشده')+'</span>'+(t.review_note?'<div class="tiny muted">'+esc(t.review_note)+'</div>':'')+'</td>'+
+        '<td style="white-space:nowrap">'+(t.receipt?'<button class="btn btn-outline btn-sm" data-act="finReceipt" data-id="'+t.id+'">'+icon('eye',12)+'</button> ':'')+
+        '<button class="btn btn-outline btn-sm" data-act="finTxEdit" data-id="'+t.id+'">'+icon('edit',12)+'</button> '+
+        '<button class="icon-btn danger" data-act="finTxDel" data-id="'+t.id+'" style="color:var(--danger)">'+icon('trash',13)+'</button></td></tr>';
+     }).join('')+'</tbody></table></div>':emptyState('هزینه‌ای ثبت نشده است'))+'</div>'+
+   '<div class="card pad"><h3>'+icon('users',17)+' حقوق امام جماعت و خادم</h3>'+
+    '<p class="tiny muted" style="margin:4px 0 10px">مبلغ توافق‌شده و سررسید پرداخت هر نیرو ثبت و پرداخت ماهانه توسط معاونت مالی انجام می‌شود؛ سوابق کامل نگهداری می‌شود. ثبت سند حسابداری و پرداخت فقط در پنل مالی است.</p>'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+['امام جماعت','خادم'].map(function(w){
+      const cfg=sals.filter(function(x){return x.who===w})[0];
+      return '<button class="btn btn-outline btn-sm" data-act="finSalCfg" data-k="'+w+'">'+icon('edit',13)+' تنظیم حقوق '+w+(cfg?' — '+faMoney(cfg.monthly)+' تومان · روز '+faNum(cfg.due_day):'')+'</button>';
+    }).join('')+
+    '<button class="btn btn-primary btn-sm" data-act="finSalPay">'+icon('plus',13)+' ثبت پرداخت ماهانه</button></div>'+
+    (sals.length?'':'<p class="tiny muted">هنوز مبلغ توافق‌شده ثبت نشده است.</p>')+
+    (salPays.length?'<h4 style="font-size:13px;margin:10px 0 8px">سوابق پرداخت حقوق</h4><div class="table-wrap"><table class="tbl" style="min-width:520px"><thead><tr><th>نیرو</th><th>ماه</th><th>مبلغ (تومان)</th><th>تاریخ پرداخت</th></tr></thead><tbody>'+
+      salPays.map(function(sp){ return '<tr><td>'+esc(sp.who)+'</td><td>'+esc(sp.month_fa)+'</td><td>'+faMoney(sp.amount)+'</td><td>'+faDate(sp.date_iso)+'</td></tr>'; }).join('')+'</tbody></table></div>':emptyState('پرداختی ثبت نشده است'))+'</div>';
+}
+/* ---------- ۴) مدیریت بودجه ---------- */
+function finBud(){
+  const tj=isoToJ(todayIso()); const y=window._finYear||tj.jy;
+  const yStart=jToIso(y,1,1), yEnd=jToIso(y,12,jalaaliMonthLength(y,12));
+  const rows=all('SELECT * FROM fin_budget WHERE year=? ORDER BY id',[y]);
+  const approved=rows.reduce(function(a,b){return a+(b.approved||0)},0);
+  const alloc=rows.reduce(function(a,b){return a+(b.allocated||0)},0);
+  const spent=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='هزینه' AND tx_status='تأییدشده' AND date_iso BETWEEN ? AND ?",[yStart,yEnd]).s||0;
+  const units=finUnitOptions();
+  const isImam=session.username==='imam';
+  return ''+
+   '<div class="page-head"><div><h2>مدیریت بودجه — سال '+faNum(y)+'</h2><p class="muted">بودجهٔ پیشنهادی معاونت‌ها ← تأیید هیئت امنا/امام جماعت ← تخصیص اعتبار توسط معاون مالی ← پایش مصرف</p></div>'+
+   '<div style="display:flex;gap:8px"><select id="finYr" class="inp" style="width:auto" data-act="finYearSel">'+[tj.jy-1,tj.jy,tj.jy+1].map(function(yy){return '<option '+(yy===y?'selected':'')+'>'+yy+'</option>'}).join('')+'</select>'+
+   '<button class="btn btn-primary no-print" data-act="finBudNew">'+icon('plus')+' ثبت بودجهٔ پیشنهادی</button></div></div>'+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>حاکمیت بودجه:</b> تأیید نهایی بودجه و تخصیص طبق مصوبات با امام جماعت و هیئت امنا است؛ معاون مالی پیشنهادها را ثبت، تخصیص را اجرا و مصرف را پایش می‌کند و اختیارات متعلق به امام جماعت/هیئت امنا را تصاحب نمی‌کند. عبور از سقف تخصیص با هشدار قرمز مشخص می‌شود.</p></div>'+
+   '<div class="grid-stats">'+
+    '<div class="stat-card accent-success"><span class="stat-label">بودجهٔ مصوب '+faNum(y)+'</span><b class="stat-num c-success">'+faMoney(approved)+'</b></div>'+
+    '<div class="stat-card accent-gold"><span class="stat-label">تخصیص‌یافته</span><b class="stat-num">'+faMoney(alloc)+'</b></div>'+
+    '<div class="stat-card accent-danger"><span class="stat-label">مصرف واقعی</span><b class="stat-num c-danger">'+faMoney(spent)+'</b></div>'+
+    '<div class="stat-card"><span class="stat-label">ماندهٔ بودجه</span><b class="stat-num">'+faMoney(approved-spent)+'</b></div>'+
+   '</div>'+
+   '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('chart',17)+' سرفصل‌های بودجه ('+faNum(rows.length)+')</h3>'+
+    (rows.length?rows.map(function(b){
+      const sp=finSpentUnit(b.unit,yStart,yEnd);
+      const over=b.allocated&&sp>b.allocated;
+      const stC={'پیشنهادی':'b-warn','مصوب':'b-success','تخصیص‌یافته':'b-info'}[b.status]||'b-neutral';
+      return '<div class="comment" style="margin-bottom:12px"><div class="c-head"><b>'+esc(UNIT_LABELS[b.unit]||b.unit)+'</b>'+(b.title?' <span class="tiny muted">'+esc(b.title)+'</span>':'')+
+       '<span class="badge '+stC+'">'+esc(b.status)+'</span>'+(over?'<span class="badge b-danger">عبور از سقف بودجه!</span>':'')+
+       '<span style="margin-right:auto;display:flex;gap:6px">'+
+       (isImam&&b.status!=='تخصیص‌یافته'?'<button class="btn btn-primary btn-sm" data-act="finBudApprove" data-id="'+b.id+'">تأیید بودجه</button>':'')+
+       ((b.status!=='پیشنهادی')?'<button class="btn btn-outline btn-sm" data-act="finBudAlloc" data-id="'+b.id+'">تخصیص اعتبار</button>':'')+
+       '<button class="icon-btn danger" data-act="finBudDel" data-id="'+b.id+'" style="color:var(--danger)">'+icon('trash',13)+'</button></span></div>'+
+       '<div class="bar-row" style="margin-top:8px"><span class="bl">پیشنهاد</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.max(2,Math.round((b.proposed||0)*100/Math.max(1,approved||b.proposed||1)))+'%"></div></div><span class="bv">'+faMoney(b.proposed)+'</span></div>'+
+       '<div class="bar-row"><span class="bl">مصوب</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.max(2,Math.round((b.approved||0)*100/Math.max(1,approved||1)))+'%"></div></div><span class="bv">'+faMoney(b.approved)+'</span></div>'+
+       '<div class="bar-row"><span class="bl">تخصیص</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.max(2,Math.round((b.allocated||0)*100/Math.max(1,approved||1)))+'%"></div></div><span class="bv">'+faMoney(b.allocated)+'</span></div>'+
+       '<div class="bar-row"><span class="bl">مصرف</span><div class="bar-track"><div class="bar-fill '+((b.allocated&&sp>b.allocated)?'red':'')+'" style="width:'+Math.max(2,Math.round(sp*100/Math.max(1,b.allocated||approved||1)))+'%"></div></div><span class="bv">'+faMoney(sp)+'</span></div>'+
+       (b.approved_by?'<small class="tiny muted">تأییدکننده: '+esc(b.approved_by)+'</small>':'')+'</div>';
+    }).join(''):emptyState('برای این سال بودجه‌ای ثبت نشده است'))+'</div>';
+}
+/* ---------- ۵) حساب‌ها و صندوق‌ها ---------- */
+function finAcc(){
+  const acs=all('SELECT * FROM fin_accounts ORDER BY id');
+  let bankBal=0,cashBal=0;
+  acs.forEach(function(a){ const b=finAccBal(a.id); if(a.kind==='بانک') bankBal+=b; else cashBal+=b; });
+  return ''+
+   '<div class="page-head"><div><h2>حساب‌ها و صندوق‌ها</h2><p class="muted">تعریف حساب بانکی و صندوق نقدی، ثبت موجودی اولیه، دریافت و پرداخت، انتقال وجه، گردش حساب و بررسی مغایرت</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="finAccNew">'+icon('plus')+' تعریف حساب/صندوق</button></div>'+
+   '<div class="grid-stats">'+
+    '<div class="stat-card accent-gold"><span class="stat-label">مجموع حساب‌های بانکی</span><b class="stat-num">'+faMoney(bankBal)+'</b></div>'+
+    '<div class="stat-card accent-gold"><span class="stat-label">مجموع صندوق‌ها</span><b class="stat-num">'+faMoney(cashBal)+'</b></div>'+
+   '</div>'+
+   (acs.length?'<div class="card pad">'+acs.map(function(a){
+     const b=finAccBal(a.id);
+     return '<div class="comment" style="margin-bottom:12px"><div class="c-head"><b>'+esc(a.name)+'</b><span class="badge '+(a.kind==='بانک'?'b-info':'b-gold')+'">'+esc(a.kind)+'</span>'+
+      '<b style="margin-right:8px">'+faMoney(b)+' تومان</b>'+
+      '<span style="margin-right:auto;display:flex;gap:6px">'+
+      '<button class="btn btn-outline btn-sm" data-act="finAtxNew" data-id="'+a.id+'">'+icon('plus',13)+' دریافت/پرداخت</button>'+
+      '<button class="btn btn-outline btn-sm" data-act="finTransfer" data-id="'+a.id+'">'+icon('refresh',13)+' انتقال وجه</button>'+
+      '<button class="btn btn-outline btn-sm" data-act="finLedger" data-id="'+a.id+'">'+icon('file',13)+' گردش حساب</button>'+
+      '<button class="btn btn-outline btn-sm" data-act="finRecon" data-id="'+a.id+'">'+icon('check',13)+' مغایرت</button>'+
+      '<button class="icon-btn danger" data-act="finAccDel" data-id="'+a.id+'" style="color:var(--danger)">'+icon('trash',13)+'</button></span></div>'+
+      '<p class="tiny muted">'+(a.kind==='بانک'?'بانک: '+esc(a.bank_name||'—')+' · شماره حساب: '+esc(a.account_no||'—')+' · ':'')+'موجودی اولیه: '+faMoney(a.opening)+' تومان'+(a.note?' · '+esc(a.note):'')+'</p></div>';
+   }).join('')+'</div>':emptyState('حساب یا صندوقی تعریف نشده است — با «تعریف حساب/صندوق» شروع کنید'))+
+   '<div class="card pad" style="margin-top:12px"><p class="tiny muted"><b>صورت‌حساب:</b> با «گردش حساب» فهرست کامل دریافت/پرداخت/انتقال‌ها با ماندهٔ ردیف‌به‌ردیف نمایش و خروجی Excel گرفته می‌شود. «مغایرت» ماندهٔ صورت‌حساب بانک را وارد می‌کنید و تفاوت با ماندهٔ سامانه محاسبه می‌شود.</p></div>';
+}
+/* ---------- ۶) مدیریت اسناد و اموال ---------- */
+function finDocs(){
+  const docs=all('SELECT * FROM fin_docs ORDER BY id DESC');
+  const k=function(kk){ return docs.filter(function(d){return d.doc_kind===kk}); };
+  const assetCnt=one('SELECT COUNT(*) AS c FROM assets').c;
+  return ''+
+   '<div class="page-head"><div><h2>مدیریت اسناد و اموال</h2><p class="muted">بایگانی اسناد خرید، فاکتورها و رسیدها، قراردادها و اسناد مالی با بارگذاری تصویر</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="finDocNew">'+icon('upload')+' ثبت سند جدید</button></div>'+
+   '<div class="grid-stats">'+
+    '<div class="stat-card"><span class="stat-label">اسناد خرید</span><b class="stat-num">'+faNum(k('سند خرید').length)+'</b></div>'+
+    '<div class="stat-card"><span class="stat-label">فاکتورها و رسیدها</span><b class="stat-num">'+faNum(k('فاکتور').length)+'</b></div>'+
+    '<div class="stat-card"><span class="stat-label">قراردادها</span><b class="stat-num">'+faNum(k('قرارداد').length)+'</b></div>'+
+    '<div class="stat-card"><span class="stat-label">اسناد مالی</span><b class="stat-num">'+faNum(k('سند مالی').length)+'</b></div>'+
+   '</div>'+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>اموال مسجد:</b> '+faNum(assetCnt)+' قلم اموال در پنل عمران و پشتیبانی ثبت شده است؛ ثبت و مدیریت اموال در پنل عمران انجام می‌شود و اسناد مالی مرتبط (خرید، فاکتور، قرارداد) در همین بخش بایگانی می‌گردد.</p></div>'+
+   '<div class="card pad"><h3>'+icon('file',17)+' بایگانی اسناد ('+faNum(docs.length)+')</h3>'+
+    (docs.length?docs.map(function(d){
+      const imgs=finImgList(d.images);
+      return '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b>'+esc(d.title)+'</b><span class="badge b-gold">'+esc(d.doc_kind)+'</span>'+
+       (d.amount?'<b>'+faMoney(d.amount)+' تومان</b>':'')+
+       (imgs.length?'<span class="badge b-neutral">'+icon('image',12)+' '+faNum(imgs.length)+'</span>':'')+
+       '<span style="margin-right:auto;display:flex;gap:6px">'+
+       (imgs.length?'<button class="btn btn-outline btn-sm" data-act="finDocView" data-id="'+d.id+'">'+icon('eye',13)+' تصاویر</button>':'')+
+       '<button class="icon-btn danger" data-act="finDocDel" data-id="'+d.id+'" style="color:var(--danger)">'+icon('trash',13)+'</button></span></div>'+
+       '<p class="tiny muted">'+esc(d.date_fa||'')+(d.note?' · '+esc(d.note):'')+'</p></div>';
+    }).join(''):emptyState('سندی ثبت نشده است'))+'</div>';
+}
+/* ---------- ۷) بدهی‌ها و مطالبات ---------- */
+function finDebts(){
+  const rows=all('SELECT * FROM fin_debts ORDER BY id DESC');
+  const open=rows.filter(function(d){return d.status!=='تسویه‌شده'});
+  const debts=open.filter(function(d){return d.kind==='بدهی'});
+  const claims=open.filter(function(d){return d.kind==='طلب'});
+  const in7=addDaysIso(todayIso(),7);
+  const dueSoon=open.filter(function(d){return d.due_iso&&d.due_iso<=in7});
+  const stB=function(d){ return d.status==='تسویه‌شده'?'b-success':(d.due_iso&&d.due_iso<=todayIso()?'b-danger':(d.due_iso&&d.due_iso<=in7?'b-warn':'b-neutral')); };
+  return ''+
+   '<div class="page-head"><div><h2>بدهی‌ها و مطالبات</h2><p class="muted">ثبت بدهی و طلب با مبلغ، طرف حساب، سررسید، اقساط و وضعیت تسویه + هشدار سررسید</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="finDebtNew">'+icon('plus')+' ثبت بدهی/طلب</button></div>'+
+   '<div class="grid-stats">'+
+    '<div class="stat-card accent-danger"><span class="stat-label">بدهی‌های باز</span><b class="stat-num c-danger">'+faMoney(debts.reduce(function(a,d){return a+Math.max(0,(d.amount||0)-(d.paid||0))},0))+'</b><small class="muted">'+faNum(debts.length)+' مورد</small></div>'+
+    '<div class="stat-card"><span class="stat-label">مطالبات باز</span><b class="stat-num">'+faMoney(claims.reduce(function(a,d){return a+Math.max(0,(d.amount||0)-(d.paid||0))},0))+'</b><small class="muted">'+faNum(claims.length)+' مورد</small></div>'+
+    '<div class="stat-card '+(dueSoon.length?'accent-danger':'')+'"><span class="stat-label">نزدیک یا گذشتهٔ سررسید</span><b class="stat-num">'+faNum(dueSoon.length)+'</b><small class="muted">تا ۷ روز آینده / معوق</small></div>'+
+   '</div>'+
+   '<div class="card pad"><h3>'+icon('clock',17)+' فهرست بدهی‌ها و مطالبات ('+faNum(rows.length)+')</h3>'+
+    (rows.length?rows.map(function(d){
+      const pct=d.amount?Math.min(100,Math.round((d.paid||0)*100/d.amount)):0;
+      return '<div class="comment" style="margin-bottom:12px"><div class="c-head"><b>'+esc(d.party)+'</b>'+
+       '<span class="badge '+(d.kind==='بدهی'?'b-danger':'b-info')+'">'+esc(d.kind)+'</span>'+
+       '<span class="badge '+stB(d)+'">'+esc(d.status)+'</span>'+
+       (d.installments>1?'<span class="badge b-neutral">'+faNum(d.installments)+' قسط</span>':'')+
+       '<span style="margin-right:auto;display:flex;gap:6px">'+
+       (d.status!=='تسویه‌شده'?'<button class="btn btn-primary btn-sm" data-act="finDebtSettle" data-id="'+d.id+'">تسویه کامل</button> <button class="btn btn-outline btn-sm" data-act="finDebtPart" data-id="'+d.id+'">ثبت قسط</button>':'')+
+       '<button class="btn btn-outline btn-sm" data-act="finDebtEdit" data-id="'+d.id+'">'+icon('edit',12)+'</button>'+
+       '<button class="icon-btn danger" data-act="finDebtDel" data-id="'+d.id+'" style="color:var(--danger)">'+icon('trash',13)+'</button></span></div>'+
+       '<div class="bar-row" style="margin:8px 0 4px"><span class="bl">پرداخت</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.max(2,pct)+'%"></div></div><span class="bv">'+faMoney(d.paid||0)+' از '+faMoney(d.amount)+'</span></div>'+
+       '<p class="tiny muted">سررسید: '+(d.due_iso?faDateLong(d.due_iso):'—')+(d.note?' · '+esc(d.note):'')+'</p></div>';
+    }).join(''):emptyState('موردی ثبت نشده است'))+'</div>';
+}
+/* ---------- ۸) حسابداری و گزارش‌ها ---------- */
+const FIN_ACCT_TABS=[{id:'journal',label:'دفتر روزنامه'},{id:'ledger',label:'دفتر کل'},{id:'trial',label:'تراز آزمایشی'},{id:'codes',label:'کدینگ حساب‌ها'},{id:'corr',label:'اصلاح اسناد'},{id:'period',label:'دورهٔ مالی'},{id:'reports',label:'گزارش‌ها'}];
+function finAcct(){
+  const t=window._finAcctTab||'journal';
+  const seg='<div class="seg" style="margin-bottom:12px;flex-wrap:wrap">'+FIN_ACCT_TABS.map(function(x){
+    return '<button class="seg-btn '+(t===x.id?'on':'')+'" data-act="finAcctTab" data-k="'+x.id+'">'+x.label+'</button>';
+  }).join('')+'</div>';
+  return '<div class="page-head"><div><h2>حسابداری و گزارش‌ها</h2><p class="muted">دفتر روزنامه، دفتر کل، کدینگ، تراز آزمایشی، اصلاح سند با ثبت سابقه، بستن دورهٔ مالی و گزارش‌های ماهانه/فصلی/سالانه</p></div></div>'+seg+finAcctBody(t);
+}
+function finAcctBody(t){
+  const tj=isoToJ(todayIso()); const y=window._finYear||tj.jy;
+  const yStart=jToIso(y,1,1), yEnd=jToIso(y,12,jalaaliMonthLength(y,12));
+  if(t==='journal'){
+    const rows=all("SELECT * FROM transactions WHERE date_iso BETWEEN ? AND ? ORDER BY date_iso, id",[yStart,yEnd]);
+    const csv=[['تاریخ','شماره سند','شرح','کد','دسته','بدهکار (هزینه)','بستانکار (درآمد)','وضعیت']];
+    return '<div class="card pad"><h3>'+icon('book',17)+' دفتر روزنامه — سال '+faNum(y)+' ('+faNum(rows.length)+' سند)</h3>'+
+     '<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-outline btn-sm" data-act="finJournalExcel">'+icon('download',13)+' خروجی Excel</button></div>'+
+     (rows.length?'<div class="table-wrap"><table class="tbl" style="min-width:820px"><thead><tr><th>تاریخ</th><th>سند</th><th>شرح</th><th>کد</th><th>دسته</th><th>بدهکار (هزینه)</th><th>بستانکار (درآمد)</th><th>وضعیت</th><th></th></tr></thead><tbody>'+
+      rows.map(function(r){ const c=finCodeOf(r.category); csv.push([faDate(r.date_iso),r.doc_no||'',r.description,c,r.category,r.kind==='هزینه'?r.amount:'',r.kind==='درآمد'?r.amount:'',r.tx_status||'']);
+       return '<tr><td>'+faDate(r.date_iso)+'</td><td>'+esc(r.doc_no||'—')+'</td><td>'+esc(r.description)+'</td><td>'+(c?'<span class="badge b-neutral">'+esc(c)+'</span>':'—')+'</td><td>'+esc(r.category)+'</td><td>'+(r.kind==='هزینه'?'<b>'+faMoney(r.amount)+'</b>':'—')+'</td><td>'+(r.kind==='درآمد'?'<b class="c-success">'+faMoney(r.amount)+'</b>':'—')+'</td><td><span class="badge '+({'تأییدشده':'b-success','در انتظار بررسی':'b-warn','ردشده':'b-danger','بازگشت برای اصلاح':'b-danger'}[r.tx_status||'تأییدشده']||'b-success')+'">'+esc(r.tx_status||'تأییدشده')+'</span></td>'+
+        '<td><button class="btn btn-outline btn-sm" data-act="finTxEdit" data-id="'+r.id+'">'+icon('edit',12)+'</button></td></tr>'; }).join('')+
+      '</tbody></table></div>':emptyState('سندی در این سال ثبت نشده است'))+'</div>';
+  }
+  if(t==='ledger'){
+    const rows=all("SELECT category,kind,SUM(amount) AS s FROM transactions WHERE date_iso BETWEEN ? AND ? AND category<>'' GROUP BY category,kind ORDER BY category",[yStart,yEnd]);
+    return '<div class="card pad"><h3>'+icon('book',17)+' دفتر کل — سال '+faNum(y)+'</h3>'+
+     (rows.length?'<div class="table-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>کد</th><th>حساب (دسته)</th><th>بدهکار (هزینه)</th><th>بستانکار (درآمد)</th></tr></thead><tbody>'+
+      rows.map(function(r){ const c=finCodeOf(r.category);
+       return '<tr><td>'+(c?esc(c):'—')+'</td><td>'+esc(r.category)+'</td><td>'+(r.kind==='هزینه'?'<b>'+faMoney(r.s)+'</b>':'—')+'</td><td>'+(r.kind==='درآمد'?'<b>'+faMoney(r.s)+'</b>':'—')+'</td></tr>'; }).join('')+'</tbody></table></div>':emptyState('داده‌ای نیست'))+'</div>';
+  }
+  if(t==='trial'){
+    const rows=all("SELECT category,kind,SUM(amount) AS s FROM transactions WHERE date_iso BETWEEN ? AND ? AND tx_status='تأییدشده' AND category<>'' GROUP BY category ORDER BY category",[yStart,yEnd]);
+    const map={}; rows.forEach(function(r){ if(!map[r.category]) map[r.category]={d:0,b:0}; if(r.kind==='هزینه') map[r.category].d+=r.s; else map[r.category].b+=r.s; });
+    let td=0,tb=0;
+    const body=Object.keys(map).sort().map(function(c){ td+=map[c].d; tb+=map[c].b; const c2=finCodeOf(c);
+      return '<tr><td>'+(c2?esc(c2):'—')+'</td><td>'+esc(c)+'</td><td>'+faMoney(map[c].d)+'</td><td>'+faMoney(map[c].b)+'</td></tr>'; }).join('');
+    return '<div class="card pad"><h3>'+icon('chart',17)+' تراز آزمایشی — سال '+faNum(y)+'</h3>'+
+     (td||tb?'<div class="table-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>کد</th><th>حساب</th><th>بدهکار</th><th>بستانکار</th></tr></thead><tbody>'+body+
+      '</tbody><tfoot><tr><th colspan="2">جمع</th><th>'+faMoney(td)+'</th><th>'+faMoney(tb)+'</th></tr></tfoot></table></div><p class="tiny muted '+(td===tb?'c-success':'c-danger')+'">'+(td===tb?'✓ تراز برقرار است':'توجه: جمع بدهکار و بستانکار برابر نیست (تراکنش‌های در انتظار بررسی/ردشده لحاظ نشده‌اند)')+'</p>':emptyState('داده‌ای نیست'))+'</div>';
+  }
+  if(t==='codes'){
+    const rows=all('SELECT * FROM fin_codes ORDER BY code');
+    return '<div class="card pad"><h3>'+icon('file',17)+' کدینگ حساب‌ها ('+faNum(rows.length)+')</h3>'+
+     '<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-outline btn-sm" data-act="finCodeAuto">'+icon('refresh',13)+' تولید خودکار کدینگ پیش‌فرض</button><button class="btn btn-primary btn-sm" data-act="finCodeNew">'+icon('plus',13)+' افزودن کد</button></div>'+
+     (rows.length?'<div class="table-wrap"><table class="tbl" style="min-width:520px"><thead><tr><th>کد</th><th>نام حساب</th><th>نوع</th><th></th></tr></thead><tbody>'+
+      rows.map(function(c){ return '<tr><td><b>'+esc(c.code)+'</b></td><td>'+esc(c.name)+'</td><td><span class="badge '+(c.kind==='درآمد'?'b-success':'b-danger')+'">'+esc(c.kind)+'</span></td><td><button class="icon-btn danger" data-act="finCodeDel" data-id="'+c.id+'" style="color:var(--danger)">'+icon('trash',13)+'</button></td></tr>'; }).join('')+'</tbody></table></div>':emptyState('کدینگی تعریف نشده است'))+'</div>';
+  }
+  if(t==='corr'){
+    const rows=all('SELECT * FROM fin_corr ORDER BY id DESC LIMIT 50');
+    return '<div class="card pad"><h3>'+icon('clock',17)+' سابقهٔ اصلاح اسناد ('+faNum(rows.length)+')</h3>'+
+     '<p class="tiny muted" style="margin:4px 0 10px">هر اصلاح سند با ذکر دلیل و مقادیر قبلی/جدید در همین سابقه ثبت می‌شود؛ برای اصلاح، از دفتر روزنامه دکمهٔ ویرایش سند را بزنید.</p>'+
+     (rows.length?rows.map(function(c){
+       return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>سند #'+faNum(c.row_id)+'</b><span class="badge b-warn">'+esc(c.created_at_fa||'')+'</span><span class="tiny muted">'+esc(c.created_by||'')+'</span></div>'+
+        '<small>دلیل: '+esc(c.reason||'—')+'</small><div class="tiny muted">قبلی: '+esc(c.old_vals||'')+'</div><div class="tiny">جدید: '+esc(c.new_vals||'')+'</div></div>';
+     }).join(''):emptyState('اصلاحی ثبت نشده است'))+'</div>';
+  }
+  if(t==='period'){
+    const rows=all('SELECT * FROM fin_periods ORDER BY year DESC');
+    const isImam=session.username==='imam';
+    return '<div class="card pad"><h3>'+icon('calendar',17)+' دورهٔ مالی ('+faNum(rows.length)+' دوره)</h3>'+
+     '<p class="tiny muted" style="margin:4px 0 10px">بستن دورهٔ مالی، سال را قفل می‌کند و هیچ ثبت/اصلاح مالی برای آن سال ممکن نیست. <b>'+(isImam?'بستن و بازگشایی دوره فقط با امام جماعت است.':'بستن دوره فقط با امام جماعت است.')+'</b></p>'+
+     '<div style="display:flex;gap:8px;margin-bottom:10px">'+(isImam?'<button class="btn btn-primary btn-sm" data-act="finPeriodClose">'+icon('lock',13)+' بستن دورهٔ مالی</button>':'')+'</div>'+
+     (rows.length?'<div class="table-wrap"><table class="tbl" style="min-width:480px"><thead><tr><th>سال</th><th>وضعیت</th><th>تاریخ بستن</th><th></th></tr></thead><tbody>'+
+      rows.map(function(r){ return '<tr><td><b>'+faNum(r.year)+'</b></td><td>'+(r.closed?'<span class="badge b-danger">بسته</span>':'<span class="badge b-success">باز</span>')+'</td><td class="tiny">'+esc(r.closed_at_fa||'—')+'</td>'+
+       '<td>'+(isImam&&r.closed?'<button class="btn btn-outline btn-sm" data-act="finPeriodOpen" data-id="'+r.id+'">بازگشایی</button>':'')+'</td></tr>'; }).join('')+'</tbody></table></div>':emptyState('دوره‌ای بسته نشده است'))+'</div>';
+  }
+  /* reports */
+  return '<div class="card pad"><h3>'+icon('chart',17)+' گزارش‌های مالی</h3>'+
+   '<p class="tiny muted" style="margin:4px 0 10px">گزارش درآمد و هزینه، موجودی حساب‌ها و بدهی/مطالبات برای دورهٔ ماهانه، فصلی یا سالانه — با خروجی PDF و Excel.</p>'+
+   '<div class="frow2">'+
+    '<div>'+fld('دوره','<select id="repP" class="inp"><option value="m">ماهانه — '+J_MONTHS[tj.jm-1]+' '+faNum(tj.jy)+'</option><option value="s">فصلی — فصل '+faNum(Math.ceil(tj.jm/3))+'</option><option value="y">سالانه — '+faNum(tj.jy)+'</option></select>')+'</div>'+
+    '<div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap">'+
+     '<button class="btn btn-primary btn-sm" data-act="finRep" data-k="ieh">گزارش درآمد و هزینه</button>'+
+     '<button class="btn btn-outline btn-sm" data-act="finRep" data-k="bal">موجودی حساب‌ها</button>'+
+     '<button class="btn btn-outline btn-sm" data-act="finRep" data-k="deb">بدهی و مطالبات</button>'+
+    '</div>'+
+   '</div></div>';
+}
+/* ---------- ۹) قالب‌ها و فرم‌های مالی ---------- */
+const FIN_FORMS=[
+ {id:'inc',label:'فرم ثبت درآمد',fields:[['شماره سند','doc'],['تاریخ (شمسی)','date'],['دریافت‌کننده وجه','txt'],['پرداخت‌کننده / منبع درآمد','txt'],['نوع درآمد (دسته)','txt'],['مبلغ (تومان) — عدد','num'],['مبلغ به حروف','txt'],['روش دریافت','txt'],['واریز به حساب/صندوق','txt'],['شرح','txt']]},
+ {id:'exp',label:'فرم ثبت هزینه',fields:[['شماره سند','doc'],['تاریخ (شمسی)','date'],['پرداخت‌کننده (صندوق دار)','txt'],['دریافت‌کننده وجه','txt'],['دستهٔ هزینه','txt'],['مبلغ (تومان) — عدد','num'],['مبلغ به حروف','txt'],['روش پرداخت','txt'],['شرح هزینه','txt'],['مدرک پیوست (فاکتور/رسید)','txt']]},
+ {id:'tan',label:'فرم تنخواه',fields:[['شماره سند','doc'],['تاریخ (شمسی)','date'],['تنخواه‌دار','txt'],['مبلغ تنخواه (تومان)','num'],['مصارف انجام‌شده','txt'],['مبلغ مصرف‌شده','num'],['مبلغ برگشتی','num'],['تسویه تنخواه','txt'],['شرح','txt']]},
+ {id:'etamin',label:'فرم درخواست تأمین اعتبار',fields:[['شماره درخواست','doc'],['تاریخ (شمسی)','date'],['واحد درخواست‌کننده','txt'],['مبلغ درخواستی (تومان)','num'],['هدف و ضرورت تأمین اعتبار','ta'],['منبع پیشنهادی تأمین','txt'],['زمان نیاز','txt']]},
+ {id:'pay',label:'فرم درخواست پرداخت',fields:[['شماره سند','doc'],['تاریخ (شمسی)','date'],['درخواست‌کننده','txt'],['ذی‌نفع / دریافت‌کننده','txt'],['مبلغ (تومان)','num'],['علت پرداخت','txt'],['شماره فاکتور/قرارداد پیوست','txt'],['تأیید مسئول واحد','txt']]},
+ {id:'naqd',label:'فرم تحویل و تحول وجه نقد',fields:[['شماره سند','doc'],['تاریخ (شمسی)','date'],['تحویل‌دهنده','txt'],['تحویل‌گیرنده','txt'],['مبلغ (تومان)','num'],['نوع تحول (دریافت/پرداخت/انتقال)','txt'],['شماره سند مرتبط','txt'],['شرح','txt']]},
+ {id:'tas',label:'فرم صورت‌حساب و تسویه',fields:[['شماره سند','doc'],['تاریخ (شمسی)','date'],['طرف حساب','txt'],['موضوع حساب','txt'],['جمع بدهی (تومان)','num'],['جمع پرداخت‌شده (تومان)','num'],['مانده (تومان)','num'],['وضعیت تسویه','txt'],['توضیحات','ta']]},
+ {id:'mon',label:'فرم گزارش مالی ماهانه',auto:'mon'},
+ {id:'yr',label:'فرم گزارش عملکرد مالی سالانه',auto:'yr'},
+ {id:'amval',label:'فرم تحویل اموال',fields:[['شماره سند','doc'],['تاریخ (شمسی)','date'],['نام اموال / مشخصات','txt'],['تعداد','txt'],['تحویل‌دهنده','txt'],['تحویل‌گیرنده','txt'],['وضعیت فیزیکی','txt'],['محل استقرار','txt'],['شرح','txt']]},
+ {id:'resid',label:'فرم رسید دریافت و پرداخت',fields:[['شماره رسید','doc'],['تاریخ (شمسی)','date'],['نوع رسید','sel:دریافت/پرداخت:دریافت|پرداخت'],['از چه کسی','txt'],['به چه کسی','txt'],['مبلغ (تومان)','num'],['بابت','txt'],['روش پرداخت','txt']]}
+];
+function finDocNo(){
+  const tj=isoToJ(todayIso());
+  const n=one('SELECT COUNT(*) AS c FROM transactions').c+one('SELECT COUNT(*) AS c FROM fin_docs').c+1;
+  return tj.jy+'/مالی/'+(n<10?'00':(n<100?'0':''))+n;
+}
+function finFormFill(fid,mode){
+  const f=FIN_FORMS.filter(function(x){return x.id===fid})[0]; if(!f) return;
+  if(f.auto){ finFormReport(f,mode); return; }
+  const rowsHtml=f.fields.map(function(fd,i){
+    const k=fd[1];
+    if(k==='doc') return fld(fd[0],'<input name="f'+i+'" class="inp" value="'+finDocNo()+'" readonly>');
+    if(k==='date') return fld(fd[0],'<input name="f'+i+'" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۴">');
+    if(k==='num') return fld(fd[0],'<input name="f'+i+'" type="number" class="inp" placeholder="0">');
+    if(k==='sel:'){ return ''; }
+    if(fd[1].indexOf&&fd[1].indexOf('sel:')===0){ const parts=fd[1].split(':'); return fld(fd[0],'<select name="f'+i+'" class="inp">'+parts[2].split('|').map(function(o){return '<option>'+o+'</option>'}).join('')+'</select>'); }
+    if(k==='ta') return fld(fd[0],'<textarea name="f'+i+'" class="inp" rows="2"></textarea>');
+    return fld(fd[0],'<input name="f'+i+'" class="inp">');
+  }).join('');
+  const ov=openModal(f.label+' — تکمیل مقادیر',
+   '<form id="ffForm" novalidate>'+rowsHtml+
+    '<p class="tiny muted">فیلدها را پر کنید یا خالی بگذارید تا فرم چاپی با جای خالی تولید شود. '+(['mon','yr'].indexOf(fid)>=0?'':'')+'</p>'+
+    '<button type="submit" class="btn btn-primary btn-block">'+(mode==='doc'?'دانلود Word (doc.)':'خروجی PDF/چاپ')+'</button></form>',{width:'600px'});
+  const form=ov.querySelector('#ffForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    const vals=[]; f.fields.forEach(function(fd,i){ vals.push(form['f'+i]?form['f'+i].value.trim():''); });
+    closeModal();
+    if(mode==='doc') exportDoc(f.label,finFormDocHtml(f,vals));
+    else openOfficialDoc(f.label,finFormHtml(f,vals),{size:'A4'});
+  });
+}
+function finFormHtml(f,vals){
+  const rows=f.fields.map(function(fd,i){
+    const v=vals[i]||'';
+    return '<tr><th style="width:42%">'+esc(fd[0])+'</th><td style="min-height:9mm">'+esc(v)+'</td></tr>';
+  }).join('');
+  return '<div class="meta"><span>شماره سند: '+esc(vals[0]||finDocNo())+'</span><span>تاریخ: '+esc(vals[1]||faDate(todayIso()))+'</span></div>'+
+   '<div class="subj" style="text-align:center"><b style="font-size:15pt">'+esc(f.label)+'</b></div>'+
+   '<table class="min" style="margin-top:6mm"><tbody>'+rows+'</tbody></table>'+
+   '<div class="sig"><div class="block"><div>امضای مسئول واحد</div><div class="line"></div></div><div class="block"><div>امضای معاون امور مالی</div><div class="line"></div></div><div class="block"><div>تأیید امام جماعت</div><div class="line"></div></div></div>';
+}
+function finFormDocHtml(f,vals){
+  const rows=f.fields.map(function(fd,i){
+    return '<tr><th style="width:42%">'+esc(fd[0])+'</th><td>'+(esc(vals[i]||'—'))+'</td></tr>';
+  }).join('');
+  return '<div class="lh"><b>مسجد صاحب‌الزمان (عج)</b><div>سامانه یکپارچه مدیریت مسجد</div></div>'+
+   '<h3>'+esc(f.label)+'</h3><p>شماره سند: '+esc(vals[0]||finDocNo())+' — تاریخ: '+esc(vals[1]||faDate(todayIso()))+'</p>'+
+   '<table><tbody>'+rows+'</tbody></table>'+
+   '<div class="sg"><div>امضای مسئول واحد<div class="line"></div></div><div>امضای معاون امور مالی<div class="line"></div></div><div>تأیید امام جماعت<div class="line"></div></div></div>'+
+   '<p class="ftr">این فرم توسط سامانه یکپارچه مدیریت مسجد صاحب‌الزمان (عج) تولید شده است.</p>';
+}
+function finFormReport(f,mode){
+  const tj=isoToJ(todayIso());
+  const yStart=jToIso(tj.jy,1,1), yEnd=jToIso(tj.jy,12,jalaaliMonthLength(tj.jy,12));
+  const mStart=jToIso(tj.jy,tj.jm,1), mEnd=jToIso(tj.jy,tj.jm,jalaaliMonthLength(tj.jy,tj.jm));
+  const mon=f.auto==='mon';
+  const s1=mon?mStart:yStart, s2=mon?mEnd:yEnd;
+  const inc=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='درآمد' AND tx_status='تأییدشده' AND date_iso BETWEEN ? AND ?",[s1,s2]).s||0;
+  const exp=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='هزینه' AND tx_status='تأییدشده' AND date_iso BETWEEN ? AND ?",[s1,s2]).s||0;
+  const cats=all("SELECT category,kind,SUM(amount) AS s FROM transactions WHERE date_iso BETWEEN ? AND ? AND tx_status='تأییدشده' GROUP BY category,kind ORDER BY s DESC",[s1,s2]);
+  const rows=cats.map(function(c){ return [esc(c.category),c.kind,faMoney(c.s)+' تومان']; });
+  const title=f.label+' — '+(mon?J_MONTHS[tj.jm-1]+' '+faNum(tj.jy):'سال '+faNum(tj.jy));
+  if(mode==='excel'){
+    const data=[['حساب','نوع','مبلغ (تومان)']].concat(rows).concat([['جمع درآمد','',faMoney(inc)],['جمع هزینه','',faMoney(exp)],['تراز','',faMoney(inc-exp)]]);
+    exportCsv(f.label+'_'+(mon?faNum(tj.jy)+'-'+faNum(tj.jm):faNum(tj.jy)),data); return;
+  }
+  if(mode==='doc'){
+    exportDoc(title,finFormDocHtml({label:title,fields:[['دوره گزارش',mon?'ماه '+J_MONTHS[tj.jm-1]+' سال '+faNum(tj.jy):'سال مالی '+faNum(tj.jy)],['جمع درآمدها',faMoney(inc)+' تومان'],['جمع هزینه‌ها',faMoney(exp)+' تومان'],['تراز',faMoney(inc-exp)+' تومان']]},[])+
+     '<h4>تفکیک حساب‌ها</h4><table><tr><th>حساب</th><th>نوع</th><th>مبلغ (تومان)</th></tr>'+cats.map(function(c){ return '<tr><td>'+esc(c.category)+'</td><td>'+c.kind+'</td><td>'+faMoney(c.s)+'</td></tr>'; }).join('')+'</table>');
+    return;
+  }
+  const bodyHtml='<div class="meta"><span>دوره: '+(mon?'ماه '+J_MONTHS[tj.jm-1]+' سال '+faNum(tj.jy):'سال '+faNum(tj.jy))+'</span><span>تاریخ گزارش: '+faDate(todayIso())+'</span></div>'+
+   '<div class="subj" style="text-align:center"><b style="font-size:14pt">'+esc(title)+'</b></div>'+
+   '<div class="grid2" style="display:flex;gap:6mm;margin:4mm 0">'+
+    '<div style="flex:1;border:1px solid #999;padding:4mm;text-align:center"><b class="c-success" style="color:#0a7a3d;font-size:14pt">'+faMoney(inc)+'</b><div>جمع درآمدها (تومان)</div></div>'+
+    '<div style="flex:1;border:1px solid #999;padding:4mm;text-align:center"><b style="color:#b41414;font-size:14pt">'+faMoney(exp)+'</b><div>جمع هزینه‌ها (تومان)</div></div>'+
+    '<div style="flex:1;border:1px solid #999;padding:4mm;text-align:center"><b style="font-size:14pt">'+faMoney(inc-exp)+'</b><div>تراز (تومان)</div></div>'+
+   '</div>'+
+   '<table class="min"><thead><tr><th>حساب</th><th>نوع</th><th>مبلغ (تومان)</th></tr></thead><tbody>'+
+    (rows.length?cats.map(function(c){ return '<tr><td>'+esc(c.category)+'</td><td>'+c.kind+'</td><td>'+faMoney(c.s)+'</td></tr>'; }).join(''):'<tr><td colspan="3">تراکنشی در این دوره ثبت نشده است</td></tr>')+
+   '</tbody></table>'+
+   '<div class="sig"><div class="block">معاون امور مالی<div class="line"></div></div><div class="block">تأیید امام جماعت<div class="line"></div></div></div>';
+  openOfficialDoc(title,bodyHtml,{size:'A4'});
+}
+function finForms(){
+  const desc={inc:'ثبت دریافت‌های مسجد با مبلغ، طرف حساب و امضا',exp:'ثبت پرداخت‌ها با روش پرداخت و مدرک پیوست',tan:'تنخواه‌گردان: تحویل وجه، مصارف و تسویه',etamin:'درخواست رسمی اعتبار از هیئت امنا',pay:'درخواست پرداخت به ذی‌نفع',naqd:'حوالهٔ تحویل و تحول وجه نقد بین صندوق‌ها/افراد',tas:'صورت‌حساب طرف حساب و وضعیت تسویه',mon:'گزارش خودکار مالی ماه با تفکیک حساب‌ها',yr:'گزارش خودکار عملکرد مالی سالانه',amval:'حوالهٔ تحویل اموال بین افراد',resid:'رسید رسمی دریافت یا پرداخت وجه'};
+  return '<div class="page-head"><div><h2>قالب‌ها و فرم‌های مالی</h2><p class="muted">یازده فرم آماده با سربرگ مسجد، تاریخ شمسی، شماره سند و محل امضا — خروجی PDF/چاپ، Word (doc.) و Excel برای گزارش‌ها</p></div></div>'+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>نحوهٔ استفاده:</b> برای هر فرم می‌توانید مقادیر را در پنجرهٔ تکمیل وارد کنید (خروجی چاپی پر می‌شود) یا فیلدها را خالی بگذارید تا فرم چاپی با جای خالی تحویل داده شود. فرم‌های گزارش ماهانه و سالانه به‌صورت خودکار از داده‌های سامانه پر می‌شوند. فایل Word (doc.) باز و قابل ویرایش است.</p></div>'+
+   '<div class="grid-2">'+FIN_FORMS.map(function(f){
+     return '<div class="card pad" style="margin-bottom:0"><h3 style="font-size:14px">'+icon('file',16)+' '+esc(f.label)+'</h3>'+
+      '<p class="tiny muted" style="margin:4px 0 10px">'+(desc[f.id]||'')+'</p>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+       '<button class="btn btn-primary btn-sm" data-act="finForm" data-k="'+f.id+'" data-m="pdf">'+icon('printer',13)+' PDF/چاپ</button>'+
+       '<button class="btn btn-outline btn-sm" data-act="finForm" data-k="'+f.id+'" data-m="doc">'+icon('download',13)+' Word</button>'+
+       (f.auto?'<button class="btn btn-outline btn-sm" data-act="finForm" data-k="'+f.id+'" data-m="excel">'+icon('download',13)+' Excel</button>':'')+
+      '</div></div>';
+   }).join('')+'</div>';
+}
+/* ---------- VIEWS.finance ---------- */
+VIEWS.finance=function(root){
+  if(!finGuard()){ VIEWS.myexp(root); return; }
+  renderFinPanel(root);
 };
 function openTxModal(){
+  /* v3.0 — سخت‌سازی دسترسی: سایر کاربران فقط «هزینه‌های من» با رسید ثبت می‌کنند (§۳-۵) */
+  if(!FINANCE_FULL.includes(session.username)){ openMyExpModal(); return; }
   const ov=openModal('ثبت تراکنش مالی (دفتر مالی مسجد)',
    '<form id="txForm" novalidate>'+
     '<div class="frow2">'+
@@ -2812,11 +3358,16 @@ function openTxReviewModal(id){
     '<div><small>تاریخ</small><b>'+faDate(t.date_iso)+'</b></div>'+
    '</div>'+
    fld('تصمیم *','<select id="txDec" class="inp"><option>تأییدشده</option><option>ردشده</option><option>بازگشت برای اصلاح</option></select>')+
+   fld('پرداخت از حساب/صندوق (در صورت تأیید — اختیاری)','<select id="txAcc" class="inp"><option value="">— بدون ثبت در حساب —</option>'+all('SELECT * FROM fin_accounts ORDER BY id').map(function(a){return '<option value="'+a.id+'">'+esc(a.name)+' ('+a.kind+')</option>'}).join('')+'</select>')+
    fld('یادداشت بررسی (دلیل رد یا موارد اصلاح)','<textarea id="txNote" class="inp" rows="2" placeholder="اختیاری…"></textarea>')+
    '<button class="btn btn-primary btn-block" id="txSaveDec">ثبت تصمیم و اطلاع‌رسانی به ثبت‌کننده</button>');
   ov.querySelector('#txSaveDec').addEventListener('click',()=>{
-    const dec=$('#txDec').value, note=$('#txNote').value.trim();
+    const dec=$('#txDec').value, note=$('#txNote').value.trim(), acc=$('#txAcc').value;
     run('UPDATE transactions SET tx_status=?, review_note=? WHERE id=?',[dec,note,id]);
+    if(dec==='تأییدشده'&&acc){
+      run('INSERT INTO fin_atx (account_id,kind,amount,date_iso,date_fa,descr,doc_no,ref_txt,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        [+acc,'پرداخت',t.amount||0,t.date_iso,faDate(t.date_iso),'تأیید هزینه: '+t.description,'','فاکتور مسئولان #'+t.id,session.username,faStamp()]);
+    }
     if(t.created_by) addNotif(t.created_by,'نتیجه بررسی هزینه شما','هزینه «'+t.description+'» به مبلغ '+faMoney(t.amount)+' تومان: '+dec+(note?' — '+note:''));
     logActivity('بررسی هزینه','هزینه «'+t.description+'» '+dec+' شد.');
     renderNotifBadge(); markDirty(); saveNow(true);
@@ -3666,8 +4217,8 @@ const ACTIONS={
     markDirty(); saveNow(true); toast('حذف شد ✓'); renderView();
   },
   extPrint:d=>{
-    const x=one('SELECT * FROM ext_letters WHERE id=?',[+d.id]); if(!x) return;
-    openOfficialDoc('نامه رسمی '+x.number,extLetterHtml(x));
+    if(!isCentralSec()){ toast('اجازه ندارید','error'); return; }
+    openExtPrintEditor(+d.id);
   },
   extReply:async d=>{
     const x=one('SELECT * FROM ext_letters WHERE id=?',[+d.id]); if(!x) return;
@@ -3845,6 +4396,751 @@ const ACTIONS={
     renderView();
   },
   txReview:d=>openTxReviewModal(+d.id),
+  /* ============ v3.0 — بایگانی مدارک دبیرخانه ============ */
+  archNew:()=>{ if(!isCentralSec()){ toast('اجازه ندارید','error'); return; } openArchModal(); },
+  archView:d=>{ if(!isCentralSec()){ toast('اجازه ندارید','error'); return; } openArchImages(+d.id); },
+  archDel:async d=>{
+    if(!isCentralSec()){ toast('اجازه ندارید','error'); return; }
+    if(!await confirmDlg('حذف سند بایگانی','این سند و تصاویر آن از بایگانی حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM arch_docs WHERE id=?',[+d.id]);
+    logActivity('بایگانی مدارک','یک سند از بایگانی حذف شد.');
+    markDirty(); saveNow(true); toast('حذف شد ✓'); renderView();
+  },
+  letterArchive:async d=>{
+    if(!isCentralSec()){ toast('اجازه ندارید','error'); return; }
+    const x=one('SELECT * FROM letters WHERE id=?',[+d.id]); if(!x) return;
+    run("UPDATE letters SET status='بایگانی' WHERE id=?",[x.id]);
+    run('INSERT INTO arch_docs (title,cat,letter_id,images,note,date_fa,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?)',
+      ['نامه: '+x.subject,'نامه وارده',x.id,'[]','بایگانی خودکار نامهٔ نهایی‌شده — شماره '+x.number,faDate(todayIso()),session.username,faStamp()]);
+    logActivity('بایگانی نامه','نامه «'+x.subject+'» به بایگانی مدارک منتقل شد.');
+    markDirty(); saveNow(true); toast('نامه بایگانی شد ✓'); renderView();
+  },
+  extArchive:async d=>{
+    if(!isCentralSec()){ toast('اجازه ندارید','error'); return; }
+    const x=one('SELECT * FROM ext_letters WHERE id=?',[+d.id]); if(!x) return;
+    run('UPDATE ext_letters SET archived=1 WHERE id=?',[x.id]);
+    run('INSERT INTO arch_docs (title,cat,ext_letter_id,images,note,date_fa,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?)',
+      ['نامهٔ صادره: '+x.subject,'نامه صادره',x.id,'[]','بایگانی نامهٔ صادرهٔ برون‌سازمانی — مخاطب: '+x.recipient,faDate(todayIso()),session.username,faStamp()]);
+    logActivity('بایگانی نامهٔ صادره','نامهٔ صادره «'+x.subject+'» بایگانی شد.');
+    markDirty(); saveNow(true); toast('نامه بایگانی شد ✓'); renderView();
+  },
+  /* ============ v3.0 — پنل تخصصی مالی ============ */
+  finTab:d=>{ window._finTab=d.k; renderView(); },
+  finAcctTab:d=>{ window._finAcctTab=d.k; renderView(); },
+  finIncCat:d=>{ window._finIncCat=d.k||''; renderView(); },
+  finExpCat:d=>{ window._finExpCat=d.k||''; renderView(); },
+  finYearSel:d=>{ window._finYear=+(d.k||window._finYear); renderView(); },
+  finForm:d=>{ if(!finGuard()){ toast('اجازه ندارید','error'); return; } finFormFill(d.k,d.m||'pdf'); },
+  finNewInc:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const acs=all('SELECT * FROM fin_accounts ORDER BY id');
+    const ov=openModal('ثبت درآمد',
+     '<form id="fiForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('مبلغ (تومان) *','<input name="amt" type="number" min="1" class="inp" placeholder="مثال: 2500000">')+
+        fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۴">')+
+      '</div>'+
+      fld('نوع درآمد (دسته) *','<select name="cat" class="inp">'+FIN_INC_CATS.map(function(c){return '<option>'+c+'</option>'}).join('')+'</select>')+
+      fld('دریافت‌کننده / پرداخت‌کننده (طرف حساب)','<input name="party" class="inp" placeholder="مثال: خیرین محل — در صورت نیاز">')+
+      fld('شرح *','<input name="desc" class="inp" placeholder="شرح درآمد…">')+
+      '<div class="frow2">'+
+        fld('شماره سند','<input name="docno" class="inp" value="'+finDocNo()+'" readonly>')+
+        fld('واریز به حساب/صندوق (اختیاری)','<select name="acc" class="inp"><option value="">— بدون ثبت در حساب —</option>'+acs.map(function(a){return '<option value="'+a.id+'">'+esc(a.name)+' ('+a.kind+')'+((finAccBal(a.id))?'':'')+'</option>'}).join('')+'</select>')+
+      '</div>'+
+      '<div class="card pad" style="margin:10px 0;background:var(--surface-2)"><label class="chk"><input type="checkbox" name="rcpt" checked> بارگذاری رسید</label></div>'+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت درآمد و بایگانی</button></form>',{width:'600px'});
+    const form=ov.querySelector('#fiForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      let ok=true;
+      if(+form.amt.value<=0){ setErr(form.amt,'مبلغ معتبر وارد کنید.'); ok=false; }
+      if(!form.desc.value.trim()){ setErr(form.desc,'شرح الزامی است.'); ok=false; }
+      const jd=parseJDate(form.date.value); if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست.'); ok=false; }
+      if(!ok) return;
+      const iso=jToIso(jd.jy,jd.jm,jd.jd);
+      const go=function(rc){
+        run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status,doc_no,party,receipt) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+          ['درآمد',form.desc.value.trim(),+form.amt.value,iso,form.cat.value,'',session.username,'تأییدشده',form.docno.value,form.party.value.trim(),rc?'{"d":"'+rc+'"}':'']);
+        if(form.acc.value){
+          run('INSERT INTO fin_atx (account_id,kind,amount,date_iso,date_fa,descr,doc_no,ref_txt,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?)',
+            [+form.acc.value,'دریافت',+form.amt.value,iso,form.date.value.trim(),form.desc.value.trim(),form.docno.value,'ثبت درآمد',session.username,faStamp()]);
+        }
+        logActivity('ثبت درآمد','درآمد «'+form.desc.value.trim()+'» به مبلغ '+faMoney(+form.amt.value)+' تومان ثبت شد.');
+        markDirty(); saveNow(true); closeModal(); toast('درآمد ثبت شد ✓'); renderView();
+      };
+      if(form.rcpt.checked) pickImages(1200,function(imgs){ go(imgs.length?imgs[0].d:''); });
+      else go('');
+    });
+  },
+  finNewExp:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const acs=all('SELECT * FROM fin_accounts ORDER BY id');
+    const ov=openModal('ثبت هزینهٔ مستقیم',
+     '<form id="feForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('مبلغ (تومان) *','<input name="amt" type="number" min="1" class="inp">')+
+        fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'">')+
+      '</div>'+
+      fld('دستهٔ هزینه *','<select name="cat" class="inp">'+FIN_EXP_CATS.map(function(c){return '<option>'+c+'</option>'}).join('')+'</select>')+
+      '<div class="frow2">'+
+        fld('روش پرداخت','<select name="pm" class="inp">'+FIN_PAY.map(function(p){return '<option>'+p+'</option>'}).join('')+'</select>')+
+        fld('شماره سند','<input name="docno" class="inp" value="'+finDocNo()+'" readonly>')+
+      '</div>'+
+      fld('دریافت‌کننده / پرداخت‌کننده (طرف حساب)','<input name="party" class="inp" placeholder="در صورت نیاز">')+
+      fld('شرح *','<input name="desc" class="inp" placeholder="شرح هزینه…">')+
+      '<div class="frow2">'+
+        fld('پرداخت از حساب/صندوق (اختیاری)','<select name="acc" class="inp"><option value="">— بدون ثبت در حساب —</option>'+acs.map(function(a){return '<option value="'+a.id+'">'+esc(a.name)+' ('+a.kind+')</option>'}).join('')+'</select>')+
+        '<div></div>'+
+      '</div>'+
+      '<div class="card pad" style="margin:10px 0;background:var(--surface-2)"><label class="chk"><input type="checkbox" name="rcpt" checked> بارگذاری فاکتور/رسید</label></div>'+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت هزینه</button></form>',{width:'600px'});
+    const form=ov.querySelector('#feForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      let ok=true;
+      if(+form.amt.value<=0){ setErr(form.amt,'مبلغ معتبر وارد کنید.'); ok=false; }
+      if(!form.desc.value.trim()){ setErr(form.desc,'شرح الزامی است.'); ok=false; }
+      const jd=parseJDate(form.date.value); if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست.'); ok=false; }
+      if(!ok) return;
+      const iso=jToIso(jd.jy,jd.jm,jd.jd);
+      const go=function(rc){
+        run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status,doc_no,party,pay_method,receipt,unit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+          ['هزینه',form.desc.value.trim(),+form.amt.value,iso,form.cat.value,'',session.username,'تأییدشده',form.docno.value,form.party.value.trim(),form.pm.value,rc?'{"d":"'+rc+'"}':'','center']);
+        if(form.acc.value){
+          run('INSERT INTO fin_atx (account_id,kind,amount,date_iso,date_fa,descr,doc_no,ref_txt,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?)',
+            [+form.acc.value,'پرداخت',+form.amt.value,iso,form.date.value.trim(),form.desc.value.trim(),form.docno.value,'هزینهٔ مستقیم',session.username,faStamp()]);
+        }
+        logActivity('ثبت هزینه','هزینهٔ مستقیم «'+form.desc.value.trim()+'» به مبلغ '+faMoney(+form.amt.value)+' تومان ثبت شد.');
+        markDirty(); saveNow(true); closeModal(); toast('هزینه ثبت شد ✓'); renderView();
+      };
+      if(form.rcpt.checked) pickImages(1200,function(imgs){ go(imgs.length?imgs[0].d:''); });
+      else go('');
+    });
+  },
+  finReceipt:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const t=one('SELECT * FROM transactions WHERE id=?',[+d.id]); if(!t) return;
+    let rc=null; try{ rc=JSON.parse(t.receipt||'null'); }catch(e){}
+    openModal('رسید تراکنش — '+t.description,
+     (rc&&rc.d?'<img src="'+rc.d+'" style="width:100%;border:1px solid var(--line);border-radius:8px">':emptyState('رسیدی ثبت نشده است'))+
+     '<div class="detail-grid" style="margin-top:12px"><div><small>مبلغ</small><b>'+faMoney(t.amount)+' تومان</b></div><div><small>تاریخ</small><b>'+faDate(t.date_iso)+'</b></div></div>');
+  },
+  finReview:d=>openTxReviewModal(+d.id),
+  finTxDel:async d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const t=one('SELECT * FROM transactions WHERE id=?',[+d.id]); if(!t) return;
+    if(!await confirmDlg('حذف تراکنش','تراکنش «'+t.description+'» حذف شود؟ این عمل قابل بازگشت نیست.',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM transactions WHERE id=?',[t.id]);
+    logActivity('حذف تراکنش مالی','تراکنش «'+t.description+'» حذف شد.');
+    markDirty(); saveNow(true); toast('حذف شد ✓'); renderView();
+  },
+  finTxEdit:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const t=one('SELECT * FROM transactions WHERE id=?',[+d.id]); if(!t) return;
+    const y=isoToJ(t.date_iso).jy;
+    if(finYearClosed(y)){ toast('دورهٔ مالی سال '+faNum(y)+' بسته است؛ اصلاح ممکن نیست','error'); return; }
+    const cats=(t.kind==='درآمد'?FIN_INC_CATS:FIN_EXP_CATS);
+    const ov=openModal('اصلاح سند #'+t.id+' (با ثبت سابقه)',
+     '<form id="fteForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('مبلغ (تومان)','<input name="amt" type="number" class="inp" value="'+(t.amount||0)+'">')+
+        fld('تاریخ (شمسی)','<input name="date" class="inp" value="'+faDate(t.date_iso)+'">')+
+      '</div>'+
+      fld('دسته','<select name="cat" class="inp">'+cats.map(function(c){return '<option '+(c===t.category?'selected':'')+'>'+c+'</option>'}).join('')+'</select>')+
+      fld('شرح','<input name="desc" class="inp" value="'+esc(t.description)+'">')+
+      fld('دلیل اصلاح *','<input name="reason" class="inp" placeholder="مثال: اصلاح مبلغ بر اساس فاکتور نهایی">')+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت اصلاح</button></form>',{width:'560px'});
+    const form=ov.querySelector('#fteForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      if(!form.reason.value.trim()){ setErr(form.reason,'دلیل اصلاح الزامی است.'); return; }
+      const jd=parseJDate(form.date.value); if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست.'); return; }
+      const oldS=JSON.stringify({a:t.amount,d:t.description,c:t.category,dt:t.date_iso});
+      const iso=jToIso(jd.jy,jd.jm,jd.jd);
+      const nv={a:+form.amt.value,d:form.desc.value.trim(),c:form.cat.value,dt:iso};
+      run('UPDATE transactions SET amount=?,description=?,category=?,date_iso=? WHERE id=?',[nv.a,nv.d,nv.c,iso,t.id]);
+      run('INSERT INTO fin_corr (tx_table,row_id,old_vals,new_vals,reason,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?)',
+        ['transactions',t.id,oldS,JSON.stringify(nv),form.reason.value.trim(),session.username,faStamp()]);
+      logActivity('اصلاح سند','سند #'+t.id+' اصلاح شد — دلیل: '+form.reason.value.trim());
+      markDirty(); saveNow(true); closeModal(); toast('سند اصلاح و در سابقه ثبت شد ✓'); renderView();
+    });
+  },
+  /* --- اجاره و حقوق --- */
+  finRentNew:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const ov=openModal('تعریف مغازه / قرارداد اجاره',
+     '<form id="frForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('نام مغازه *','<input name="shop" class="inp" placeholder="مثال: مغازهٔ شرقی حیاط">')+
+        fld('مستأجر','<input name="tenant" class="inp">')+
+      '</div>'+
+      '<div class="frow2">'+
+        fld('اجارهٔ ماهانه (تومان) *','<input name="rent" type="number" min="1" class="inp">')+
+        fld('سررسید (روز ماه)','<input name="due" type="number" min="1" max="31" value="5" class="inp">')+
+      '</div>'+
+      '<div class="frow2">'+
+        fld('شروع قرارداد (شمسی)','<input name="st" class="inp" placeholder="۱۴۰۵/۰۱/۰۱">')+
+        fld('پایان قرارداد (شمسی)','<input name="en" class="inp" placeholder="۱۴۰۶/۱۲/۲۹">')+
+      '</div>'+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت قرارداد</button></form>');
+    const form=ov.querySelector('#frForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      if(!form.shop.value.trim()){ setErr(form.shop,'نام مغازه الزامی است.'); return; }
+      if(+form.rent.value<=0){ setErr(form.rent,'مبلغ اجاره معتبر وارد کنید.'); return; }
+      run('INSERT INTO fin_rentals (shop_name,tenant,monthly_rent,due_day,start_fa,end_fa,status,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?)',
+        [form.shop.value.trim(),form.tenant.value.trim(),+form.rent.value,Math.min(31,Math.max(1,+form.due.value||5)),form.st.value.trim(),form.en.value.trim(),'فعال',session.username,faStamp()]);
+      logActivity('قرارداد اجاره','قرارداد اجارهٔ «'+form.shop.value.trim()+'» ثبت شد.');
+      markDirty(); saveNow(true); closeModal(); toast('قرارداد ثبت شد ✓'); renderView();
+    });
+  },
+  finRentImport:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const props=all('SELECT * FROM properties');
+    let n=0;
+    props.forEach(function(pr){
+      const ex=one('SELECT id FROM fin_rentals WHERE shop_name=?',[pr.title]);
+      if(!ex){ run('INSERT INTO fin_rentals (shop_name,tenant,monthly_rent,due_day,start_fa,end_fa,status,imported,note,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+        [pr.title,pr.tenant,pr.rent||0,5,pr.start_iso?'':'',pr.end_iso?'':'',pr.status==='فعال'?'فعال':'غیرفعال',1,'واردشده از املاک پنل عمران'+(pr.contract_no?' — قرارداد: '+pr.contract_no:''),session.username,faStamp()]); n++; }
+    });
+    if(n){ markDirty(); saveNow(true); toast(faNum(n)+' قرارداد از پنل عمران وارد شد ✓'); }
+    else toast('قرارداد جدیدی برای وارد کردن نبود','info');
+    renderView();
+  },
+  finRentPay:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const r=one('SELECT * FROM fin_rentals WHERE id=?',[+d.id]); if(!r) return;
+    const tj=isoToJ(todayIso());
+    const acs=all('SELECT * FROM fin_accounts ORDER BY id');
+    const ov=openModal('ثبت دریافت اجاره — '+r.shop_name,
+     '<form id="frpForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('ماه (شمسی) *','<input name="mf" class="inp" value="'+tj.jy+'/'+(tj.jm<10?'0':'')+tj.jm+'" placeholder="۱۴۰۵/۰۸">')+
+        fld('مبلغ (تومان) *','<input name="amt" type="number" class="inp" value="'+(r.monthly_rent||0)+'">')+
+      '</div>'+
+      '<div class="frow2">'+
+        fld('تاریخ دریافت *','<input name="date" class="inp" value="'+faDate(todayIso())+'">')+
+        fld('واریز به حساب/صندوق','<select name="acc" class="inp"><option value="">— بدون ثبت در حساب —</option>'+acs.map(function(a){return '<option value="'+a.id+'">'+esc(a.name)+' ('+a.kind+')</option>'}).join('')+'</select>')+
+      '</div>'+
+      fld('یادداشت','<input name="note" class="inp" placeholder="مثال: دریافت نقدی از مستأجر">')+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت دریافت</button></form>');
+    const form=ov.querySelector('#frpForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      let ok=true;
+      if(+form.amt.value<=0){ setErr(form.amt,'مبلغ معتبر وارد کنید.'); ok=false; }
+      if(!/^\d{4}\/\d{1,2}$/.test(form.mf.value.trim())){ setErr(form.mf,'ماه به شکل ۱۴۰۵/۰۸ وارد شود.'); ok=false; }
+      const jd=parseJDate(form.date.value); if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست.'); ok=false; }
+      if(!ok) return;
+      const iso=jToIso(jd.jy,jd.jm,jd.jd);
+      run('INSERT INTO fin_rent_pay (rental_id,month_fa,amount,st,date_iso,note,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?)',
+        [r.id,form.mf.value.trim(),+form.amt.value,'پرداخت‌شده',iso,form.note.value.trim(),session.username,faStamp()]);
+      run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status,doc_no,party) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        ['درآمد','اجارهٔ '+r.shop_name+' — ماه '+form.mf.value.trim(),+form.amt.value,iso,'اجاره مغازه‌های مسجد','',session.username,'تأییدشده',finDocNo(),r.tenant||'']);
+      if(form.acc.value){
+        run('INSERT INTO fin_atx (account_id,kind,amount,date_iso,date_fa,descr,doc_no,ref_txt,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?)',
+          [+form.acc.value,'دریافت',+form.amt.value,iso,form.date.value.trim(),'دریافت اجارهٔ '+r.shop_name,'','ثبت اجاره',session.username,faStamp()]);
+      }
+      logActivity('دریافت اجاره','اجارهٔ ماه '+form.mf.value.trim()+' مغازهٔ '+r.shop_name+' دریافت شد.');
+      markDirty(); saveNow(true); closeModal(); toast('دریافت اجاره ثبت شد ✓'); renderView();
+    });
+  },
+  finRentDel:async d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    if(!await confirmDlg('حذف قرارداد','قرارداد اجاره حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM fin_rentals WHERE id=?',[+d.id]);
+    markDirty(); saveNow(true); toast('حذف شد ✓'); renderView();
+  },
+  finRentReport:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const rs=all('SELECT * FROM fin_rentals ORDER BY id');
+    const tj=isoToJ(todayIso());
+    const mf=tj.jy+'/'+(tj.jm<10?'0':'')+tj.jm;
+    const body='<div class="meta"><span>گزارش اجاره‌ها — '+J_MONTHS[tj.jm-1]+' '+faNum(tj.jy)+'</span><span>تاریخ: '+faDate(todayIso())+'</span></div>'+
+     '<table class="min"><thead><tr><th>مغازه</th><th>مستأجر</th><th>اجارهٔ ماهانه</th><th>سررسید</th><th>وضعیت '+J_MONTHS[tj.jm-1]+'</th></tr></thead><tbody>'+
+     (rs.length?rs.map(function(r){
+       const paid=one("SELECT COUNT(*) AS c FROM fin_rent_pay WHERE rental_id=? AND month_fa=?",[r.id,mf]).c;
+       const st=paid?'پرداخت‌شده':(tj.jd>=r.due_day?'معوق':'پرداخت‌نشده');
+       return '<tr><td>'+esc(r.shop_name)+'</td><td>'+esc(r.tenant||'—')+'</td><td>'+faMoney(r.monthly_rent)+'</td><td>روز '+faNum(r.due_day)+'</td><td>'+st+'</td></tr>';
+     }).join(''):'<tr><td colspan="5">قراردادی ثبت نشده است</td></tr>')+'</tbody></table>'+
+     '<div class="sig"><div class="block">معاون امور مالی<div class="line"></div></div><div class="block">تأیید امام جماعت<div class="line"></div></div></div>';
+    openOfficialDoc('گزارش اجاره‌ها',body,{size:'A4'});
+  },
+  finRentExcel:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const rs=all('SELECT * FROM fin_rentals ORDER BY id');
+    const tj=isoToJ(todayIso()); const mf=tj.jy+'/'+(tj.jm<10?'0':'')+tj.jm;
+    const data=[['مغازه','مستأجر','اجاره ماهانه','سررسید','شروع','پایان','وضعیت ماه جاری']];
+    rs.forEach(function(r){
+      const paid=one("SELECT COUNT(*) AS c FROM fin_rent_pay WHERE rental_id=? AND month_fa=?",[r.id,mf]).c;
+      data.push([r.shop_name,r.tenant||'',r.monthly_rent,'روز '+r.due_day,r.start_fa||'',r.end_fa||'',paid?'پرداخت‌شده':(tj.jd>=r.due_day?'معوق':'پرداخت‌نشده')]);
+    });
+    exportCsv('گزارش-اجاره-ها',data);
+  },
+  finSalCfg:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const who=d.k||'امام جماعت';
+    const cfg=one('SELECT * FROM fin_salaries WHERE who=?',[who]);
+    const ov=openModal('تنظیم حقوق '+who,
+     '<form id="fscForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('مبلغ ماهانه (تومان) *','<input name="amt" type="number" min="0" class="inp" value="'+(cfg?cfg.monthly:0)+'">')+
+        fld('سررسید پرداخت (روز ماه)','<input name="due" type="number" min="1" max="31" class="inp" value="'+(cfg?cfg.due_day:25)+'">')+
+      '</div>'+
+      fld('یادداشت','<input name="note" class="inp" value="'+esc(cfg?cfg.note||'':'')+'" placeholder="مثال: مطابق توافق مکتوب">')+
+      '<button type="submit" class="btn btn-primary btn-block">ذخیره تنظیمات</button></form>');
+    const form=ov.querySelector('#fscForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      const vals=[+form.amt.value,Math.min(31,Math.max(1,+form.due.value||25)),form.note.value.trim(),session.username,faStamp()];
+      if(cfg) run('UPDATE fin_salaries SET monthly=?,due_day=?,note=?,updated_by=?,updated_at_fa=? WHERE id=?',vals.concat([cfg.id]));
+      else run('INSERT INTO fin_salaries (who,monthly,due_day,note,updated_by,updated_at_fa) VALUES (?,?,?,?,?,?)',[who].concat(vals));
+      logActivity('تنظیم حقوق','مبلغ و سررسید حقوق '+who+' تنظیم شد.');
+      markDirty(); saveNow(true); closeModal(); toast('تنظیمات حقوق ذخیره شد ✓'); renderView();
+    });
+  },
+  finSalPay:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const who=d.k||'امام جماعت';
+    const cfg=one('SELECT * FROM fin_salaries WHERE who=?',[who]);
+    if(!cfg){ toast('ابتدا مبلغ و سررسید حقوق را تنظیم کنید','error'); return; }
+    const tj=isoToJ(todayIso());
+    const acs=all('SELECT * FROM fin_accounts ORDER BY id');
+    const ov=openModal('ثبت پرداخت حقوق '+who,
+     '<form id="fspForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('ماه (شمسی) *','<input name="mf" class="inp" value="'+tj.jy+'/'+(tj.jm<10?'0':'')+tj.jm+'">')+
+        fld('مبلغ (تومان) *','<input name="amt" type="number" class="inp" value="'+cfg.monthly+'">')+
+      '</div>'+
+      '<div class="frow2">'+
+        fld('تاریخ پرداخت *','<input name="date" class="inp" value="'+faDate(todayIso())+'">')+
+        fld('پرداخت از حساب/صندوق','<select name="acc" class="inp"><option value="">— بدون ثبت در حساب —</option>'+acs.map(function(a){return '<option value="'+a.id+'">'+esc(a.name)+' ('+a.kind+')</option>'}).join('')+'</select>')+
+      '</div>'+
+      fld('یادداشت','<input name="note" class="inp">')+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت پرداخت</button></form>');
+    const form=ov.querySelector('#fspForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      let ok=true;
+      if(+form.amt.value<=0){ setErr(form.amt,'مبلغ معتبر وارد کنید.'); ok=false; }
+      if(!/^\d{4}\/\d{1,2}$/.test(form.mf.value.trim())){ setErr(form.mf,'ماه به شکل ۱۴۰۵/۰۸ وارد شود.'); ok=false; }
+      const jd=parseJDate(form.date.value); if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست.'); ok=false; }
+      if(!ok) return;
+      const iso=jToIso(jd.jy,jd.jm,jd.jd);
+      run('INSERT INTO fin_salary_pay (who,month_fa,amount,date_iso,note,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?)',
+        [who,form.mf.value.trim(),+form.amt.value,iso,form.note.value.trim(),session.username,faStamp()]);
+      run('INSERT INTO transactions (kind,description,amount,date_iso,category,letter_number,created_by,tx_status,doc_no,party) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        ['هزینه','حقوق '+who+' — ماه '+form.mf.value.trim(),+form.amt.value,iso,'حقوق و دستمزد','',session.username,'تأییدشده',finDocNo(),who]);
+      if(form.acc.value){
+        run('INSERT INTO fin_atx (account_id,kind,amount,date_iso,date_fa,descr,doc_no,ref_txt,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?)',
+          [+form.acc.value,'پرداخت',+form.amt.value,iso,form.date.value.trim(),'حقوق '+who,'','حقوق ماهانه',session.username,faStamp()]);
+      }
+      logActivity('پرداخت حقوق','حقوق '+who+' ماه '+form.mf.value.trim()+' پرداخت شد.');
+      markDirty(); saveNow(true); closeModal(); toast('پرداخت حقوق ثبت شد ✓'); renderView();
+    });
+  },
+  /* --- بودجه --- */
+  finBudNew:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const tj=isoToJ(todayIso()); const y=window._finYear||tj.jy;
+    const units=finUnitOptions();
+    const ov=openModal('ثبت بودجهٔ پیشنهادی — سال '+faNum(y),
+     '<form id="fbForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('واحد *','<select name="unit" class="inp">'+units.map(function(u){return '<option value="'+u.id+'">'+esc(u.label)+'</option>'}).join('')+'</select>')+
+        fld('مبلغ پیشنهادی (تومان) *','<input name="prop" type="number" min="1" class="inp">')+
+      '</div>'+
+      fld('عنوان / محور مصرف','<input name="title" class="inp" placeholder="مثال: برنامه‌های فرهنگی محرم">')+
+      fld('توضیح','<input name="note" class="inp" placeholder="اختیاری…">')+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت پیشنهاد</button></form>');
+    const form=ov.querySelector('#fbForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      if(+form.prop.value<=0){ setErr(form.prop,'مبلغ معتبر وارد کنید.'); return; }
+      run('INSERT INTO fin_budget (year,unit,title,proposed,status,note,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?)',
+        [y,form.unit.value,form.title.value.trim(),+form.prop.value,'پیشنهادی',form.note.value.trim(),session.username,faStamp()]);
+      logActivity('بودجه','بودجهٔ پیشنهادی '+UNIT_LABELS[form.unit.value]+' برای سال '+faNum(y)+' ثبت شد.');
+      markDirty(); saveNow(true); closeModal(); toast('پیشنهاد بودجه ثبت شد ✓'); renderView();
+    });
+  },
+  finBudApprove:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    if(session.username!=='imam'){ toast('تأیید بودجه فقط با امام جماعت است (حاکمیت مصوبات)','error'); return; }
+    const b=one('SELECT * FROM fin_budget WHERE id=?',[+d.id]); if(!b) return;
+    const ov=openModal('تأیید بودجه — '+UNIT_LABELS[b.unit],
+     '<form id="fbaForm" novalidate>'+
+      fld('مبلغ مصوب (تومان) *','<input name="appr" type="number" min="0" class="inp" value="'+(b.proposed||0)+'">')+
+      '<p class="tiny muted">تأیید نهایی بودجه طبق اختیارات و مصوبات هیئت امنا توسط امام جماعت انجام می‌شود.</p>'+
+      '<button type="submit" class="btn btn-primary btn-block">تأیید نهایی بودجه</button></form>');
+    const form=ov.querySelector('#fbaForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      run('UPDATE fin_budget SET approved=?,status=?,approved_by=? WHERE id=?',[+form.appr.value||0,'مصوب',session.name||session.username,b.id]);
+      logActivity('تأیید بودجه','بودجهٔ '+UNIT_LABELS[b.unit]+' به مبلغ '+faMoney(+form.appr.value)+' تومان تأیید شد.');
+      markDirty(); saveNow(true); closeModal(); toast('بودجه تأیید شد ✓'); renderView();
+    });
+  },
+  finBudAlloc:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const b=one('SELECT * FROM fin_budget WHERE id=?',[+d.id]); if(!b) return;
+    if(b.status==='پیشنهادی'){ toast('ابتدا بودجه باید تأیید شود','error'); return; }
+    const ov=openModal('تخصیص اعتبار — '+UNIT_LABELS[b.unit],
+     '<form id="fblForm" novalidate>'+
+      fld('مبلغ تخصیص (تومان) *','<input name="alloc" type="number" min="1" class="inp" value="'+(b.allocated||b.approved||0)+'">')+
+      (b.approved?'<p class="tiny muted">سقف مصوب: '+faMoney(b.approved)+' تومان — تخصیص بیش از سقف هشدار می‌گیرد.</p>':'')+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت تخصیص</button></form>');
+    const form=ov.querySelector('#fblForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      const v=+form.alloc.value||0;
+      if(v<=0){ setErr(form.alloc,'مبلغ معتبر وارد کنید.'); return; }
+      run('UPDATE fin_budget SET allocated=?,status=? WHERE id=?',[v,'تخصیص‌یافته',b.id]);
+      logActivity('تخصیص بودجه','اعتبار '+faMoney(v)+' تومان به '+UNIT_LABELS[b.unit]+' تخصیص یافت.');
+      markDirty(); saveNow(true); closeModal();
+      if(b.approved&&v>b.approved) toast('تخصیص ثبت شد — توجه: بیش از سقف مصوب است','warning');
+      else toast('تخصیص ثبت شد ✓');
+      renderView();
+    });
+  },
+  finBudDel:async d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    if(!await confirmDlg('حذف سرفصل بودجه','این سرفصل حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM fin_budget WHERE id=?',[+d.id]);
+    markDirty(); saveNow(true); toast('حذف شد ✓'); renderView();
+  },
+  /* --- حساب‌ها و صندوق‌ها --- */
+  finAccNew:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const ov=openModal('تعریف حساب بانکی / صندوق نقدی',
+     '<form id="faForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('نام *','<input name="name" class="inp" placeholder="مثال: صندوق نقدی مسجد / حساب بانکی ملی">')+
+        fld('نوع *','<select name="kind" class="inp"><option>صندوق</option><option>بانک</option></select>')+
+      '</div>'+
+      '<div class="frow2">'+
+        fld('نام بانک','<input name="bank" class="inp" placeholder="در صورت بانکی بودن">')+
+        fld('شماره حساب/شماره شبا','<input name="accno" class="inp" dir="ltr" style="text-align:right">')+
+      '</div>'+
+      fld('موجودی اولیه (تومان)','<input name="op" type="number" min="0" class="inp" value="0">')+
+      fld('یادداشت','<input name="note" class="inp">')+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت حساب/صندوق</button></form>');
+    const form=ov.querySelector('#faForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      if(!form.name.value.trim()){ setErr(form.name,'نام الزامی است.'); return; }
+      run('INSERT INTO fin_accounts (name,kind,bank_name,account_no,opening,note,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?)',
+        [form.name.value.trim(),form.kind.value,form.bank.value.trim(),form.accno.value.trim(),+form.op.value||0,form.note.value.trim(),session.username,faStamp()]);
+      logActivity('حساب‌ها و صندوق','«'+form.name.value.trim()+'» ('+form.kind.value+') تعریف شد.');
+      markDirty(); saveNow(true); closeModal(); toast('حساب/صندوق ثبت شد ✓'); renderView();
+    });
+  },
+  finAccDel:async d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    if(!await confirmDlg('حذف حساب/صندوق','حساب و گردش آن حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM fin_accounts WHERE id=?',[+d.id]);
+    run('DELETE FROM fin_atx WHERE account_id=?',[+d.id]);
+    markDirty(); saveNow(true); toast('حذف شد ✓'); renderView();
+  },
+  finAtxNew:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const acs=all('SELECT * FROM fin_accounts ORDER BY id');
+    if(!acs.length){ toast('ابتدا حساب یا صندوق تعریف کنید','error'); return; }
+    const pre=+d.id||acs[0].id;
+    const ov=openModal('ثبت دریافت / پرداخت',
+     '<form id="fatForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('نوع *','<select name="kind" class="inp"><option>دریافت</option><option>پرداخت</option></select>')+
+        fld('حساب/صندوق *','<select name="acc" class="inp">'+acs.map(function(a){return '<option value="'+a.id+'" '+(a.id===pre?'selected':'')+'>'+esc(a.name)+' ('+a.kind+')</option>'}).join('')+'</select>')+
+      '</div>'+
+      '<div class="frow2">'+
+        fld('مبلغ (تومان) *','<input name="amt" type="number" min="1" class="inp">')+
+        fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'">')+
+      '</div>'+
+      fld('شرح *','<input name="desc" class="inp" placeholder="مثال: کمک مردمی جمعه">')+
+      '<div class="frow2">'+
+        fld('شماره سند/صورت‌حساب','<input name="docno" class="inp" value="'+finDocNo()+'" readonly>')+
+        fld('ارجاع','<input name="ref" class="inp" placeholder="مثال: تراکنش #۳">')+
+      '</div>'+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت</button></form>');
+    const form=ov.querySelector('#fatForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      let ok=true;
+      if(+form.amt.value<=0){ setErr(form.amt,'مبلغ معتبر وارد کنید.'); ok=false; }
+      if(!form.desc.value.trim()){ setErr(form.desc,'شرح الزامی است.'); ok=false; }
+      const jd=parseJDate(form.date.value); if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست.'); ok=false; }
+      if(!ok) return;
+      const iso=jToIso(jd.jy,jd.jm,jd.jd);
+      run('INSERT INTO fin_atx (account_id,kind,amount,date_iso,date_fa,descr,doc_no,ref_txt,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        [+form.acc.value,form.kind.value,+form.amt.value,iso,form.date.value.trim(),form.desc.value.trim(),form.docno.value,form.ref.value.trim(),session.username,faStamp()]);
+      logActivity('گردش حساب',form.kind.value+' '+faMoney(+form.amt.value)+' تومان در '+finAccName(+form.acc.value)+' ثبت شد.');
+      markDirty(); saveNow(true); closeModal(); toast('ثبت شد ✓'); renderView();
+    });
+  },
+  finTransfer:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const acs=all('SELECT * FROM fin_accounts ORDER BY id');
+    if(acs.length<1){ toast('ابتدا حساب تعریف کنید','error'); return; }
+    const from=+d.id||acs[0].id;
+    const ov=openModal('انتقال وجه بین حساب‌ها',
+     '<form id="ftrForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('از حساب *','<select name="from" class="inp">'+acs.map(function(a){return '<option value="'+a.id+'" '+(a.id===from?'selected':'')+'>'+esc(a.name)+' — موجودی '+faMoney(finAccBal(a.id))+'</option>'}).join('')+'</select>')+
+        fld('به حساب *','<select name="to" class="inp">'+acs.map(function(a){return '<option value="'+a.id+'">'+esc(a.name)+' ('+a.kind+')</option>'}).join('')+'</select>')+
+      '</div>'+
+      '<div class="frow2">'+
+        fld('مبلغ (تومان) *','<input name="amt" type="number" min="1" class="inp">')+
+        fld('تاریخ (شمسی) *','<input name="date" class="inp" value="'+faDate(todayIso())+'">')+
+      '</div>'+
+      fld('شرح','<input name="desc" class="inp" placeholder="مثال: انتقال نقدی صندوق به بانک">')+
+      '<button type="submit" class="btn btn-primary btn-block">انجام انتقال</button></form>');
+    const form=ov.querySelector('#ftrForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      let ok=true;
+      const f=+form.from.value,t2=+form.to.value;
+      if(f===t2){ setErr(form.to,'حساب مبدا و مقصد یکسان است.'); ok=false; }
+      if(+form.amt.value<=0){ setErr(form.amt,'مبلغ معتبر وارد کنید.'); ok=false; }
+      const jd=parseJDate(form.date.value); if(!jd){ setErr(form.date,'تاریخ شمسی معتبر نیست.'); ok=false; }
+      if(!ok) return;
+      const iso=jToIso(jd.jy,jd.jm,jd.jd);
+      const desc=form.desc.value.trim()||('انتقال وجه از '+finAccName(f)+' به '+finAccName(t2));
+      run('INSERT INTO fin_atx (account_id,kind,amount,date_iso,date_fa,descr,doc_no,ref_txt,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        [f,'پرداخت',+form.amt.value,iso,form.date.value.trim(),desc,'','انتقال وجه به '+finAccName(t2),session.username,faStamp()]);
+      run('INSERT INTO fin_atx (account_id,kind,amount,date_iso,date_fa,descr,doc_no,ref_txt,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        [t2,'دریافت',+form.amt.value,iso,form.date.value.trim(),desc,'','انتقال وجه از '+finAccName(f),session.username,faStamp()]);
+      logActivity('انتقال وجه',faMoney(+form.amt.value)+' تومان از '+finAccName(f)+' به '+finAccName(t2)+' منتقل شد.');
+      markDirty(); saveNow(true); closeModal(); toast('انتقال انجام شد ✓'); renderView();
+    });
+  },
+  finLedger:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const a=one('SELECT * FROM fin_accounts WHERE id=?',[+d.id]); if(!a) return;
+    const rows=all('SELECT * FROM fin_atx WHERE account_id=? ORDER BY date_iso,id',[a.id]);
+    let bal=a.opening||0;
+    const csv=[['تاریخ','نوع','شرح','شماره سند','ارجاع','مبلغ','مانده']];
+    const body=rows.map(function(r){
+      bal+=r.kind==='دریافت'?r.amount:-r.amount;
+      csv.push([faDate(r.date_iso),r.kind,r.descr,r.doc_no||'',r.ref_txt||'',faMoney(r.amount),faMoney(bal)]);
+      return '<tr><td>'+faDate(r.date_iso)+'</td><td><span class="badge '+(r.kind==='دریافت'?'b-success':'b-danger')+'">'+r.kind+'</span></td><td>'+esc(r.descr)+(r.ref_txt?' <span class="tiny muted">('+esc(r.ref_txt)+')</span>':'')+'</td><td>'+esc(r.doc_no||'—')+'</td><td>'+(r.kind==='دریافت'?'<b class="c-success">+'+faMoney(r.amount)+'</b>':'<b class="c-danger">−'+faMoney(r.amount)+'</b>')+'</td><td><b>'+faMoney(bal)+'</b></td></tr>';
+    }).join('');
+    const ov=openModal('گردش حساب — '+a.name,
+     '<div class="detail-grid" style="margin-bottom:10px"><div><small>موجودی اولیه</small><b>'+faMoney(a.opening)+'</b></div><div><small>مانده فعلی</small><b>'+faMoney(bal)+'</b></div></div>'+
+     '<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-outline btn-sm" id="lgCsv">'+icon('download',13)+' خروجی Excel</button></div>'+
+     '<div class="table-wrap" style="max-height:52vh;overflow:auto"><table class="tbl" style="min-width:680px"><thead><tr><th>تاریخ</th><th>نوع</th><th>شرح</th><th>سند</th><th>مبلغ</th><th>مانده</th></tr></thead><tbody>'+(body||'<tr><td colspan="6">'+emptyState('گردشی ثبت نشده است')+'</td></tr>')+'</tbody></table></div>',{width:'820px'});
+    ov.querySelector('#lgCsv').addEventListener('click',function(){ exportCsv('گردش-'+a.name,csv); });
+  },
+  finRecon:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const a=one('SELECT * FROM fin_accounts WHERE id=?',[+d.id]); if(!a) return;
+    const bal=finAccBal(a.id);
+    const ov=openModal('بررسی مغایرت — '+a.name,
+     '<div class="detail-grid" style="margin-bottom:10px"><div><small>ماندهٔ سامانه</small><b>'+faMoney(bal)+'</b></div></div>'+
+     '<form id="frcForm" novalidate>'+
+      fld('ماندهٔ صورت‌حساب بانک / شمارش صندوق (تومان) *','<input name="stmt" type="number" class="inp">')+
+      '<p class="tiny muted" id="frcDiff">مغایرت پس از ثبت محاسبه می‌شود.</p>'+
+      fld('توضیح مغایرت','<input name="note" class="inp" placeholder="مثال: چک وصول‌نشده / هزینهٔ کارمزد ثبت‌نشده">')+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت بررسی مغایرت</button></form>');
+    const form=ov.querySelector('#frcForm');
+    form.stmt.addEventListener('input',function(){
+      const diff=(+form.stmt.value||0)-bal;
+      ov.querySelector('#frcDiff').textContent='مغایرت: '+faMoney(Math.abs(diff))+' تومان '+(diff===0?'— بدون مغایرت ✓':(diff>0?'بیشتر از سامانه (افزایشی)':'کمتر از سامانه (کاهشی)'));
+    });
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      if(form.stmt.value===''){ setErr(form.stmt,'ماندهٔ صورت‌حساب را وارد کنید.'); return; }
+      const diff=(+form.stmt.value)-bal;
+      const note='مغایرت‌پایی '+faDate(todayIso())+': ماندهٔ واقعی '+faMoney(+form.stmt.value)+' تومان، مغایرت '+faMoney(Math.abs(diff))+' تومان'+(form.note.value.trim()?' — '+form.note.value.trim():'');
+      run('UPDATE fin_accounts SET note=? WHERE id=?',[note,a.id]);
+      logActivity('مغایرت‌پایی','بررسی مغایرت '+a.name+' ثبت شد.');
+      markDirty(); saveNow(true); closeModal(); toast('بررسی مغایرت ثبت شد ✓'); renderView();
+    });
+  },
+  /* --- اسناد و اموال --- */
+  finDocNew:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const ov=openModal('ثبت سند در بایگانی مالی',
+     '<form id="fdForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('عنوان سند *','<input name="title" class="inp" placeholder="مثال: فاکتور تهیه بلندگو">')+
+        fld('نوع سند','<select name="kind" class="inp"><option>سند خرید</option><option>فاکتور</option><option>قرارداد</option><option>سند مالی</option><option>سایر</option></select>')+
+      '</div>'+
+      '<div class="frow2">'+
+        fld('مبلغ (تومان)','<input name="amt" type="number" min="0" class="inp" value="0">')+
+        fld('تاریخ (شمسی)','<input name="date" class="inp" value="'+faDate(todayIso())+'">')+
+      '</div>'+
+      fld('یادداشت','<input name="note" class="inp">')+
+      '<div class="card pad" style="margin:10px 0;background:var(--surface-2)"><label class="chk"><input type="checkbox" id="fdImgs" checked> بارگذاری تصویر سند</label></div>'+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت سند</button></form>');
+    const form=ov.querySelector('#fdForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      if(!form.title.value.trim()){ setErr(form.title,'عنوان الزامی است.'); return; }
+      const save=function(imgs){
+        run('INSERT INTO fin_docs (title,doc_kind,amount,date_fa,images,note,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?)',
+          [form.title.value.trim(),form.kind.value,+form.amt.value||0,form.date.value.trim(),JSON.stringify(imgs),form.note.value.trim(),session.username,faStamp()]);
+        logActivity('بایگانی مالی','سند «'+form.title.value.trim()+'» ثبت شد.');
+        markDirty(); saveNow(true); closeModal(); toast('سند ثبت شد ✓'); renderView();
+      };
+      if(ov.querySelector('#fdImgs').checked) pickImages(1400,function(imgs){ save(imgs); });
+      else save([]);
+    });
+  },
+  finDocView:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const doc=one('SELECT * FROM fin_docs WHERE id=?',[+d.id]); if(!doc) return;
+    const imgs=finImgList(doc.images);
+    openModal('تصاویر سند: '+doc.title,
+     '<div style="max-height:60vh;overflow:auto">'+(imgs.length?imgs.map(function(p,i){
+       return '<div style="margin-bottom:12px"><img src="'+p.d+'" style="width:100%;border:1px solid var(--line);border-radius:8px"><div class="tiny muted" style="text-align:center">تصویر '+faNum(i+1)+'</div></div>';
+     }).join(''):emptyState('تصویری ثبت نشده است'))+'</div>');
+  },
+  finDocDel:async d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    if(!await confirmDlg('حذف سند','سند از بایگانی مالی حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM fin_docs WHERE id=?',[+d.id]);
+    markDirty(); saveNow(true); toast('حذف شد ✓'); renderView();
+  },
+  /* --- بدهی و مطالبات --- */
+  finDebtNew:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    finDebtModal(null);
+  },
+  finDebtEdit:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    finDebtModal(+d.id);
+  },
+  finDebtSettle:async d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const dt=one('SELECT * FROM fin_debts WHERE id=?',[+d.id]); if(!dt) return;
+    run('UPDATE fin_debts SET paid=?,status=? WHERE id=?',[dt.amount,'تسویه‌شده',dt.id]);
+    logActivity('تسویه',dt.kind+' '+dt.party+' به‌طور کامل تسویه شد.');
+    markDirty(); saveNow(true); toast('تسویه کامل ثبت شد ✓'); renderView();
+  },
+  finDebtPart:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const dt=one('SELECT * FROM fin_debts WHERE id=?',[+d.id]); if(!dt) return;
+    promptText('ثبت قسط','مبلغ این قسط (تومان) از '+faMoney(Math.max(0,(dt.amount||0)-(dt.paid||0)))+' مانده:',String(Math.max(0,(dt.amount||0)-(dt.paid||0)))).then(function(v){
+      if(v===null) return;
+      const amt=Math.max(0,+v||0);
+      const paid=Math.min(dt.amount,(dt.paid||0)+amt);
+      run('UPDATE fin_debts SET paid=?,status=? WHERE id=?',[paid,paid>=dt.amount?'تسویه‌شده':'تسویه‌نشده',dt.id]);
+      logActivity('قسط','قسط '+faMoney(amt)+' تومانی برای '+dt.kind+' '+dt.party+' ثبت شد.');
+      markDirty(); saveNow(true); toast('قسط ثبت شد ✓'); renderView();
+    });
+  },
+  finDebtDel:async d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    if(!await confirmDlg('حذف','این مورد حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM fin_debts WHERE id=?',[+d.id]);
+    markDirty(); saveNow(true); toast('حذف شد ✓'); renderView();
+  },
+  /* --- حسابداری --- */
+  finJournalExcel:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const tj=isoToJ(todayIso()); const y=window._finYear||tj.jy;
+    const yStart=jToIso(y,1,1), yEnd=jToIso(y,12,jalaaliMonthLength(y,12));
+    const rows=all("SELECT * FROM transactions WHERE date_iso BETWEEN ? AND ? ORDER BY date_iso,id",[yStart,yEnd]);
+    const data=[['تاریخ','شماره سند','شرح','کد','دسته','بدهکار (هزینه)','بستانکار (درآمد)','وضعیت']];
+    rows.forEach(function(r){ data.push([faDate(r.date_iso),r.doc_no||'',r.description,finCodeOf(r.category),r.category,r.kind==='هزینه'?r.amount:'',r.kind==='درآمد'?r.amount:'',r.tx_status||'تأییدشده']); });
+    exportCsv('دفتر-روزنامه-'+y,data);
+  },
+  finCodeAuto:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    let n=0;
+    FIN_INC_CATS.forEach(function(c,i){
+      if(!one('SELECT id FROM fin_codes WHERE name=?',[c])){ run('INSERT INTO fin_codes (code,name,kind) VALUES (?,?,?)',['۴۰'+(i+1),c,'درآمد']); n++; }
+    });
+    FIN_EXP_CATS.forEach(function(c,i){
+      if(!one('SELECT id FROM fin_codes WHERE name=?',[c])){ run('INSERT INTO fin_codes (code,name,kind) VALUES (?,?,?)',['۵۰'+(i+1),c,'هزینه']); n++; }
+    });
+    if(n){ markDirty(); saveNow(true); toast(faNum(n)+' کد تولید شد ✓'); }
+    else toast('همهٔ حساب‌ها کد دارند','info');
+    renderView();
+  },
+  finCodeNew:()=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const ov=openModal('افزودن کد حساب',
+     '<form id="fcdForm" novalidate>'+
+      '<div class="frow2">'+
+        fld('کد *','<input name="code" class="inp" dir="ltr" style="text-align:right" placeholder="۵۰۱۰">')+
+        fld('نوع','<select name="kind" class="inp"><option>هزینه</option><option>درآمد</option></select>')+
+      '</div>'+
+      fld('نام حساب *','<input name="name" class="inp">')+
+      '<button type="submit" class="btn btn-primary btn-block">ثبت کد</button></form>');
+    const form=ov.querySelector('#fcdForm');
+    form.addEventListener('submit',function(e){
+      e.preventDefault(); clearErrs(form);
+      if(!form.code.value.trim()||!form.name.value.trim()){ setErr(form.name,'کد و نام حساب الزامی است.'); return; }
+      run('INSERT INTO fin_codes (code,name,kind) VALUES (?,?,?)',[form.code.value.trim(),form.name.value.trim(),form.kind.value]);
+      markDirty(); saveNow(true); closeModal(); toast('کد ثبت شد ✓'); renderView();
+    });
+  },
+  finCodeDel:async d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    if(!await confirmDlg('حذف کد','این کد حذف شود؟',{danger:true,okText:'حذف'})) return;
+    run('DELETE FROM fin_codes WHERE id=?',[+d.id]);
+    markDirty(); saveNow(true); toast('حذف شد ✓'); renderView();
+  },
+  finPeriodClose:()=>{
+    if(session.username!=='imam'){ toast('بستن دوره فقط با امام جماعت است','error'); return; }
+    const tj=isoToJ(todayIso());
+    promptText('بستن دورهٔ مالی','کدام سال مالی بسته شود؟ (مثال: '+tj.jy+')',String(tj.jy)).then(function(v){
+      if(v===null) return;
+      const y=+v; if(!y){ toast('سال معتبر وارد کنید','error'); return; }
+      if(finYearClosed(y)){ toast('این سال قبلاً بسته شده است','info'); return; }
+      const ex=one('SELECT id FROM fin_periods WHERE year=?',[y]);
+      if(ex) run('UPDATE fin_periods SET closed=1,closed_by=?,closed_at_fa=? WHERE id=?',[session.name||session.username,faStamp(),ex.id]);
+      else run('INSERT INTO fin_periods (year,closed,closed_by,closed_at_fa) VALUES (?,?,?,?)',[y,1,session.name||session.username,faStamp()]);
+      logActivity('بستن دورهٔ مالی','دورهٔ مالی سال '+faNum(y)+' بسته شد.');
+      markDirty(); saveNow(true); toast('دورهٔ مالی سال '+faNum(y)+' بسته شد ✓'); renderView();
+    });
+  },
+  finPeriodOpen:d=>{
+    if(session.username!=='imam'){ toast('بازگشایی دوره فقط با امام جماعت است','error'); return; }
+    const r=one('SELECT * FROM fin_periods WHERE id=?',[+d.id]); if(!r) return;
+    run('UPDATE fin_periods SET closed=0 WHERE id=?',[r.id]);
+    logActivity('بازگشایی دوره','دورهٔ مالی سال '+faNum(r.year)+' بازگشایی شد.');
+    markDirty(); saveNow(true); toast('دوره بازگشایی شد ✓'); renderView();
+  },
+  finRep:d=>{
+    if(!finGuard()){ toast('اجازه ندارید','error'); return; }
+    const sel=document.querySelector('#repP'); const p=sel?sel.value:'m';
+    const tj=isoToJ(todayIso());
+    let s1,s2,label;
+    if(p==='m'){ s1=jToIso(tj.jy,tj.jm,1); s2=jToIso(tj.jy,tj.jm,jalaaliMonthLength(tj.jy,tj.jm)); label='ماه '+J_MONTHS[tj.jm-1]+' '+faNum(tj.jy); }
+    else if(p==='s'){ const q=Math.ceil(tj.jm/3); const m1=(q-1)*3+1,m2=q*3; s1=jToIso(tj.jy,m1,1); s2=jToIso(tj.jy,m2,jalaaliMonthLength(tj.jy,m2)); label='فصل '+faNum(q)+' سال '+faNum(tj.jy); }
+    else { s1=jToIso(tj.jy,1,1); s2=jToIso(tj.jy,12,jalaaliMonthLength(tj.jy,12)); label='سال '+faNum(tj.jy); }
+    const kind=d.k||'ieh';
+    if(kind==='ieh'){
+      const inc=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='درآمد' AND tx_status='تأییدشده' AND date_iso BETWEEN ? AND ?",[s1,s2]).s||0;
+      const exp=one("SELECT COALESCE(SUM(amount),0) AS s FROM transactions WHERE kind='هزینه' AND tx_status='تأییدشده' AND date_iso BETWEEN ? AND ?",[s1,s2]).s||0;
+      const cats=all("SELECT category,kind,SUM(amount) AS s FROM transactions WHERE date_iso BETWEEN ? AND ? AND tx_status='تأییدشده' GROUP BY category,kind ORDER BY s DESC",[s1,s2]);
+      const body='<div class="meta"><span>گزارش درآمد و هزینه — '+label+'</span><span>تاریخ گزارش: '+faDate(todayIso())+'</span></div>'+
+       '<div class="subj" style="text-align:center"><b style="font-size:14pt">گزارش درآمد و هزینه مسجد صاحب‌الزمان (عج)</b></div>'+
+       '<table class="min"><thead><tr><th>حساب</th><th>نوع</th><th>مبلغ (تومان)</th></tr></thead><tbody>'+
+       (cats.length?cats.map(function(c){ return '<tr><td>'+esc(c.category)+'</td><td>'+c.kind+'</td><td>'+faMoney(c.s)+'</td></tr>'; }).join(''):'<tr><td colspan="3">تراکنشی نیست</td></tr>')+
+       '</tbody><tfoot><tr><th colspan="2">جمع درآمد</th><th>'+faMoney(inc)+'</th></tr><tr><th colspan="2">جمع هزینه</th><th>'+faMoney(exp)+'</th></tr><tr><th colspan="2">تراز</th><th>'+faMoney(inc-exp)+'</th></tr></tfoot></table>'+
+       '<div class="sig"><div class="block">معاون امور مالی<div class="line"></div></div><div class="block">تأیید امام جماعت<div class="line"></div></div></div>';
+      const exCsv=[['حساب','نوع','مبلغ (تومان)']].concat(cats.map(function(c){return [c.category,c.kind,c.s]})).concat([['جمع درآمد','',inc],['جمع هزینه','',exp],['تراز','',inc-exp]]);
+      openReportWin('گزارش درآمد و هزینه — '+label,body,exCsv);
+    } else if(kind==='bal'){
+      const acs=all('SELECT * FROM fin_accounts ORDER BY id');
+      const body='<div class="meta"><span>گزارش موجودی حساب‌ها — '+label+'</span><span>تاریخ گزارش: '+faDate(todayIso())+'</span></div>'+
+       '<table class="min"><thead><tr><th>حساب</th><th>نوع</th><th>موجودی (تومان)</th></tr></thead><tbody>'+
+       (acs.length?acs.map(function(a){ return '<tr><td>'+esc(a.name)+'</td><td>'+a.kind+'</td><td>'+faMoney(finAccBal(a.id))+'</td></tr>'; }).join(''):'<tr><td colspan="3">حسابی تعریف نشده است</td></tr>')+'</tbody></table>'+
+       '<div class="sig"><div class="block">معاون امور مالی<div class="line"></div></div></div>';
+      openReportWin('گزارش موجودی حساب‌ها — '+label,body,acs.map(function(a){return [a.name,a.kind,finAccBal(a.id)]}));
+    } else {
+      const ds=all('SELECT * FROM fin_debts ORDER BY id DESC');
+      const body='<div class="meta"><span>گزارش بدهی و مطالبات — '+label+'</span><span>تاریخ گزارش: '+faDate(todayIso())+'</span></div>'+
+       '<table class="min"><thead><tr><th>نوع</th><th>طرف حساب</th><th>مبلغ</th><th>پرداخت‌شده</th><th>مانده</th><th>سررسید</th><th>وضعیت</th></tr></thead><tbody>'+
+       (ds.length?ds.map(function(dt){ return '<tr><td>'+dt.kind+'</td><td>'+esc(dt.party)+'</td><td>'+faMoney(dt.amount)+'</td><td>'+faMoney(dt.paid||0)+'</td><td>'+faMoney(Math.max(0,dt.amount-(dt.paid||0)))+'</td><td>'+(dt.due_iso?faDate(dt.due_iso):'—')+'</td><td>'+esc(dt.status)+'</td></tr>'; }).join(''):'<tr><td colspan="7">موردی ثبت نشده است</td></tr>')+'</tbody></table>'+
+       '<div class="sig"><div class="block">معاون امور مالی<div class="line"></div></div></div>';
+      openReportWin('گزارش بدهی و مطالبات — '+label,body,ds.map(function(dt){return [dt.kind,dt.party,dt.amount,dt.paid||0,Math.max(0,dt.amount-(dt.paid||0)),dt.due_iso?faDate(dt.due_iso):'',dt.status]}));
+    }
+  },
+
   myexpNew:()=>openMyExpModal(),
   growthOpen:d=>openGrowthModal(+d.id),
   panelTab:d=>{ window._panelTab=d.k; renderView(); },
@@ -4274,7 +5570,8 @@ const SEC_TABS=[
  {id:'sec',label:'دبیرخانه مرکزی'},
  {id:'ext',label:'مکاتبات برون‌سازمانی'},
  {id:'meet',label:'دبیر جلسات هیئت امنا'},
- {id:'follow',label:'هماهنگی و پیگیری'}
+ {id:'follow',label:'هماهنگی و پیگیری'},
+ {id:'arch',label:'بایگانی مدارک'}
 ];
 const EXT_ST_CLS={'پیش‌نویس':'b-neutral','صادرشده':'b-success'};
 /* v2.6 — قالب رسمی مصوب نامه: کادر سه‌خط (نازک-ضخیم-نازک)، فونت B Zar نهفته، سربرگ مسجد، امضای خودکار */
@@ -4296,49 +5593,80 @@ function vazirFaceCss(){
   }catch(e){}
   _vazirFace=css; return css;
 }
-function openOfficialDoc(docTitle,bodyHtml){ return openOfficialMulti(docTitle,[bodyHtml]); }
-/* v2.9 — خروجی چند جلسه: هر جلسه در برگهٔ A4 مستقل (شکست صفحه خودکار) */
-function openOfficialMulti(docTitle,parts){
+function openOfficialDoc(docTitle,bodyHtml,opts){ return openOfficialMulti(docTitle,[bodyHtml],opts); }
+/* v3.0 — خروجی رسمی: انتخاب اندازهٔ A4/A5 + نوار ابزار چاپ؛ هر برگ در برگهٔ مستقل */
+function openOfficialMulti(docTitle,parts,opts){
+  const size0=(opts&&opts.size)||'A4';
   const w=window.open('','_blank');
   if(!w){ toast('پنجرهٔ چاپ مرورگر مسدود است؛ لطفاً اجازه پاپ‌آپ دهید','error'); return; }
   const faces='@font-face{font-family:"B Zar";src:url('+BZAR_WOFF+') format("woff");font-weight:normal;font-style:normal}\n'+vazirFaceCss();
-  /* v2.7 — کادر سه‌خط به‌صورت جاری‌رو داخل برگهٔ A4 (بدون fixed) تا در خروجی PDF/چاپ هیچ‌گاه به‌هم نمی‌ریزد */
   w.document.write('<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="utf-8"><title>'+docTitle+'</title>'+
    '<style>'+faces+
    '@page{size:A4;margin:0} *{box-sizing:border-box} html,body{margin:0;padding:0}'+
    'body{background:#eceae4;font-family:"B Zar","Vazirmatn",Tahoma,sans-serif;direction:rtl;color:#1a1a1a;line-height:2;font-size:13.5pt}'+
-   '.sheet{position:relative;width:210mm;min-height:296mm;margin:5mm auto;background:#fff;padding:18mm 17mm 22mm;box-shadow:0 2px 14px rgba(0,0,0,.18)}'+
+   '.tb{position:sticky;top:0;z-index:50;background:#183D30;color:#fff;display:flex;align-items:center;gap:10px;padding:10px 18px;font-family:Vazirmatn,Tahoma,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25)}'+
+   '.tb b{font-size:14px;margin-left:auto}'+
+   '.tb button{background:#B49A60;border:none;color:#183D30;border-radius:8px;padding:8px 20px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer}'+
+   '.tb button.sz{background:#fff} .tb button.sz.on{background:#B49A60}'+
+   '.sheet{position:relative;width:210mm;min-height:296mm;margin:5mm auto;background:#fff;padding:18mm 17mm 22mm;box-shadow:0 2px 14px rgba(0,0,0,.18);font-size:13.5pt}'+
+   'body.s5 .sheet{width:148mm;min-height:203mm;padding:10mm 10mm 12mm;font-size:10.5pt;line-height:1.8}'+
+   'body.s5{font-size:10.5pt}'+
    '.fr{position:absolute;pointer-events:none}'+
    '.fr1{top:5mm;bottom:5mm;left:5mm;right:5mm;border:1px solid #000}'+
    '.fr2{top:6.4mm;bottom:6.4mm;left:6.4mm;right:6.4mm;border:1.15mm solid #000}'+
    '.fr3{top:9.3mm;bottom:9.3mm;left:9.3mm;right:9.3mm;border:1px solid #000}'+
    '.lhead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px double #B49A60;padding-bottom:10px;margin-bottom:6px}'+
    '.lhead .org{font-size:17pt;font-weight:bold;color:#245743;text-align:center;flex:1} .lhead .org small{display:block;font-size:10pt;font-weight:normal;color:#555}'+
+   'body.s5 .lhead .org{font-size:13pt}'+
    '.meta{display:flex;justify-content:space-between;font-size:11pt;border-bottom:1px solid #999;padding:6px 0;margin-bottom:18px}'+
+   'body.s5 .meta{font-size:9pt;margin-bottom:10px}'+
    '.to{font-weight:bold;margin:6mm 0 0} .subj{margin:4mm 0} .subj b{text-decoration:underline}'+
+   'body.s5 .to{margin:3mm 0 0} body.s5 .subj{margin:2mm 0}'+
    '.greet{font-weight:bold;margin:2mm 0 0} .greet2{margin:0 0 3mm}'+
    '.body{text-align:justify;min-height:40mm}'+
    '.regards{font-weight:bold;margin-top:12mm}'+
    '.signer{text-align:center;margin:16mm 0 0;page-break-inside:avoid} .signer b{display:block;font-size:14pt} .signer .sttl{font-size:11.5pt}'+
+   'body.s5 .signer{margin:8mm 0 0} body.s5 .signer b{font-size:11pt}'+
    '.sigimg{height:21mm;max-width:62mm;object-fit:contain;display:block;margin:0 auto 2mm}'+
+   'body.s5 .sigimg{height:14mm;max-width:44mm}'+
    '.cc{margin-top:12mm;font-size:11.5pt} .cc ul{margin:2mm 0 0;padding:0 18px 0 0;list-style:none} .cc li{line-height:1.9}'+
+   'body.s5 .cc{margin-top:6mm;font-size:9pt}'+
    '.trk{margin-top:6mm;font-size:10pt;color:#555}'+
    '.ltop{display:flex;align-items:flex-start;margin-bottom:6mm}'+
    '.ltop .lcol{width:26%} .ltop .lcenter{flex:1;text-align:center} .ltop .lleft{text-align:left;font-size:11pt;line-height:2}'+
+   'body.s5 .ltop{margin-bottom:3mm} body.s5 .ltop .lleft{font-size:8.5pt;line-height:1.7}'+
    '.ltop .lg1{height:88px;max-width:100%;object-fit:contain} .ltop .lg2{height:64px}'+
+   'body.s5 .ltop .lg1{height:56px} body.s5 .ltop .lg2{height:40px}'+
    '.ltop .slogan{font-weight:bold;font-size:14pt;line-height:1.7}'+
+   'body.s5 .ltop .slogan{font-size:10pt}'+
    '.ltop .orgname{font-size:11pt;color:#333}'+
+   'body.s5 .ltop .orgname{font-size:8.5pt}'+
    '.sig{margin-top:14mm;display:flex;justify-content:space-between;align-items:flex-end}'+
+   'body.s5 .sig{margin-top:8mm}'+
    '.sig .block{text-align:center;font-size:12pt} .sig .line{border-top:1.5px solid #333;margin-top:10mm;padding-top:6px;min-width:170px}'+
+   'body.s5 .sig .line{margin-top:5mm;min-width:120px}'+
    '.draftmark{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:44pt;color:rgba(180,20,20,.13);font-weight:bold;border:5px solid rgba(180,20,20,.13);padding:6px 26px;border-radius:12px;white-space:nowrap;z-index:5}'+
+   'body.s5 .draftmark{font-size:26pt}'+
    '.sig-img-note{font-size:9.5pt;color:#777}'+
    'table.min{width:100%;border-collapse:collapse;margin:5mm 0} table.min th,table.min td{border:1px solid #666;padding:7px 9px;font-size:11.5pt;text-align:right} table.min th{background:#f0ece1}'+
-   '@media print{ body{background:#fff} .sheet{margin:0;box-shadow:none} }'+
+   'body.s5 table.min th,body.s5 table.min td{padding:4px 6px;font-size:9pt}'+
+   '@media print{ body{background:#fff} .sheet{margin:0;box-shadow:none} .tb{display:none!important} }'+
    '.sheet{page-break-after:always} .sheet:last-child{page-break-after:auto}'+
    '.mphoto{width:58mm;height:42mm;object-fit:cover;border:1px solid #999;border-radius:2mm}'+
-   '</style></head><body>'+
+   '</style></head><body class="'+(size0==='A5'?'s5':'')+'">'+
+   '<div class="tb">'+
+    '<button onclick="window.print()">🖨️ پرینت</button>'+
+    '<span style="font-size:12px;opacity:.85">اندازهٔ کاغذ:</span>'+
+    '<button class="sz b4 '+(size0!=='A5'?'on':'')+'" onclick="sz(false)">A4</button>'+
+    '<button class="sz b5 '+(size0==='A5'?'on':'')+'" onclick="sz(true)">A5</button>'+
+    '<b>'+docTitle+'</b>'+
+   '</div>'+
+   '<div id="sheets">'+
    parts.map(function(p){ return '<div class="sheet"><div class="fr fr1"></div><div class="fr fr2"></div><div class="fr fr3"></div>'+p+'</div>'; }).join('')+
-   '<script>setTimeout(function(){window.print()},700)<\/script></body></html>');
+   '</div>'+
+   '<script>function sz(a5){document.body.classList.toggle("s5",a5);document.querySelector(".b4").classList.toggle("on",!a5);document.querySelector(".b5").classList.toggle("on",a5);var st=document.querySelector("style#pgs");if(st)st.textContent=a5?"@page{size:A5;margin:0}":"@page{size:A4;margin:0}"}setTimeout(function(){window.print()},700)<\/script>'+
+   '<style id="pgs">@page{size:'+(size0==='A5'?'A5':'A4')+';margin:0}</style>'+
+   '</body></html>');
   w.document.close();
 }
 function getImamSign(){ try{ const r=one("SELECT v FROM app_kv WHERE k='imam_sign'"); return r?r.v:null; }catch(e){ return null; } }
@@ -4370,6 +5698,7 @@ function renderSecSec(){
   const outType=L.filter(function(x){return x.type==='صادره'}).length;
   const inTypeIn=L.filter(function(x){return x.type==='داخلی'}).length;
   const calReqs=all("SELECT * FROM culture_programs WHERE official='درخواست به دبیرخانه' ORDER BY date_iso");
+  const fin=L.filter(function(x){return x.status==='تأیید نهایی'||x.status==='تکمیل‌شده'});
   const rowHtml=function(x,actions){
     return '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b>'+esc(x.subject)+'</b>'+typeBadge(x.type)+statusBadge(x.status)+
      (x.tracking_no?'<span class="badge b-gold">رسید: '+esc(x.tracking_no)+'</span>':'')+
@@ -4397,7 +5726,10 @@ function renderSecSec(){
     (referred.length?referred.slice(0,10).map(function(x){return rowHtml(x,'<button class="btn btn-outline btn-sm" data-act="letterView" data-id="'+x.id+'">مشاهده و پیگیری</button>')}).join(''):emptyState('موردی نیست'))+'</div>'+
    '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('refresh',17)+' بازگشت‌شده به فرستنده ('+faNum(back.length)+')</h3>'+
     (back.length?back.slice(0,10).map(function(x){return rowHtml(x,'<button class="btn btn-outline btn-sm" data-act="letterView" data-id="'+x.id+'">مشاهده</button><button class="btn btn-primary btn-sm" data-act="adminOK" data-id="'+x.id+'">تکمیل شد — ارسال</button>')}).join(''):emptyState('موردی نیست'))+'</div>'+
-   '<div class="card pad"><h3>'+icon('file',17)+' پرونده‌های اداری و بایگانی</h3><p class="tiny muted" style="margin:6px 0 10px">پرونده اداری هر واحد بر اساس نامه‌های ارجاع‌شده به آن واحد؛ آرشیو رسمی در بخش «مکاتبات» با فیلتر بایگانی.</p>'+
+   '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('inbox',17)+' نامه‌های نهایی‌شده در انتظار بایگانی ('+faNum(fin.length)+')</h3>'+
+    '<p class="tiny muted" style="margin:4px 0 10px">نامه‌هایی که به وضعیت «تأیید نهایی» یا «تکمیل‌شده» رسیده‌اند؛ با دکمهٔ بایگانی به بایگانی مدارک منتقل می‌شوند.</p>'+
+    (fin.length?fin.map(function(x){return rowHtml(x,'<button class="btn btn-primary btn-sm" data-act="letterArchive" data-id="'+x.id+'">بایگانی نامه</button>')}).join(''):emptyState('نامهٔ نهایی‌شده‌ای در انتظار بایگانی نیست'))+'</div>'+
+   '<div class="card pad"><h3>'+icon('file',17)+' پرونده‌های اداری و بایگانی</h3><p class="tiny muted" style="margin:6px 0 10px">پرونده اداری هر واحد بر اساس نامه‌های ارجاع‌شده به آن واحد؛ آرشیو رسمی در تب «مکاتبات» با فیلتر بایگانی.</p>'+
     '<div class="table-wrap"><table class="tbl"><thead><tr><th>پرونده (واحد مقصد)</th><th>نامه‌های جاری</th><th>بایگانی‌شده</th></tr></thead><tbody>'+
     (ROLES.map(function(r){
       const a=referred.filter(function(x){return x.assigned_role===r}).length, b=arch.filter(function(x){return x.assigned_role===r}).length;
@@ -4430,7 +5762,9 @@ function renderSecExt(){
      (x.reply_note?'<span class="badge b-info">پاسخ دریافت شد</span>':'')+
 
      '<span style="margin-right:auto;display:flex;gap:6px">'+
-     '<button class="btn btn-outline btn-sm" data-act="extPrint" data-id="'+x.id+'">'+icon('printer',13)+' PDF</button>'+
+     (x.status==='صادرشده'&&!x.archived?'<button class="btn btn-outline btn-sm" data-act="extArchive" data-id="'+x.id+'">'+icon('archive',13)+' بایگانی</button>':'')+
+     (x.archived?'<span class="badge b-neutral">بایگانی‌شده</span>':'')+
+     '<button class="btn btn-outline btn-sm" data-act="extPrint" data-id="'+x.id+'">'+icon('printer',13)+' ویرایش و خروجی</button>'+
      '<button class="btn btn-outline btn-sm" data-act="extReply" data-id="'+x.id+'">'+icon('mail',13)+' ثبت پاسخ</button>'+
      '<button class="btn btn-outline btn-sm" data-act="extEdit" data-id="'+x.id+'">'+icon('edit',13)+'</button>'+
      '<button class="icon-btn danger" data-act="extDel" data-id="'+x.id+'" style="color:var(--danger)">'+icon('trash',13)+'</button>'+
@@ -4803,8 +6137,208 @@ function renderSecPanel(root){
     return '<button class="seg-btn '+(tab===t.id?'on':'')+'" data-act="secTab" data-k="'+t.id+'">'+t.label+'</button>';
   }).join('')+'</div>';
   const head='<div class="page-head"><div><h2>پنل دبیر هیئت امنا و دبیرخانه مرکزی</h2><p class="muted">یک حساب با سه مسئولیت تجمیع‌شده: مدیر دبیرخانه مرکزی · مسئول امور اداری و مکاتبات برون‌سازمانی · دبیر جلسات هیئت امنا (سند مأموریت §۳-۲)</p></div></div>';
-  const fn=tab==='sec'?renderSecSec:tab==='ext'?renderSecExt:tab==='meet'?renderSecMeet:renderSecFollow;
+  const fn=tab==='sec'?renderSecSec:tab==='ext'?renderSecExt:tab==='meet'?renderSecMeet:tab==='arch'?renderSecArch:renderSecFollow;
   root.innerHTML=imamPanelTabs()+head+tabs+fn();
+}
+
+/* ============================================================
+   v3.0 — ابزارهای مشترک: آپلود فشرده تصاویر · خروجی Excel (CSV) · خروجی Word (doc.)
+   ============================================================ */
+function pickImages(maxW,cb){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true;
+  inp.onchange=()=>{
+    const files=Array.from(inp.files||[]); if(!files.length) return;
+    const out=[]; let n=files.length;
+    files.forEach(f=>{
+      const rd=new FileReader();
+      rd.onload=()=>{
+        const img=new Image();
+        img.onload=()=>{
+          try{
+            const w0=img.width||600,h0=img.height||400,sc=Math.min(1,maxW/(w0||1));
+            const cv=document.createElement('canvas'); cv.width=Math.max(1,Math.round(w0*sc)); cv.height=Math.max(1,Math.round(h0*sc));
+            cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+            out.push({d:cv.toDataURL('image/jpeg',0.72)});
+          }catch(e){}
+          if(--n===0) cb(out);
+        };
+        img.onerror=()=>{ if(--n===0) cb(out); };
+        img.src=rd.result;
+      };
+      rd.readAsDataURL(f);
+    });
+  };
+  inp.click();
+}
+function exportCsv(name,rows){
+  const csv='\ufeff'+rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(',')}).join('\r\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download=name+'.csv';
+  document.body.appendChild(a); a.click(); a.remove(); toast('خروجی Excel (CSV) دانلود شد ✓');
+}
+function exportDoc(name,bodyHtml){
+  const html='<html dir="rtl" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>'+esc(name)+'</title><style>body{font-family:Tahoma,"Vazirmatn";direction:rtl;font-size:11pt;line-height:2;color:#111} h3{text-align:center;margin:6px 0} .lh{text-align:center;border-bottom:3px double #B49A60;padding-bottom:6px;margin-bottom:10px} .lh b{font-size:14pt;color:#245743} table{border-collapse:collapse;width:100%;margin:8px 0} td,th{border:1px solid #777;padding:7px 10px;text-align:right} th{background:#f0ece1} .sg{margin-top:26px;display:flex;justify-content:space-between;text-align:center} .sg div{min-width:150px} .sg .line{border-top:1px solid #333;margin-top:52px;padding-top:4px;font-size:10pt} .ftr{margin-top:14px;font-size:9pt;color:#666}</style></head><body>'+bodyHtml+'</body></html>';
+  const a=document.createElement('a'); a.href='data:application/msword;charset=utf-8,'+encodeURIComponent(html); a.download=name+'.doc';
+  document.body.appendChild(a); a.click(); a.remove(); toast('فایل Word (doc.) دانلود شد ✓');
+}
+
+/* ============================================================
+   v3.0 — بایگانی مدارک دبیرخانه:
+   آپلود تصویر اسناد + انتقال نامه‌های نهایی‌شده (تأیید نهایی/تکمیل‌شده)
+   و نامه‌های صادرهٔ برون‌سازمانی به بایگانی
+   ============================================================ */
+const ARCH_CATS=['سند اداری','نامه وارده','نامه صادره','قرارداد و موافقت‌نامه','آرشیو جلسات','مدارک مالی','سایر اسناد'];
+function archImagesOf(d){ try{ return JSON.parse(d.images||'[]'); }catch(e){ return []; } }
+function renderSecArch(){
+  const docs=all('SELECT * FROM arch_docs ORDER BY id DESC');
+  const finLetters=all("SELECT * FROM letters WHERE status IN ('تأیید نهایی','تکمیل‌شده') ORDER BY id DESC");
+  const archLetters=all("SELECT * FROM letters WHERE status='بایگانی' ORDER BY id DESC");
+  const extArch=all('SELECT * FROM ext_letters WHERE archived=1 ORDER BY id DESC');
+  const totalImgs=docs.reduce(function(a,d){ return a+archImagesOf(d).length; },0);
+  const docRow=function(d){
+    const imgs=archImagesOf(d);
+    return '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b>'+esc(d.title)+'</b>'+
+     '<span class="badge b-gold">'+esc(d.cat)+'</span>'+
+     (imgs.length?'<span class="badge b-neutral">'+icon('image',12)+' '+faNum(imgs.length)+' تصویر</span>':'')+
+     '<span style="margin-right:auto;display:flex;gap:6px">'+
+     (imgs.length?'<button class="btn btn-outline btn-sm" data-act="archView" data-id="'+d.id+'">'+icon('eye',13)+' مشاهده تصاویر</button>':'')+
+     '<button class="icon-btn danger" data-act="archDel" data-id="'+d.id+'" style="color:var(--danger)">'+icon('trash',13)+'</button></span></div>'+
+     '<p class="tiny muted">'+esc(d.date_fa||'')+(d.letter_id?' · پیوست نامهٔ داخلی شماره '+faNum(d.letter_id):'')+(d.ext_letter_id?' · پیوست نامهٔ صادره شماره '+faNum(d.ext_letter_id):'')+(d.note?' · '+esc(d.note):'')+'</p></div>';
+  };
+  const ltrRow=function(x,btn){
+    return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(x.subject)+'</b>'+statusBadge(x.status)+
+     '<span style="margin-right:auto;display:flex;gap:6px">'+btn+'</span></div>'+
+     '<p class="tiny muted">فرستنده: '+esc(x.sender||'—')+' · گیرنده: '+esc(x.assigned_role||'—')+' · شماره: '+esc(x.number)+' · '+esc(x.created_at_fa||'')+'</p></div>';
+  };
+  return ''+
+   '<div class="page-head"><div><h2>بایگانی مدارک</h2><p class="muted">آپلود تصویر اسناد و مدارک رسمی، بایگانی نامه‌های نهایی‌شدهٔ دبیرخانه و نامه‌های صادرهٔ برون‌سازمانی با امکان مشاهدهٔ تصاویر بایگانی</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="archNew">'+icon('upload')+' بارگذاری سند جدید</button></div>'+
+   '<div class="grid-stats">'+
+    '<div class="stat-card"><span class="stat-label">اسناد بایگانی‌شده</span><b class="stat-num">'+faNum(docs.length)+'</b><small class="muted">در بایگانی مدارک</small></div>'+
+    '<div class="stat-card accent-gold"><span class="stat-label">تصاویر بایگانی</span><b class="stat-num">'+faNum(totalImgs)+'</b><small class="muted">نسخهٔ اسکن‌شدهٔ اسناد</small></div>'+
+    '<div class="stat-card accent-success"><span class="stat-label">نامه‌های بایگانی‌شده</span><b class="stat-num c-success">'+faNum(archLetters.length+extArch.length)+'</b><small class="muted">داخلی '+faNum(archLetters.length)+' · صادره '+faNum(extArch.length)+'</small></div>'+
+    '<div class="stat-card '+(finLetters.length?'accent-danger':'')+'"><span class="stat-label">در انتظار بایگانی</span><b class="stat-num">'+faNum(finLetters.length)+'</b><small class="muted">نامهٔ نهایی‌شده</small></div>'+
+   '</div>'+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>گردش بایگانی:</b> نامه‌ای که در جریان دبیرخانه به «تأیید نهایی» یا «تکمیل‌شده» می‌رسد با یک دکمه به بایگانی منتقل می‌شود؛ نامه‌های صادرهٔ برون‌سازمانی هم پس از صدور از همین‌جا بایگانی می‌شوند. تصاویر اسکن‌شدهٔ هر سند به‌صورت فشرده ذخیره می‌شود.</p></div>'+
+   (finLetters.length?'<div class="card pad" style="margin-bottom:14px"><h3>'+icon('inbox',17)+' نامه‌های نهایی‌شدهٔ آمادهٔ بایگانی ('+faNum(finLetters.length)+')</h3>'+
+     finLetters.map(function(x){return ltrRow(x,'<button class="btn btn-primary btn-sm" data-act="letterArchive" data-id="'+x.id+'">'+icon('archive',13)+' بایگانی نامه</button>')}).join('')+'</div>':'')+
+   '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('archive',17)+' اسناد و مدارک بایگانی ('+faNum(docs.length)+')</h3>'+
+    (docs.length?docs.map(docRow).join(''):emptyState('هنوز سندی بایگانی نشده است — با «بارگذاری سند جدید» تصویر مدارک را بایگانی کنید'))+'</div>'+
+   (archLetters.length?'<div class="card pad" style="margin-bottom:14px"><h3>'+icon('mail',17)+' نامه‌های داخلی بایگانی‌شده ('+faNum(archLetters.length)+')</h3>'+
+     archLetters.map(function(x){return ltrRow(x,'<span class="badge b-neutral">بایگانی‌شده</span>')}).join('')+'</div>':'')+
+   (extArch.length?'<div class="card pad"><h3>'+icon('send',17)+' نامه‌های صادرهٔ برون‌سازمانی بایگانی‌شده ('+faNum(extArch.length)+')</h3>'+
+     extArch.map(function(x){
+       return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(x.subject)+'</b><span class="badge b-neutral">بایگانی‌شده</span>'+
+        '<span style="margin-right:auto"><button class="btn btn-outline btn-sm" data-act="extPrint" data-id="'+x.id+'">'+icon('printer',13)+' ویرایش و خروجی</button></span></div>'+
+        '<p class="tiny muted">شماره: '+esc(x.number)+' · مخاطب: '+esc(x.recipient)+' · تاریخ: '+esc(x.date_fa)+'</p></div>';
+     }).join('')+'</div>':'');
+}
+function openArchModal(){
+  const ov=openModal('بارگذاری سند در بایگانی مدارک',
+   '<form id="arForm" novalidate>'+
+    '<div class="frow2">'+
+      fld('عنوان سند *','<input name="title" class="inp" placeholder="مثال: صورتجلسه هیئت امنا آبان ۱۴۰۵">')+
+      fld('دستهٔ بایگانی','<select name="cat" class="inp">'+ARCH_CATS.map(function(c){return '<option>'+c+'</option>'}).join('')+'</select>')+
+    '</div>'+
+    '<div class="frow2">'+
+      fld('تاریخ (شمسی)','<input name="datefa" class="inp" value="'+faDate(todayIso())+'" placeholder="۱۴۰۵/۰۸/۱۴">')+
+      '<div></div>'+
+    '</div>'+
+    fld('یادداشت','<input name="note" class="inp" placeholder="توضیح اختیاری…">')+
+    '<div class="card pad" style="margin:10px 0;background:var(--surface-2)"><label class="chk"><input type="checkbox" id="arImgs" checked> بارگذاری تصویر (اسکن یا عکس سند)</label>'+
+    '<p class="tiny muted" style="margin:6px 0 0">می‌توانید چند تصویر همزمان انتخاب کنید؛ تصاویر به‌صورت خودکار فشرده می‌شوند.</p></div>'+
+    '<button type="submit" class="btn btn-primary btn-block">بایگانی سند</button>'+
+   '</form>',{width:'560px'});
+  const form=ov.querySelector('#arForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    if(!form.title.value.trim()){ setErr(form.title,'عنوان سند الزامی است.'); return; }
+    const save=function(imgs){
+      run('INSERT INTO arch_docs (title,cat,images,note,date_fa,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?)',
+        [form.title.value.trim(),form.cat.value,JSON.stringify(imgs),form.note.value.trim(),form.datefa.value.trim()||faDate(todayIso()),session.username,faStamp()]);
+      logActivity('بایگانی مدارک','سند «'+form.title.value.trim()+'» با '+faNum(imgs.length)+' تصویر بایگانی شد.');
+      markDirty(); saveNow(true); closeModal(); toast('سند در بایگانی ثبت شد ✓'); renderView();
+    };
+    if(ov.querySelector('#arImgs').checked){ pickImages(1400,function(imgs){ save(imgs); }); }
+    else save([]);
+  });
+}
+function openArchImages(id){
+  const d=one('SELECT * FROM arch_docs WHERE id=?',[id]); if(!d) return;
+  const imgs=archImagesOf(d);
+  openModal('تصاویر سند: '+d.title,
+   '<div style="max-height:60vh;overflow:auto">'+(imgs.length?imgs.map(function(p,i){
+     return '<div style="margin-bottom:12px"><img src="'+p.d+'" style="width:100%;border:1px solid var(--line);border-radius:8px"><div class="tiny muted" style="text-align:center;margin-top:2px">تصویر '+faNum(i+1)+' از '+faNum(imgs.length)+'</div></div>';
+   }).join(''):emptyState('تصویری ثبت نشده است'))+'</div>');
+}
+/* v3.0 — ویرایشگر ساختار نامهٔ برون‌سازمانی قبل از خروجی (مثل ویرایش در Word) + انتخاب A4/A5 */
+function openExtPrintEditor(id){
+  const x=one('SELECT * FROM ext_letters WHERE id=?',[id]); if(!x) return;
+  const sig=!!getImamSign();
+  const ov=openModal('ویرایش ساختار نامه رسمی — '+x.number,
+   '<form id="epForm" novalidate>'+
+    '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted">ساختار نامه (شماره/تاریخ، به/از، موضوع، متن، پیوست، رونوشت و امضا) را ویرایش کنید؛ خروجی نهایی با کادر رسمی سه‌خط، سربرگ مسجد و فونت B Zar تولید می‌شود. <b>'+(sig?'امضای امام جماعت در نامه‌های صادرشدهٔ دارای مجوز خودکار درج می‌شود.':'تصویر امضای امام جماعت ثبت نشده است؛ نامه بدون امضا صادر می‌شود.')+'</b></p></div>'+
+    '<div class="frow2">'+
+      fld('شماره','<input name="num" class="inp" value="'+esc(x.number)+'" readonly>')+
+      fld('تاریخ (شمسی) *','<input name="datefa" class="inp" value="'+esc(x.date_fa)+'" placeholder="۱۴۰۵/۰۸/۱۴">')+
+    '</div>'+
+    '<div class="frow2">'+
+      fld('به: *','<input name="rec" class="inp" value="'+esc(x.recipient)+'" placeholder="مخاطب…">')+
+      fld('از:','<input name="from" class="inp" value="امام جماعت مسجد صاحب‌الزمان (عج)">')+
+    '</div>'+
+    fld('موضوع *','<input name="subj" class="inp" value="'+esc(x.subject)+'">')+
+    fld('متن نامه','<textarea name="body" class="inp" rows="9" style="line-height:2" placeholder="متن نامه… (سلام و صلوات خودکار درج می‌شود)">'+esc(x.body||'')+'</textarea>')+
+    '<div class="frow2">'+
+      fld('پیوست','<input name="attach" class="inp" value="'+esc(x.attach||'ندارد')+'">')+
+      fld('شناسه پیگیری','<input name="trk" class="inp" value="'+esc(x.tracking_no||'')+'">')+
+    '</div>'+
+    fld('رونوشت (هر خط یک مورد)','<textarea name="cc" class="inp" rows="2">'+esc(x.cc||'')+'</textarea>')+
+    '<div class="frow2">'+
+      fld('نام امضاکننده','<input name="sname" class="inp" value="'+esc(x.signer_name||'')+'" placeholder="خالی = امضای رئیس">')+
+      fld('سمت امضاکننده','<input name="stitle" class="inp" value="'+esc(x.signer_title||'امام جماعت مسجد صاحب‌الزمان (عج)')+'">')+
+    '</div>'+
+    '<div class="frow2">'+
+      fld('اندازهٔ کاغذ خروجی','<select name="sz" class="inp"><option value="A4">A4 — استاندارد نامه‌های اداری</option><option value="A5">A5 — نیم‌برگ</option></select>')+
+      '<div style="display:flex;align-items:flex-end"><label class="chk" style="margin-bottom:8px"><input type="checkbox" name="sig" '+(x.signed_imam?'checked':'')+'> مجوز امضای امام جماعت</label></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;margin-top:6px">'+
+      '<button type="submit" class="btn btn-primary" style="flex:1">'+icon('printer',15)+' ذخیره و خروجی PDF/چاپ</button>'+
+      '<button type="button" class="btn btn-outline" id="epSaveOnly">'+icon('save',15)+' فقط ذخیره</button>'+
+    '</div>'+
+   '</form>',{width:'720px'});
+  const form=ov.querySelector('#epForm');
+  const collect=function(){
+    return {
+      recipient:form.rec.value.trim(), subject:form.subj.value.trim(), body:form.body.value,
+      date_fa:form.datefa.value.trim(), attach:form.attach.value.trim(), tracking_no:form.trk.value.trim(),
+      cc:form.cc.value.split('\n').map(function(s2){return s2.trim()}).filter(Boolean).join('\n'),
+      signer_name:form.sname.value.trim(), signer_title:form.stitle.value.trim(),
+      signed_imam:(form.sig.checked&&x.status==='صادرشده')?1:0
+    };
+  };
+  const saveAll=function(){
+    const v=collect();
+    run('UPDATE ext_letters SET recipient=?,subject=?,body=?,date_fa=?,attach=?,tracking_no=?,cc=?,signer_name=?,signer_title=?,signed_imam=? WHERE id=?',
+      [v.recipient,v.subject,v.body,v.date_fa,v.attach,v.tracking_no,v.cc,v.signer_name,v.signer_title,v.signed_imam,id]);
+    logActivity('ویرایش نامه رسمی','ساختار نامه '+x.number+' ویرایش و ذخیره شد.');
+    markDirty(); saveNow(true);
+  };
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    let ok=true;
+    if(!form.rec.value.trim()){ setErr(form.rec,'مخاطب الزامی است.'); ok=false; }
+    if(!form.subj.value.trim()){ setErr(form.subj,'موضوع الزامی است.'); ok=false; }
+    if(!parseJDate(form.datefa.value)){ setErr(form.datefa,'تاریخ شمسی معتبر نیست.'); ok=false; }
+    if(!ok) return;
+    const v=collect(); const sz=form.sz.value; const st=x.status;
+    const tmp={number:x.number,status:st,signed_imam:v.signed_imam};
+    saveAll(); closeModal();
+    toast('نامه ذخیره شد؛ پنجرهٔ خروجی باز می‌شود ✓');
+    setTimeout(function(){ openOfficialDoc('نامه رسمی '+x.number,extLetterHtml(Object.assign({},x,v,tmp)),{size:sz}); },150);
+  });
+  ov.querySelector('#epSaveOnly').addEventListener('click',function(){
+    if(!form.rec.value.trim()||!form.subj.value.trim()||!parseJDate(form.datefa.value)){ toast('مخاطب، موضوع و تاریخ معتبر الزامی است','error'); return; }
+    saveAll(); closeModal(); toast('تغییرات نامه ذخیره شد ✓'); renderView();
+  });
 }
 
 const PANEL_KIND={
