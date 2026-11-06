@@ -14,4 +14,8 @@
     <string name="error_offline">اتصال به سامانه برقرار نشد. لطفاً اتصال اینترنت و آدرس سرور را بررسی کنید.</string>
     <string name="retry">تلاش مجدد</string>
     <string name="loading">در حال بارگذاری سامانه…</string>
+
+    <!-- v3.6 — پوستهٔ نیتیو -->
+    <string name="offline_banner">⛔ اتصال اینترنت قطع است — آخرین داده‌های ذخیره‌شده نمایش داده می‌شود</string>
+    <string name="exit_hint">برای خروج، دکمهٔ بازگشت را دوباره بزنید</string>
 </resources>

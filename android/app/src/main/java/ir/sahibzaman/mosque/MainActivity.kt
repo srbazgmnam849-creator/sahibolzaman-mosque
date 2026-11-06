@@ -6,12 +6,18 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.os.SystemClock
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
+import android.webkit.JavascriptInterface
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -20,6 +26,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.ActivityResultLauncher
@@ -28,22 +35,31 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.google.android.material.snackbar.Snackbar
 
 /**
- * سامانه مدیریت مسجد صاحب‌الزمان
- * WebView wrapper برای وب‌اپلیکیشن مسجد (Laravel/PHP).
+ * سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — پوستهٔ نیتیو اندروید v3.6
  *
- * - URL از res/values/strings.xml (app_url) خوانده می‌شود.
- * - لینک‌های خارجی (هاست متفاوت / tel / mailto و ...) در مرورگر یا اپ مربوطه باز می‌شوند.
- * - در صورت خطا (قطع اینترنت / سرور در دسترس نیست) یک صفحه خطای فارسی و راست‌به‌چپ
- *   با دکمه «تلاش مجدد» نمایش داده می‌شود.
- * - آپلود فایل (تصویر / PDF) در فرم‌های وب از طریق onShowFileChooser پشتیبانی می‌شود.
- * - دانلود فایل‌ها با DownloadManager انجام می‌شود.
- * - کشیدن از بالا (SwipeRefresh) صفحه را تازه‌سازی می‌کند.
- * - دکمه بازگشت: اگر WebView بتواند عقب برود، عقب می‌رود؛ وگرنه برنامه بسته می‌شود.
+ * قابلیت‌های نیتیو این نسخه (v3.6 — versionCode 11):
+ * ۱) پل نیتیو همگام‌سازی (AndroidBridge): هر بار داده‌ها به ابر ارسال یا از ابر
+ *    دریافت شود، اسنک‌بار نیتیو متریال وضعیت همگام‌سازی را نشان می‌دهد —
+ *    یعنی «هر تغییر در هردو بستر ثبت می‌شود» برای کاربر به‌صورت نیتیو دیده می‌شود.
+ * ۲) پایش نیتیو شبکه: قطع اینترنت → نوار هشدار نیتیو + حالت آفلاین (نمایش آخرین
+ *    داده‌ها از کش و ادامهٔ کار با پایگاه‌دادهٔ محلی)؛ وصل‌شدن → برداشتن هشدار،
+ *    بازگشت به حالت آنلاین و بارگذاری مجدد در صورت صفحهٔ خطا.
+ * ۳) لینک مستقیم (Deep Link): پیوندهای سایت مسجد از خارج (مرورگر/پیام‌رسان) در خود اپ باز می‌شوند.
+ * ۴) خروج دومرحله‌ای: دکمهٔ بازگشت در ریشه، با تأیید دومرحله‌ای نیتیو برنامه را می‌بندد.
+ * ۵) قابلیت‌های نگه‌داشته‌شده از نسخه‌های قبل: اسپلش نیتیو، کشیدن برای تازه‌سازی،
+ *    صفحهٔ خطای فارسی با تلاش مجدد، آپلود فایل از حافظهٔ گوشی، دانلود با DownloadManager،
+ *    بازگشت درون‌سایتی، مدیریت لینک‌های خارجی (tel/mailto/...) و نشست پایدار کاربر.
+ *
+ * - URL از res/values/strings.xml (app_url) خوانده می‌شود؛ اپ و سایت همیشه از یک
+ *   منبع واحد کد و یک مخزن دادهٔ رمزنگاری‌شدهٔ مشترک استفاده می‌کنند.
  */
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var root: View
+    private lateinit var offlineBanner: TextView
     private lateinit var webView: WebView
     private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var mainUrl: String
@@ -53,6 +69,13 @@ class MainActivity : AppCompatActivity() {
 
     /** کال‌بک انتخاب فایل فرم وب (آپلود تصویر/PDF) */
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
+
+    /** زمان آخرین فشار دکمهٔ بازگشت (برای خروج دومرحله‌ای) */
+    private var lastBackAt = 0L
+
+    /** محدودساز پیام‌های همگام‌سازی (جلوگیری از تکرار پشت‌سرهم) */
+    private var lastSyncEvt = ""
+    private var lastSyncAt = 0L
 
     /**
      * لانچر انتخاب فایل — باید قبل از onCreate (به‌صورت فیلد) ثبت شود.
@@ -81,17 +104,47 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         mainUrl = getString(R.string.app_url)
+        root = findViewById(R.id.root)
+        offlineBanner = findViewById(R.id.offlineBanner)
         webView = findViewById(R.id.webView)
         swipeRefresh = findViewById(R.id.swipeRefresh)
 
         setupWebView()
         setupSwipeRefresh()
         setupBackHandling()
+        setupNetworkMonitor()
 
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState)
         } else {
-            webView.loadUrl(mainUrl)
+            webView.loadUrl(deepLinkUrl() ?: mainUrl)
+        }
+    }
+
+    // ------------------------------------------------------------------ //
+    // Deep link (v3.6): بازکردن پیوندهای سایت مسجد در خود اپ
+    // ------------------------------------------------------------------ //
+
+    private fun inScope(u: Uri?): Boolean {
+        if (u == null) return false
+        val scheme = u.scheme?.lowercase() ?: return false
+        if (scheme != "http" && scheme != "https") return false
+        val mainHost = Uri.parse(mainUrl).host ?: return false
+        return u.host == mainHost && (u.path ?: "").startsWith("/sahibolzaman-mosque")
+    }
+
+    private fun deepLinkUrl(): String? {
+        val u = intent?.data
+        return if (inScope(u)) u.toString() else null
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val u = intent?.data
+        if (inScope(u)) {
+            isError = false
+            webView.loadUrl(u.toString())
         }
     }
 
@@ -122,6 +175,9 @@ class MainActivity : AppCompatActivity() {
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
 
         webView.setBackgroundColor(ContextCompat.getColor(this, R.color.bg))
+
+        // پل نیتیو v3.6: اعلام رویدادهای همگام‌سازی ابری به پوسته
+        webView.addJavascriptInterface(AndroidBridge(), "AndroidBridge")
 
         webView.webViewClient = object : WebViewClient() {
 
@@ -212,6 +268,79 @@ class MainActivity : AppCompatActivity() {
         // دانلود فایل‌ها با DownloadManager
         webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             startDownload(url, userAgent, contentDisposition, mimeType)
+        }
+    }
+
+    // ------------------------------------------------------------------ //
+    // پل نیتیو همگام‌سازی (v3.6): JS → بومی
+    // ------------------------------------------------------------------ //
+
+    private inner class AndroidBridge {
+        @JavascriptInterface
+        fun onSync(evt: String, msg: String) {
+            val now = SystemClock.elapsedRealtime()
+            if (evt == lastSyncEvt && now - lastSyncAt < 4000) return
+            lastSyncEvt = evt
+            lastSyncAt = now
+            val text = when (evt) {
+                "push" -> "☁ همگام شد — تغییرات به ابر ارسال شد"
+                "pull" -> "☁ همگام شد — تازه‌ترین داده‌ها از ابر دریافت شد"
+                "conflict" -> "⚠ نسخهٔ تازه‌تری در ابر یافت شد — دریافت خودکار آغاز شد"
+                else -> if (msg.isNotBlank()) msg else "وضعیت همگام‌سازی تغییر کرد"
+            }
+            runOnUiThread {
+                Snackbar.make(
+                    root,
+                    text,
+                    if (evt == "conflict") Snackbar.LENGTH_LONG else Snackbar.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ //
+    // پایش نیتیو شبکه (v3.6): نوار آفلاین + حالت کش آفلاین + بازیابی خودکار
+    // ------------------------------------------------------------------ //
+
+    private fun isOnline(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val n = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(n) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    private fun setupNetworkMonitor() {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        try {
+            cm.registerNetworkCallback(
+                NetworkRequest.Builder().build(),
+                object : ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: Network) {
+                        runOnUiThread {
+                            offlineBanner.visibility = View.GONE
+                            webView.settings.cacheMode = WebSettings.LOAD_DEFAULT
+                            if (isError) {
+                                isError = false
+                                webView.loadUrl(mainUrl)
+                            }
+                            Snackbar.make(root, "اتصال برقرار شد ✓", Snackbar.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    override fun onLost(network: Network) {
+                        runOnUiThread {
+                            if (!isOnline()) {
+                                offlineBanner.visibility = View.VISIBLE
+                                // در حالت آفلاین، آخرین نسخهٔ کش‌شدهٔ سامانه نمایش داده می‌شود؛
+                                // داده‌های محلی (IndexedDB رمزنگاری‌شده) در دسترس و قابل مشاهده است
+                                webView.settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                            }
+                        }
+                    }
+                }
+            )
+        } catch (e: Exception) {
+            // پایش شبکه اختیاری است؛ خطای ثبت کال‌بک نباید برنامه را متوقف کند
         }
     }
 
@@ -334,7 +463,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ------------------------------------------------------------------ //
-    // Back handling
+    // Back handling (v3.6: خروج دومرحله‌ای)
     // ------------------------------------------------------------------ //
 
     private fun setupBackHandling() {
@@ -343,7 +472,17 @@ class MainActivity : AppCompatActivity() {
                 if (webView.canGoBack()) {
                     webView.goBack()
                 } else {
-                    finish()
+                    val now = SystemClock.elapsedRealtime()
+                    if (now - lastBackAt < 2000) {
+                        finish()
+                    } else {
+                        lastBackAt = now
+                        Toast.makeText(
+                            this@MainActivity,
+                            getString(R.string.exit_hint),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             }
         })

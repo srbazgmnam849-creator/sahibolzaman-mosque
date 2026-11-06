@@ -7,12 +7,13 @@
         <item name="android:windowLightStatusBar">false</item>
     </style>
 
-    <!-- تم اصلی برنامه -->
+    <!-- تم اصلی برنامه (v3.6: نوار ناوبری نیتیو هم‌رنگ هدر) -->
     <style name="Theme.MosqueApp" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorSecondary">@color/accent</item>
         <item name="android:statusBarColor">@color/primaryDark</item>
+        <item name="android:navigationBarColor">@color/primaryDark</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowBackground">@color/bg</item>
     </style>

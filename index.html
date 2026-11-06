@@ -682,7 +682,7 @@ tr.row-ov td{color:#8E2020}
     </form>
     <a class="apk-link" href="app/app.apk" download>📥 دانلود اپلیکیشن اندروید (APK)</a>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۵</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۶</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -734,7 +734,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۵ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۶ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -1198,6 +1198,8 @@ async function cloudFetchMeta(){
   }catch(e){ console.warn('cloudFetchMeta raw',e); }
   return undefined;
 }
+/* v3.6 — پل نیتیو اندروید: رویدادهای همگام‌سازی ابری به پوستهٔ بومی اعلام می‌شود (در مرورگر بی‌اثر است) */
+function mszNative(evt,msg){ try{ if(window.AndroidBridge&&window.AndroidBridge.onSync) window.AndroidBridge.onSync(String(evt),String(msg||'')); }catch(e){} }
 async function cloudPush(reason,manual){
   if(!db||cloudLock) return false;
   if(manual&&cloudMode==='pull'){ cloudMode='full'; localStorage.setItem('msz_cloud_mode','full'); }
@@ -1219,6 +1221,7 @@ async function cloudPush(reason,manual){
     const myVer=Number(localStorage.getItem('msz_cloud_ver')||0);
     if(cloudMeta&&cloudMeta.ver&&cloudMeta.dev!==DEVICE_ID&&cloudMeta.ver>myVer&&reason!=='manual'&&reason!=='initial'&&reason!=='adoption'){
       cloudState('busy','نسخهٔ تازه‌تر در ابر — دریافت خودکار…');
+      mszNative('conflict','نسخهٔ تازه‌تر در ابر یافت شد');
       setTimeout(function(){ if(!cloudLock) cloudPull(false); },800);
       return false;
     }
@@ -1229,6 +1232,7 @@ async function cloudPush(reason,manual){
     localStorage.setItem('msz_cloud_time',new Date().toISOString());
     cloudAdopted=true;
     cloudState('ok','همگام شد ✓');
+    mszNative('push','تغییرات به ابر ارسال شد');
     return true;
   }catch(e){ console.warn('cloudPush',e); const m=String((e&&e.message)||e); if(m.indexOf('401')>-1||m.indexOf('403')>-1){ cloudState('off','دسترسی ارسال به ابر قطع است'); } else { cloudState('off','ارسال ناموفق — تلاش مجدد خودکار'); } return false; }
   finally{ cloudLock=false; }
@@ -1267,6 +1271,7 @@ async function cloudPull(manual){
     localStorage.setItem('msz_cloud_time',new Date().toISOString());
     cloudAdopted=true;
     cloudState('ok','دریافت شد ✓');
+    mszNative('pull','تازه‌ترین داده‌ها از ابر دریافت شد');
     if(session){ renderView(); try{ refreshTicker(); }catch(e){} try{ renderNotifBadge(); }catch(e){} }
     if(manual||meta.dev!==DEVICE_ID) toast('داده‌های تازه از ابر دریافت شد ✓'+(meta.by?' (آخرین ویرایش: '+meta.by+')':''));
     return meta.ver;
@@ -8119,7 +8124,7 @@ function entSection(k){
    ارتباط مالی: قرارداد اجاره و اطلاعات املاک این‌جاست؛ ثبت دریافت و تأیید
    درآمد و پرداخت‌ها فقط در پنل معاونت امور مالی انجام می‌شود.
    ============================================================ */
-const MSZ_VERSION='v3.5';
+const MSZ_VERSION='v3.6';
 const OMR_TABS=[
  {id:'dash',label:'داشبورد'},
  {id:'proj',label:'پروژه‌های عمرانی'},

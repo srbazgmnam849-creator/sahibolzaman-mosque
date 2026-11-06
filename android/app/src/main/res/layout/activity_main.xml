@@ -1,14 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    صفحه اصلی: WebView تمام‌صفحه داخل SwipeRefreshLayout برای پشتیبانی
-    از «کشیدن برای تازه‌سازی».
-    نکته: پر کردن کل ویو (fill viewport) از طریق useWideViewPort و
-    loadWithOverviewMode در MainActivity.kt انجام می‌شود.
+    صفحه اصلی (v3.6): ستون عمودی شامل نوار هشدار آفلاین نیتیو + SwipeRefreshLayout
+    و WebView تمام‌صفحه برای پشتیبانی از «کشیدن برای تازه‌سازی».
+    - نوار هشدار (offlineBanner) هنگام قطع اینترنت به‌صورت نیتیو نمایش داده می‌شود.
+    - ریشه (root) لنگرگاه Snackbar نیتیو برای پیام‌های همگام‌سازی و اتصال است.
 -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@color/bg">
+
+    <TextView
+        android:id="@+id/offlineBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/primaryDark"
+        android:textColor="@color/white"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
+        android:text="@string/offline_banner"
+        android:visibility="gone" />
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
@@ -21,4 +36,4 @@
             android:layout_height="match_parent" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-</FrameLayout>
+</LinearLayout>
