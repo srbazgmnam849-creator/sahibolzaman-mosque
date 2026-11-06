@@ -682,7 +682,7 @@ tr.row-ov td{color:#8E2020}
     </form>
     <a class="apk-link" href="app/app.apk" download>📥 دانلود اپلیکیشن اندروید (APK)</a>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۲</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۳</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -734,7 +734,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۲ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۳ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -1054,7 +1054,17 @@ const ACCOUNTS=[
  ['member','511e32e318a34d2c37a4df975c1b99b108fce78bf858858a2f0a0d75de9298bc','آقای معاون','عضو عادی',1,'center'],
  ['media_admin','a39a1517787ae51c92d84b7652141a1fd623a65811aa14492ccba67d10d504e9','استاد بصیر','مدیر فنی و معاونت رسانه',2,'center']
 ];
-const ROLES=ACCOUNTS.map(a=>a[3]);
+let ROLES=ACCOUNTS.map(a=>a[3]);
+/* v3.3 — فهرست نقش‌ها از پایگاه‌داده تازه‌سازی می‌شود تا عناوین ویرایش‌شده و نقش‌های حساب‌های جدید هم در فهرست‌های ارجاع/مأموریت لحاظ شوند */
+function refreshRoles(){
+  try{
+    const set=[];
+    all('SELECT role,level,id FROM users WHERE active=1 ORDER BY level DESC,id').forEach(function(r){
+      if(r.role&&set.indexOf(r.role)<0) set.push(r.role);
+    });
+    if(set.length>=3) ROLES=set;
+  }catch(e){ console.warn('refreshRoles',e); }
+}
 const HALLS=['سالن اصلی','سالن خواهران','کلاس درس ۱','کلاس درس ۲','کتابخانه','حیاط مرکزی'];
 const EVENT_TYPES=['جلسه','مراسم','کلاس','سخنرانی','ورزشی'];
 const LETTER_TYPES=['وارده','صادره','داخلی'];
@@ -1735,6 +1745,20 @@ function ensureSchema(){
     try{
       run("CREATE TABLE IF NOT EXISTS sec_missions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, descr TEXT DEFAULT '', target_username TEXT DEFAULT '', target_role TEXT DEFAULT '', deadline_iso TEXT DEFAULT '', priority TEXT DEFAULT 'عادی', status TEXT DEFAULT 'ثبت‌شده', result_note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)");
     }catch(e){ console.warn('sec_missions',e); }
+    /* v3.3 — نمایش گذرواژه برای امام جماعت و مدیر فنی: ستون گذرواژهٔ قابل‌نمایش (تنها در پایگاه‌دادهٔ رمزنگاری‌شدهٔ محلی نگه‌داری می‌شود؛ به درخواست صریح کارفرما) */
+    try{ addCol('users','pass_plain',"TEXT DEFAULT ''"); }catch(e){}
+    try{
+      const prflag=one('SELECT value FROM sys_flags WHERE name=?',['pwreveal_1405_v1']);
+      if(!prflag){
+        /* گذرواژه‌های اولیهٔ تعیین‌شدهٔ کارفرما — تنها وقتی هش حساب تغییر نکرده باشد برای نمایش ثبت می‌شوند */
+        [['imam','Imam!1405A7'],['board','Board!1405C3'],['trainer','Trainer!1405N4'],['member','Member!1405P5']].forEach(function(k){
+          const acc=ACCOUNTS.filter(function(a){ return a[0]===k[0]; })[0];
+          if(acc) run("UPDATE users SET pass_plain=? WHERE username=? AND pass_hash=? AND (pass_plain IS NULL OR pass_plain='')",[k[1],k[0],acc[1]]);
+        });
+        run('INSERT OR REPLACE INTO sys_flags(name,value) VALUES (?,?)',['pwreveal_1405_v1',faStamp()]);
+        markDirty();
+      }
+    }catch(e){ console.warn('pwreveal migrate',e); }
   }catch(e){ console.warn('ensureSchema migrate',e); }
   try{ run("CREATE TABLE IF NOT EXISTS user_perms(username TEXT NOT NULL, module TEXT NOT NULL, lvl INTEGER NOT NULL, updated_at_fa TEXT DEFAULT '', PRIMARY KEY(username,module))"); }catch(e){}
   try{
@@ -1844,6 +1868,7 @@ async function doLogin(){
 function startApp(u){
   session={username:u.username,name:u.display_name,role:u.role,level:u.level,org:ORG_BY_UN[u.username]||u.org||'center',isMedia:u.username==='media_admin'};
   if(session.username==='imam') session.org='ALL';
+  refreshRoles();
   sessionStorage.setItem('msz_session',session.username);
   $('#loginScreen').classList.add('hidden');
   $('#appShell').classList.remove('hidden');
@@ -1868,7 +1893,7 @@ function startApp(u){
 const NAV=[
  {id:'dashboard',label:'داشبورد',icon:'home',min:1,group:'اصلی',desc:'نمای کلی سامانه'},
  {id:'settings',label:'تنظیمات و پشتیبان‌گیری',icon:'settings',min:1,group:'اصلی',desc:'پشتیبان‌گیری، بازیابی و همگام‌سازی'},
- {id:'users',label:'کاربران و دسترسی‌ها',icon:'shield',roles:['imam'],group:'اصلی',desc:'حساب‌ها و اختیارات جزئی'},
+ {id:'users',label:'کاربران و دسترسی‌ها',icon:'shield',roles:['imam','media_admin'],group:'اصلی',desc:'حساب‌ها و اختیارات جزئی'},
  {id:'letters',label:'مکاتبات',icon:'mail',min:1,group:'پنل عمومی — امکانات مشترک',desc:'مکاتبات با فرستنده و گیرنده، تأیید دبیر و بازگشت پاسخ به مبدا'},
  {id:'missions',label:'مأموریت‌ها (مصوبات)',icon:'check',min:1,group:'پنل عمومی — امکانات مشترک',desc:'مصوبات جلسات تعیین‌شده برای واحد شما'},
  {id:'calendar',label:'تقویم اجرایی',icon:'calendar',min:1,group:'پنل عمومی — امکانات مشترک',desc:'درخواست برنامه (تاریخ، ساعت، نوع) و تأیید دبیر هیئت امنا'},
@@ -3564,21 +3589,40 @@ function lastActiveL4(except){
   return one('SELECT COUNT(*) AS c FROM users WHERE level=4 AND active=1 AND username<>?',[except||'']).c===0;
 }
 VIEWS.users=function(root){
-  if(session.username!=='imam'){
+  const isImam=session.username==='imam';
+  const isMedia=session.username==='media_admin'||session.isMedia;
+  if(!isImam&&!isMedia){
     root.innerHTML='<div class="card pad" style="border-right:4px solid var(--danger)"><b style="color:var(--danger);display:flex;align-items:center;gap:8px">'+icon('alert',17)+' دسترسی محدود</b><p class="tiny muted" style="margin-top:8px">مدیریت کاربران، نقش‌ها و اختیارات فقط در اختیار امام جماعت است (سند مأموریت §۵). مدیر فنی فقط مسئول زیرساخت فنی است و اختیار سازمانی ندارد.</p></div>';
     return;
   }
-  const isImam=true;
-  const isMedia=session.username==='media_admin'||session.isMedia;
   const us=all('SELECT * FROM users ORDER BY level DESC, id');
+  function pwCell(u){
+    return u.pass_plain
+      ? '<button class="icon-btn pw-eye" data-act="pwShow" data-user="'+esc(u.username)+'" title="نمایش گذرواژه" aria-label="نمایش گذرواژه '+esc(u.username)+'" style="color:var(--gold)">'+icon('eye',16)+'</button>'
+      : '<span class="tiny muted" title="پیش از فعال‌شدن قابلیت نمایش گذرواژه تغییر یافته است">—</span>';
+  }
+  if(!isImam){
+    /* v3.3 — مدیر فنی: فقط مشاهدهٔ فهرست حساب‌ها و گذرواژه‌ها؛ بدون هیچ اختیار تغییر */
+    root.innerHTML=
+     '<div class="page-head"><div><h2>حساب‌های کاربری — مشاهده گذرواژه‌ها</h2><p class="muted">نمایش فهرست حساب‌ها و گذرواژه‌ها صرفاً برای پشتیبانی فنی؛ هرگونه تغییر حساب، عنوان نقش یا سطح دسترسی فقط از پنل امام جماعت انجام می‌شود.</p></div></div>'+
+     '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>فعال</th><th>گذرواژه</th></tr></thead><tbody>'+
+      us.map(u=>'<tr><td><b>'+esc(u.display_name)+'</b></td>'+
+        '<td><code style="font-size:11px;background:var(--soft);padding:2px 7px;border-radius:6px;direction:ltr;display:inline-block">'+esc(u.username)+'</code></td>'+
+        '<td>'+esc(u.role)+'</td>'+
+        '<td>'+(u.active?'<span class="badge b-success">فعال</span>':'<span class="badge b-neutral">غیرفعال</span>')+'</td>'+
+        '<td>'+pwCell(u)+'</td></tr>').join('')+
+     '</tbody></table></div></div>';
+    return;
+  }
   root.innerHTML=
    '<div class="page-head"><div><h2>مدیریت کاربران و دسترسی‌ها</h2><p class="muted">'+(isImam?'مدیریت کامل حساب‌ها، گذرواژه‌ها و تعیین اختیارات جزئی هر کاربر':'مدیریت حساب‌های کاربری سامانه')+'</p></div>'+
    '<button class="btn btn-primary" data-act="userAdd">'+icon('plus',16)+' افزودن حساب</button></div>'+
    (isMedia?'<div class="card pad" style="border-right:4px solid var(--warning);margin-bottom:14px"><p style="font-size:12.5px;font-weight:700;color:var(--warning);display:flex;align-items:center;gap:8px">'+icon('alert',16)+'<span>این پنل فقط مدیریت حساب‌ها را انجام می‌دهد؛ تغییر سطح دسترسی فقط از پنل امام جماعت انجام می‌شود.</span></p></div>':'')+
-   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>سطح دسترسی</th><th>فعال</th><th>عملیات</th></tr></thead><tbody>'+
+   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>گذرواژه</th><th>سطح دسترسی</th><th>فعال</th><th>عملیات</th></tr></thead><tbody>'+
     us.map(u=>'<tr><td><b>'+esc(u.display_name)+'</b>'+(u.username==='media_admin'?'<span class="u-med">دسترسی محدود رسانه (بدون اختیار سازمانی)</span>':'')+'</td>'+
       '<td><code style="font-size:11px;background:var(--soft);padding:2px 7px;border-radius:6px;direction:ltr;display:inline-block">'+esc(u.username)+'</code></td>'+
       '<td>'+esc(u.role)+'</td>'+
+      '<td>'+pwCell(u)+'</td>'+
       '<td>'+userLevelBadge(u.level)+'</td>'+
       '<td><label class="switch"><input type="checkbox" data-toggle-user="'+esc(u.username)+'" '+(u.active?'checked':'')+' aria-label="فعال/غیرفعال '+esc(u.username)+'"><i></i></label></td>'+
       '<td><div style="display:flex;gap:4px;justify-content:center">'+
@@ -3630,18 +3674,25 @@ function openUserModal(mode,origUn){
     fld('نام و نام خانوادگی *','<input id="uDname" class="inp" value="'+esc(u?u.display_name:'')+'">')+
     (mode==='add'
       ? fld('عنوان نقش *','<input id="uRoleInput" class="inp" placeholder="مثال: مسئول کمیته خیریه">')
-      : fld('عنوان نقش','<input class="inp" value="'+esc(u.role)+'" disabled>'))+
+      : fld('عنوان نقش *','<input id="uRoleInput" class="inp" value="'+esc(u.role)+'">'))+
     (isImam?fld('سطح دسترسی',lvlSel):'')+
-    fld(mode==='edit'?'گذرواژه جدید (خالی بگذارید = بدون تغییر)':'گذرواژه * (حداقل ۸ کاراکتر)','<input id="uPass" class="inp" type="password" dir="ltr" style="text-align:right" autocomplete="new-password">')+
+    (mode==='edit'
+      ? (u.pass_plain
+        ? fld('گذرواژه فعلی','<div style="display:flex;gap:8px;align-items:center"><input id="uPassCur" class="inp" type="password" dir="ltr" value="'+esc(u.pass_plain)+'" readonly style="text-align:left;flex:1"><button type="button" class="btn btn-ghost pw-eye" id="uPassCurEye" title="نمایش/پنهان">'+icon('eye',16)+'</button></div>')
+        : fld('گذرواژه فعلی','<p class="tiny muted" style="margin:0">قابل نمایش نیست (پیش از فعال‌شدن قابلیت نمایش، تغییر یافته است). با تعیین گذرواژهٔ جدید، از این پس قابل نمایش می‌شود.</p>'))
+      : '')+
+    fld(mode==='edit'?'گذرواژه جدید (خالی بگذارید = بدون تغییر)':'گذرواژه * (حداقل ۸ کاراکتر)','<div style="display:flex;gap:8px;align-items:center"><input id="uPass" class="inp" type="password" dir="ltr" style="text-align:right;flex:1" autocomplete="new-password"><button type="button" class="btn btn-ghost pw-eye" id="uPassEye" title="نمایش/پنهان">'+icon('eye',16)+'</button></div>')+
     '<div class="field"><label>وضعیت حساب</label><div style="display:flex;align-items:center;gap:10px"><label class="switch"><input id="uActive" type="checkbox" '+(mode==='edit'?(u.active?'checked':''):'checked')+'><i></i></label><span class="tiny muted">'+(mode==='edit'?'حساب فعال باشد':'حساب به‌صورت فعال ایجاد شود')+'</span></div></div>'+
     '<div id="uFormErr" style="color:var(--danger);font-size:12px;font-weight:700;min-height:18px"></div>'+
     '<div style="display:flex;gap:10px;margin-top:10px"><button type="submit" class="btn btn-primary" style="flex:1">'+icon('save',16)+' ذخیره</button><button type="button" class="btn btn-ghost" data-act="closeModal">انصراف</button></div>'+
    '</form>');
+  const curEye=$('#uPassCurEye'); if(curEye) curEye.addEventListener('click',function(){ const p=$('#uPassCur'); p.type=p.type==='password'?'text':'password'; });
+  const newEye=$('#uPassEye'); if(newEye) newEye.addEventListener('click',function(){ const p=$('#uPass'); p.type=p.type==='password'?'text':'password'; });
   $('#userForm').addEventListener('submit',async ev=>{
     ev.preventDefault();
     const errEl=$('#uFormErr'); errEl.textContent='';
     const un=$('#uUser').value.trim(), dn=$('#uDname').value.trim(), pw=$('#uPass').value;
-    const rl=mode==='add'?$('#uRoleInput').value.trim():u.role;
+    const rl=$('#uRoleInput')?$('#uRoleInput').value.trim():u.role;
     const act=$('#uActive').checked?1:0;
     let lvl=null;
     if(isImam) lvl=parseInt($('#uLevel').value,10);
@@ -3652,7 +3703,7 @@ function openUserModal(mode,origUn){
     }
     if(!un){ errEl.textContent='نام کاربری الزامی است.'; return; }
     if(!dn){ errEl.textContent='نام و نام خانوادگی الزامی است.'; return; }
-    if(mode==='add' && !rl){ errEl.textContent='عنوان نقش الزامی است.'; return; }
+    if(!rl){ errEl.textContent='عنوان نقش الزامی است.'; return; }
     if(pw && pw.length<8){ errEl.textContent='گذرواژه باید حداقل ۸ کاراکتر باشد.'; return; }
     if(mode==='add' && !pw){ errEl.textContent='برای حساب جدید تعیین گذرواژه الزامی است.'; return; }
     if(mode==='edit' && origUn===session.username && un!==origUn){ errEl.textContent='تغییر نام کاربری حساب خودتان امکان‌پذیر نیست.'; return; }
@@ -3667,23 +3718,40 @@ function openUserModal(mode,origUn){
     if(dupe){ errEl.textContent='این نام کاربری قبلاً ثبت شده است.'; return; }
     const hash=pw?await sha256Hex(PASS_SALT+pw):null;
     if(mode==='add'){
-      run('INSERT INTO users (username,pass_hash,display_name,role,level,active) VALUES (?,?,?,?,?,?)',
-        [un,hash,dn,rl,isMedia?2:lvl,act]);
+      run('INSERT INTO users (username,pass_hash,pass_plain,display_name,role,level,active) VALUES (?,?,?,?,?,?,?)',
+        [un,hash,pw,dn,rl,isMedia?2:lvl,act]);
       logActivity('افزودن کاربر','حساب «'+un+'» با نقش «'+rl+'» ایجاد شد.');
       toast('حساب «'+dn+'» ایجاد شد ✓');
     }else{
       if(isMedia){
-        if(hash) run('UPDATE users SET username=?,pass_hash=?,display_name=?,active=? WHERE username=?',[un,hash,dn,act,origUn]);
+        if(hash) run('UPDATE users SET username=?,pass_hash=?,pass_plain=?,display_name=?,active=? WHERE username=?',[un,hash,pw,dn,act,origUn]);
         else run('UPDATE users SET username=?,display_name=?,active=? WHERE username=?',[un,dn,act,origUn]);
       }else{
-        if(hash) run('UPDATE users SET username=?,pass_hash=?,display_name=?,role=?,level=?,active=? WHERE username=?',[un,hash,dn,u.role,lvl,act,origUn]);
-        else run('UPDATE users SET username=?,display_name=?,role=?,level=?,active=? WHERE username=?',[un,dn,u.role,lvl,act,origUn]);
+        if(hash) run('UPDATE users SET username=?,pass_hash=?,pass_plain=?,display_name=?,role=?,level=?,active=? WHERE username=?',[un,hash,pw,dn,rl,lvl,act,origUn]);
+        else run('UPDATE users SET username=?,display_name=?,role=?,level=?,active=? WHERE username=?',[un,dn,rl,lvl,act,origUn]);
+      }
+      if(mode==='edit' && rl!==u.role){
+        /* v3.3 — همگام‌سازی همهٔ ارجاع‌های متنی به عنوان نقش قدیمی با عنوان جدید */
+        run('UPDATE letters SET assigned_role=? WHERE assigned_role=?',[rl,u.role]);
+        run('UPDATE sec_missions SET target_role=? WHERE target_role=?',[rl,u.role]);
+        run('UPDATE decisions SET assignee=? WHERE assignee=?',[rl,u.role]);
+        run('UPDATE tasks SET assignee=? WHERE assignee=?',[rl,u.role]);
+        run('UPDATE meetings SET unit=? WHERE unit=?',[rl,u.role]);
+        try{
+          all('SELECT id,attendees FROM meetings').forEach(function(m){
+            let arr=null; try{ arr=JSON.parse(m.attendees||'[]'); }catch(e){ return; }
+            if(Array.isArray(arr)&&arr.indexOf(u.role)>=0) run('UPDATE meetings SET attendees=? WHERE id=?',[JSON.stringify(arr.map(function(a){ return a===u.role?rl:a; })),m.id]);
+          });
+        }catch(e){}
+        run('UPDATE letter_comments SET role=? WHERE role=?',[rl,u.role]);
+        refreshRoles();
+        logActivity('تغییر عنوان نقش','عنوان نقش «'+u.role+'» به «'+rl+'» تغییر یافت و در ارجاع‌ها، جلسات و مأموریت‌های قبلی به‌روزرسانی شد.');
       }
       logActivity('ویرایش کاربر','حساب «'+un+'» ویرایش شد.');
       if(origUn===session.username){
-        session.name=dn;
+        session.name=dn; session.role=rl;
         $('#uName').textContent=dn;
-        $('#uRole').textContent=u.role;
+        $('#uRole').textContent=rl;
       }
       toast('تغییرات حساب «'+dn+'» ذخیره شد ✓');
     }
@@ -3797,7 +3865,7 @@ function openChangePassModal(){
     if(u.pass_hash!==curH){ errEl.textContent='گذرواژه فعلی نادرست است.'; return; }
     const newH=await sha256Hex(PASS_SALT+n1);
     if(u.pass_hash===newH){ errEl.textContent='گذرواژه جدید نباید با گذرواژه فعلی یکسان باشد.'; return; }
-    run('UPDATE users SET pass_hash=? WHERE username=?',[newH,session.username]);
+    run('UPDATE users SET pass_hash=?,pass_plain=? WHERE username=?',[newH,n1,session.username]);
     logActivity('تغییر گذرواژه','گذرواژه حساب «'+session.username+'» تغییر کرد.');
     markDirty(); saveNow(true);
     closeModal();
@@ -4067,6 +4135,17 @@ const ACTIONS={
   userEdit:d=>openUserModal('edit',d.user),
   permEdit:d=>openPermModal(d.user),
   userDelete:d=>deleteUserFlow(d.user),
+  pwShow:d=>{
+    const u=one('SELECT * FROM users WHERE username=?',[d.user]); if(!u) return;
+    if(session.username!=='imam'&&!session.isMedia){ toast('نمایش گذرواژه فقط برای امام جماعت و مدیر فنی مجاز است','error'); return; }
+    openModal('گذرواژه حساب «'+u.display_name+'»',
+      '<p style="margin:0 0 10px">نام کاربری: <code style="direction:ltr;display:inline-block;background:var(--soft);padding:2px 7px;border-radius:6px">'+esc(u.username)+'</code></p>'+
+      (u.pass_plain
+        ? '<div class="field"><label>گذرواژه فعلی</label><div style="display:flex;gap:8px;align-items:center"><input id="pwShowVal" class="inp" type="password" dir="ltr" value="'+esc(u.pass_plain)+'" readonly style="text-align:left;flex:1"><button type="button" class="btn btn-ghost pw-eye" id="pwShowEye">'+icon('eye',16)+'</button></div></div>'
+        : '<p class="tiny muted">گذرواژهٔ فعلی این حساب قابل نمایش نیست (پیش از فعال‌شدن قابلیت نمایش، تغییر یافته است). با «ویرایش حساب» گذرواژهٔ جدید تعیین کنید تا از این پس قابل نمایش شود.</p>')+
+      '<p class="tiny muted" style="margin-bottom:0">این گذرواژه محرمانه است و فقط برای امام جماعت و مسئول فنی نمایش داده می‌شود.</p>');
+    const pe=$('#pwShowEye'); if(pe) pe.addEventListener('click',function(){ const p=$('#pwShowVal'); p.type=p.type==='password'?'text':'password'; });
+  },
   toggleNotif:()=>{
     const p=$('#notifPanel');
     if(p.hidden){ fillNotifPanel(); p.hidden=false; } else p.hidden=true;
@@ -7540,7 +7619,7 @@ function entSection(k){
    ارتباط مالی: قرارداد اجاره و اطلاعات املاک این‌جاست؛ ثبت دریافت و تأیید
    درآمد و پرداخت‌ها فقط در پنل معاونت امور مالی انجام می‌شود.
    ============================================================ */
-const MSZ_VERSION='v3.2';
+const MSZ_VERSION='v3.3';
 const OMR_TABS=[
  {id:'dash',label:'داشبورد'},
  {id:'proj',label:'پروژه‌های عمرانی'},
