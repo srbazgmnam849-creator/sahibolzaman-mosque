@@ -2016,9 +2016,9 @@ VIEWS.dashboard=function(root){
   const statsHTML=
    '<div class="grid-stats">'+
      '<div class="stat-card" data-act="nav" data-view="letters" role="button" title="ورود به دبیرخانه"><div class="stat-top"><span class="stat-label">نامه‌های در جریان</span><span class="stat-ic">'+icon('mail',19)+'</span></div><b class="stat-num">'+faNum(inFlow)+'</b><small class="muted">در جریان بررسی و اقدام</small></div>'+
-     (['imam','secretary','heyat'].includes(session.username)?'<div class="stat-card accent-info" data-act="'+(session.username==='heyat'?'nav':'dashMeet')+'" role="button" title="جلسات"><div class="stat-top"><span class="stat-label">جلسات پیش‌رو</span><span class="stat-ic teal">'+icon('users',19)+'</span></div><b class="stat-num">'+faNum(upcoming)+'</b><small class="muted">برنامه‌ریزی‌شده</small></div>':'')+
+     (['imam','secretary','heyat'].includes(session.username)?'<div class="stat-card accent-info" data-act="'+(session.username==='heyat'?'heyTabNav':'dashMeet')+'"'+(session.username==='heyat'?' data-k="meets"':'')+' role="button" title="جلسات"><div class="stat-top"><span class="stat-label">جلسات پیش‌رو</span><span class="stat-ic teal">'+icon('users',19)+'</span></div><b class="stat-num">'+faNum(upcoming)+'</b><small class="muted">برنامه‌ریزی‌شده</small></div>':'')+
      '<div class="stat-card accent-success" data-act="nav" data-view="missions" role="button" title="مأموریت‌ها و وظایف من"><div class="stat-top"><span class="stat-label">وظایف من</span><span class="stat-ic green">'+icon('check',19)+'</span></div><b class="stat-num">'+faNum(myTasks)+'</b><small class="muted">در انتظار اقدام من</small></div>'+
-     (['imam','secretary','heyat'].includes(session.username)?'<div class="stat-card accent-danger" data-act="'+(session.username==='heyat'?'nav':'dashMeet')+'" role="button" title="جلسات"><div class="stat-top"><span class="stat-label">جلسات عقب‌افتاده</span><span class="stat-ic red">'+icon('clock',19)+'</span></div><b class="stat-num">'+faNum(lateMeet)+'</b><small class="muted">نیازمند پیگیری</small></div>':'')+
+     (['imam','secretary','heyat'].includes(session.username)?'<div class="stat-card accent-danger" data-act="'+(session.username==='heyat'?'heyTabNav':'dashMeet')+'"'+(session.username==='heyat'?' data-k="follow"':'')+' role="button" title="جلسات"><div class="stat-top"><span class="stat-label">جلسات عقب‌افتاده</span><span class="stat-ic red">'+icon('clock',19)+'</span></div><b class="stat-num">'+faNum(lateMeet)+'</b><small class="muted">نیازمند پیگیری</small></div>':'')+
      balCard+
    '</div>';
   const qaDefs=[['letters','mail','i1'],['missions','check','i4'],['calendar','calendar','i3'],['orgfin','wallet','i2'],['anns','bell','i3'],['panel','inbox','i6'],['finance','wallet','i2'],['media','send','i3'],['reports','chart','i1'],['users','shield','i5'],['settings','settings','i6']];
@@ -4379,7 +4379,10 @@ const ACTIONS={
     openLetterDetail(+d.id);
   },
   cultTab:d=>{ window._cultTab=d.k; renderView(); },
-  coordLetter:d=>openLetterModal(COORD_PRESETS[d.k]||{}),
+  coordLetter:d=>openLetterModal(COORD_PRESETS[d.k]||HEY_COORD_PRESETS[d.k]||{}), /* v3.5 — پشتیبانی از پریست‌های مکاتبات هیئت */
+  /* v3.5 — تب‌های پنل هیئت فداییان */
+  heyTab:d=>{ window._heyTab=d.k; renderView(); },
+  heyTabNav:d=>{ window._heyTab=d.k||'dash'; nav('panel'); },
   ideaSt:d=>{
     const it=one('SELECT * FROM ideas WHERE id=?',[+d.id]); if(!it) return;
     run('UPDATE ideas SET status=? WHERE id=?',[d.st,it.id]);
@@ -4427,6 +4430,22 @@ const ACTIONS={
     markDirty(); saveNow(true); toast('ثبت شد'); renderView();
   },
   secTab:d=>{ window._secTab=d.k; renderView(); },
+  /* v3.5 — چاپ گزارش عملکرد هیئت فداییان (هم‌تراز با گزارش عملکرد معاونت فرهنگی) */
+  heyPerfPrint:()=>{
+    const cers=all('SELECT * FROM ceremonies ORDER BY date_iso');
+    const doneC=cers.filter(function(c){ return c.report; });
+    const meets=all("SELECT * FROM meetings WHERE org='heyat' ORDER BY date_iso");
+    const decDone=one("SELECT COUNT(*) c FROM decisions d JOIN tasks t ON t.id=d.task_id JOIN meetings m ON m.id=d.meeting_id WHERE m.org='heyat' AND t.status='انجام‌شده'").c;
+    const decAll=one("SELECT COUNT(*) c FROM decisions d JOIN meetings m ON m.id=d.meeting_id WHERE m.org='heyat'").c;
+    const rows=cers.map(function(c){ return '<tr><td>'+esc(c.title)+'</td><td>'+faDate(c.date_iso)+'</td><td>'+esc(c.maddah||'—')+'</td><td>'+esc(c.speaker||'—')+'</td><td>'+(c.report?'دارد':'—')+'</td></tr>'; }).join('');
+    const html=secLetterhead('—',faStamp(),'هیئت فداییان حضرت زینب (س) مسجد صاحب‌الزمان (عج)')+
+     '<h3 style="text-align:center;margin:6mm 0">گزارش عملکرد هیئت فداییان حضرت زینب (س)</h3>'+
+     '<p>مراسم‌های ثبت‌شده: <b>'+faNum(cers.length)+'</b> · دارای گزارش: <b>'+faNum(doneC.length)+'</b> · گزارش جلسات: <b>'+faNum(meets.length)+'</b> · مصوبات اجراشده: <b>'+faNum(decDone)+' از '+faNum(decAll)+'</b></p>'+
+     '<table class="min"><thead><tr><th>مراسم</th><th>تاریخ</th><th>مداح</th><th>سخنران</th><th>گزارش</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5">مراسمی ثبت نشده است</td></tr>')+'</tbody></table>'+
+     '<div class="sig"><div class="block">مسئول هیئت فداییان حضرت زینب (س)<div class="line">امضا</div></div><div class="block">امام جماعت<div class="line">تأیید</div></div></div>';
+    openOfficialDoc('گزارش عملکرد هیئت فداییان حضرت زینب (س)',html);
+    logActivity('گزارش عملکرد هیئت','گزارش عملکرد هیئت فداییان تهیه و آماده چاپ شد.');
+  },
   /* v3.2 — مأموریت‌های درون‌سازمانی دبیر */
   secMissNew:()=>openSecMissionModal(),
   secMissAdv:d=>{ const m=one('SELECT * FROM sec_missions WHERE id=?',[+d.id]); if(!m) return; run('UPDATE sec_missions SET status=? WHERE id=?',['در حال انجام',m.id]); addNotif(m.target_username,'وضعیت مأموریت','مأموریت «'+m.title+'» به وضعیت «در حال انجام» رسید.'); logActivity('پیگیری مأموریت','مأموریت «'+m.title+'» در حال انجام شد.'); markDirty(); saveNow(true); toast('وضعیت به‌روزرسانی شد ✓'); renderView(); },
@@ -4552,7 +4571,7 @@ const ACTIONS={
     logActivity('حذف نامه رسمی','یک نامه برون‌سازمانی حذف شد.');
     markDirty(); saveNow(true); toast('حذف شد ✓'); renderView();
   },
-  dashMeet:()=>{ window._secTab='meet'; go('panel'); },
+  dashMeet:()=>{ window._secTab='meet'; nav('panel'); }, /* v3.5 — رفع خطای تابع تعریف‌نشدهٔ go() */
   signUpload:()=>{
     if(!isCentralSec()){ toast('اجازه ندارید','error'); return; }
     const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
@@ -6604,13 +6623,220 @@ function meetExportIds(ids){
   openOfficialMulti('صورت‌جلسه‌های رسمی — '+faNum(ms.length)+' جلسه',ms.map(function(m){ return meetingPrintHtml(m,'full'); }));
   logActivity('خروجی جلسات','خروجی رسمی '+faNum(ms.length)+' جلسه تهیه شد.');
 }
+/* ============================================================
+   v3.5 — ارتقای پنل هیئت فداییان حضرت زینب (س) به ساختار تخصصی ۸ بخشی
+   (هم‌تراز با پنل دبیر هیئت امنا و معاونت فرهنگی، طبق درخواست کارفرما)
+   ۱) داشبورد هیئت  ۲) گزارش جلسات (مصوبات، تصاویر، خروجی PDF)
+   ۳) مراسم و مناسبت‌ها  ۴) اعضا و مسئولیت‌ها  ۵) تجهیزات هیئت
+   ۶) مکاتبات و هماهنگی  ۷) پیگیری مصوبات و مأموریت‌ها  ۸) گزارش عملکرد
+   ============================================================ */
+const HEY_TABS=[
+ {id:'dash',label:'داشبورد هیئت'},
+ {id:'meets',label:'گزارش جلسات'},
+ {id:'cer',label:'مراسم و مناسبت‌ها'},
+ {id:'mem',label:'اعضا و مسئولیت‌ها'},
+ {id:'eq',label:'تجهیزات هیئت'},
+ {id:'coord',label:'مکاتبات و هماهنگی'},
+ {id:'follow',label:'پیگیری مصوبات و مأموریت‌ها'},
+ {id:'perf',label:'گزارش عملکرد'}
+];
+function heyStat(l,n,cls,sub){
+  return '<div class="stat-card '+(cls||'')+'"><span class="stat-label">'+l+'</span><b class="stat-num">'+faNum(n)+'</b><small class="muted">'+(sub||'')+'</small></div>';
+}
+/* ۱) داشبورد هیئت */
+function heyDash(){
+  const t=todayIso();
+  const cers=all('SELECT * FROM ceremonies ORDER BY date_iso DESC');
+  const upC=cers.filter(function(c){ return c.date_iso&&c.date_iso>=t; }).sort(function(a,b){ return a.date_iso<b.date_iso?-1:1; });
+  const noRep=cers.filter(function(c){ return c.date_iso&&c.date_iso<t&&!c.report; });
+  const meets=all("SELECT m.*, (SELECT COUNT(*) FROM decisions dd WHERE dd.meeting_id=m.id) AS dcount FROM meetings m WHERE m.org='heyat' ORDER BY m.date_iso DESC, m.id DESC");
+  const decs=all("SELECT d.*, t.status AS tstatus, t.deadline_iso AS tdead FROM decisions d LEFT JOIN tasks t ON t.id=d.task_id JOIN meetings m ON m.id=d.meeting_id WHERE m.org='heyat' ORDER BY d.id DESC");
+  const decOpen=decs.filter(function(d){ return d.tstatus!=='انجام‌شده'; });
+  const decLate=decOpen.filter(function(d){ return d.tdead&&d.tdead<t; });
+  const mems=all('SELECT * FROM org_members ORDER BY id DESC');
+  const eqs=all('SELECT * FROM equipment ORDER BY id DESC');
+  const eqBad=eqs.filter(function(e){ return e.condition_txt==='نیاز به تعمیر'||e.condition_txt==='خراب'; });
+  const myTasks=all("SELECT t.*, m.number AS mnum FROM tasks t LEFT JOIN meetings m ON m.id=t.meeting_id WHERE t.assignee_username=? AND t.status!='انجام‌شده' ORDER BY t.deadline_iso",[session.username]);
+  const lateTasks=myTasks.filter(function(x){ return x.deadline_iso&&x.deadline_iso<t; });
+  return ''+
+   '<div class="grid-stats">'+
+    heyStat('مراسم پیش‌رو',upC.length,'','جاری و آینده')+
+    heyStat('گزارش جلسات ثبت‌شده',meets.filter(function(m){return m.status==='برگزار شد'}).length,'accent-success','بایگانی جلسات هیئت')+
+    heyStat('مصوبات در جریان',decOpen.length,'','از جلسات هیئت')+
+    heyStat('مصوبات معوق',decLate.length,decLate.length?'accent-danger':'','فراتر از مهلت')+
+    heyStat('اعضای هیئت',mems.length,'','ثبت‌شده در پنل')+
+    heyStat('تجهیزات نیازمند توجه',eqBad.length,eqBad.length?'accent-gold':'','نیاز به تعمیر یا خراب')+
+    heyStat('مأموریت‌های معوق من',lateTasks.length,lateTasks.length?'accent-danger':'','ارجاعی به هیئت')+
+   '</div>'+
+   '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px">'+
+    '<div class="card pad"><h3>'+icon('calendar',17)+' مراسم پیش‌رو</h3>'+
+     (upC.length?upC.slice(0,6).map(function(c){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(c.title)+'</b></div><small class="muted">'+faDateLong(c.date_iso)+(c.time_fa?' · ساعت '+esc(c.time_fa):'')+(c.place?' · '+esc(c.place):'')+'</small></div>'; }).join(''):emptyState('مراسم پیش‌رویی ثبت نشده است'))+
+     '<div style="margin-top:8px"><button class="btn btn-outline btn-sm" data-act="heyTab" data-k="cer">'+icon('calendar',14)+' بخش مراسم و مناسبت‌ها</button></div></div>'+
+    '<div class="card pad"><h3>'+icon('users',17)+' گزارش جلسات اخیر</h3>'+
+     (meets.length?meets.slice(0,4).map(function(m){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(m.title)+'</b>'+meetBadge(m.status)+'</div><small class="muted">'+faDateLong(m.date_iso)+' · '+faNum(m.dcount)+' مصوبه</small></div>'; }).join(''):emptyState('گزارش جلسه‌ای ثبت نشده است'))+
+     '<div style="margin-top:8px"><button class="btn btn-outline btn-sm" data-act="heyTab" data-k="meets">'+icon('inbox',14)+' بخش گزارش جلسات</button></div></div>'+
+    '<div class="card pad"><h3>'+icon('clock',17)+' مصوبات معوق جلسات هیئت</h3>'+
+     (decLate.length?decLate.slice(0,6).map(function(d){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(d.title)+'</b><span class="badge b-danger">معوق</span></div><small class="muted">مسئول: '+esc(d.assignee||'—')+' · مهلت: '+faDate(d.tdead)+'</small></div>'; }).join(''):emptyState('مصوبه معوقی وجود ندارد'))+
+     '<div style="margin-top:8px"><button class="btn btn-outline btn-sm" data-act="heyTab" data-k="follow">'+icon('check',14)+' پیگیری مصوبات</button></div></div>'+
+    '<div class="card pad"><h3>'+icon('file',17)+' مراسم‌های بدون گزارش</h3>'+
+     (noRep.length?noRep.slice(0,6).map(function(c){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(c.title)+'</b><span class="badge b-warn">بدون گزارش</span></div><small class="muted">'+faDateLong(c.date_iso)+'</small></div>'; }).join(''):emptyState('همه مراسم گزارش دارند ✓'))+
+     '<div style="margin-top:8px"><button class="btn btn-outline btn-sm" data-act="heyTab" data-k="cer">'+icon('calendar',14)+' تکمیل گزارش‌ها</button></div></div>'+
+   '</div>'+
+   (myTasks.length?'<div class="card pad" style="margin-top:12px"><h3>'+icon('check',17)+' مأموریت‌های ارجاعی به هیئت ('+faNum(myTasks.length)+' باز)</h3>'+
+     '<div style="margin-top:10px" class="table-wrap"><table class="tbl"><thead><tr><th>وظیفه</th><th>منشأ</th><th>مهلت</th><th>وضعیت</th></tr></thead><tbody>'+
+     myTasks.slice(0,8).map(function(x){ const late=x.deadline_iso&&x.deadline_iso<t; return '<tr'+(late?' class="row-ov"':'')+'><td>'+esc(x.title)+'</td><td class="tiny">'+esc(x.mnum||'—')+'</td><td>'+(x.deadline_iso?faDate(x.deadline_iso):'—')+'</td><td><span class="badge '+(late?'b-danger':'b-info')+'">'+(late?'معوق':esc(x.status||'در انتظار'))+'</span></td></tr>'; }).join('')+
+     '</tbody></table></div><p class="tiny muted" style="margin:8px 0 0">اقدام و به‌روزرسانی وضعیت در «مأموریت‌ها (مصوبات)» پنل عمومی انجام می‌شود.</p></div>':'');
+}
+/* ۳) مراسم و مناسبت‌ها */
+function heyCer(){
+  const t=todayIso();
+  const cers=all('SELECT * FROM ceremonies ORDER BY date_iso DESC');
+  const up=cers.filter(function(c){ return c.date_iso&&c.date_iso>=t; });
+  const done=cers.filter(function(c){ return c.date_iso&&c.date_iso<t; });
+  const noRep=done.filter(function(c){ return !c.report; });
+  const withRep=done.filter(function(c){ return c.report; });
+  const byM={};
+  done.forEach(function(c){ if(!c.date_iso) return; const j=isoToJ(c.date_iso); const k=j.jy+'/'+('0'+j.jm).slice(-2); byM[k]=(byM[k]||0)+1; });
+  const months=Object.keys(byM).sort().reverse();
+  return ''+
+   '<div class="grid-stats">'+
+    heyStat('کل مراسم ثبت‌شده',cers.length,'','')+
+    heyStat('مراسم پیش‌رو',up.length,'','برنامه‌ریزی‌شده')+
+    heyStat('برگزارشده با گزارش',withRep.length,'accent-success','مستندسازی‌شده')+
+    heyStat('بدون گزارش',noRep.length,noRep.length?'accent-gold':'','نیازمند تکمیل')+
+   '</div>'+
+   '<div style="margin-top:12px">'+entSection('cer')+'</div>'+
+   '<div class="card pad"><h3>'+icon('chart',17)+' خلاصه ماهانه مراسم برگزارشده</h3>'+
+    (months.length?'<div style="margin-top:10px" class="table-wrap"><table class="tbl"><thead><tr><th>ماه</th><th>تعداد مراسم</th></tr></thead><tbody>'+
+     months.map(function(m){ const p=m.split('/'); return '<tr><td><b>'+faNum(p[0])+'/'+faNum(+p[1])+'</b></td><td>'+faNum(byM[m])+'</td></tr>'; }).join('')+
+     '</tbody></table></div>':emptyState('پس از ثبت گزارش مراسم‌ها، آمار ماهانه تشکیل می‌شود'))+'</div>';
+}
+/* ۴) اعضا و مسئولیت‌ها */
+function heyMem(){
+  const mems=all('SELECT * FROM org_members ORDER BY id DESC');
+  const withPhone=mems.filter(function(m){ return m.phone; }).length;
+  const withDuty=mems.filter(function(m){ return m.duty; }).length;
+  return ''+
+   '<div class="grid-stats">'+
+    heyStat('اعضای هیئت',mems.length,'accent-success','فهرست اعضا')+
+    heyStat('دارای مسئولیت مشخص',withDuty,'','تقسیم کار هیئت')+
+    heyStat('دارای شماره تماس',withPhone,'','اطلاعات تماس ثبت‌شده')+
+   '</div>'+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin:12px 0 14px"><p class="tiny muted" style="margin:0"><b>ساختار اعضا:</b> هر عضو با «مسئولیت»، «تماس» و «حضور در برنامه‌ها / ملاحظات» ثبت می‌شود؛ حاضران و غایبان هر جلسه در تب «گزارش جلسات» به‌صورت نقش‌محور ثبت می‌شود.</p></div>'+
+   entSection('hmem');
+}
+/* ۵) تجهیزات هیئت — انبار و تحویل */
+function heyEq(){
+  const eqs=all('SELECT * FROM equipment ORDER BY id DESC');
+  const ok=eqs.filter(function(e){ return e.condition_txt==='سالم'; });
+  const fix=eqs.filter(function(e){ return e.condition_txt==='نیاز به تعمیر'; });
+  const bad=eqs.filter(function(e){ return e.condition_txt==='خراب'; });
+  const total=eqs.reduce(function(s,e){ return s+(e.qty||0); },0);
+  const out=eqs.filter(function(e){ return e.holder; });
+  return ''+
+   '<div class="grid-stats">'+
+    heyStat('قلم تجهیزات',eqs.length,'','')+
+    heyStat('مجموع تعداد',total,'','')+
+    heyStat('سالم',ok.length,'accent-success','')+
+    heyStat('نیاز به تعمیر',fix.length,fix.length?'accent-gold':'','')+
+    heyStat('خراب',bad.length,bad.length?'accent-danger':'','')+
+    heyStat('تحویل‌شده',out.length,'','دارای تحویل‌گیرنده')+
+   '</div>'+
+   (fix.length+bad.length?'<div class="card pad" style="border-right:4px solid var(--gold);margin:12px 0 14px"><h3>'+icon('alert',17)+' اقلام نیازمند تعمیر یا جایگزینی</h3>'+
+     '<p class="tiny muted" style="margin:6px 0 8px">برای تعمیر یا تأمین این اقلام، درخواست خود را از تب «مکاتبات و هماهنگی» برای معاونت عمران و پشتیبانی ثبت کنید.</p>'+
+     fix.concat(bad).map(function(e){ return '<div class="comment" style="margin-bottom:8px"><div class="c-head"><b>'+esc(e.name)+'</b><span class="badge '+entBadgeCls(e.condition_txt)+'">'+esc(e.condition_txt||'—')+'</span><small class="muted" style="margin-right:8px">تعداد: '+faNum(e.qty||0)+'</small></div></div>'; }).join('')+'</div>':'')+
+   '<div style="margin-top:'+(fix.length+bad.length?'0':'12px')+'">'+entSection('heq')+'</div>';
+}
+/* ۶) مکاتبات و هماهنگی هیئت */
+const HEY_COORD_PRESETS={
+ heyTajhiz:{recv:'معاون عمران و پشتیبانی',type:'داخلی',sender:'هیئت فداییان حضرت زینب (س) مسجد صاحب‌الزمان (عج)',subject:'درخواست تجهیزات و پشتیبانی جهت مراسم هیئت',summary:'با سلام؛ جهت برگزاری مراسم‌های هیئت فداییان حضرت زینب (س)، درخواست تجهیزات و پشتیبانی فنی از معاونت عمران و پشتیبانی دارد. فهرست اقلام موردنیاز در متن نامه اعلام می‌گردد.'},
+ heyBudje:{recv:'معاون امور مالی',type:'داخلی',sender:'هیئت فداییان حضرت زینب (س) مسجد صاحب‌الزمان (عج)',subject:'درخواست بودجه برنامه‌های هیئت',summary:'با سلام؛ جهت اجرای مراسم و برنامه‌های هیئت فداییان حضرت زینب (س)، درخواست تخصیص بودجه از معاونت امور مالی دارد. برآورد هزینه در متن نامه اعلام می‌گردد.'},
+ heyHamkari:{recv:'معاونت فرهنگی',type:'داخلی',sender:'هیئت فداییان حضرت زینب (س) مسجد صاحب‌الزمان (عج)',subject:'هماهنگی برنامه مشترک با معاونت فرهنگی',summary:'با سلام؛ جهت هماهنگی برگزاری برنامه مشترک فرهنگی با معاونت فرهنگی، خواهشمند است زمان‌بندی و تقسیم وظایف مورد هماهنگی قرار گیرد. (تشکل‌ها مستقل‌اند و زیرمجموعه کارگروه‌های معاونت فرهنگی نیستند.)'},
+ heyDabir:{recv:'دبیر هیئت امنا',type:'داخلی',sender:'هیئت فداییان حضرت زینب (س) مسجد صاحب‌الزمان (عج)',subject:'ارسال گزارش و هماهنگی با دبیرخانه مرکزی',summary:'با سلام؛ گزارش و موضوع پیشنهادی هیئت به استحضار دبیرخانه مرکزی می‌رسد؛ خواهشمند است دستور فرمایید مطابق روال اداری بررسی و اقدام شود.'}
+};
+function heyCoord(){
+  const btn=function(k,ic,t,d){ return '<button class="btn btn-outline" data-act="coordLetter" data-k="'+k+'" style="justify-content:flex-start;margin-top:10px">'+icon(ic,16)+' '+t+'</button><p class="tiny muted" style="margin:4px 0 2px">'+d+'</p>'; };
+  const L=all("SELECT * FROM letters WHERE assigned_role=? OR created_by=? ORDER BY id DESC LIMIT 12",[session.role,session.username]);
+  return '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('send',17)+' درخواست‌های هماهنگی هیئت</h3>'+
+   '<p class="tiny muted" style="margin:6px 0 4px">مکاتبات هیئت دقیقاً مثل سایر معاونت‌ها از دبیرخانه مرکزی ثبت و پس از بررسی اداری به مقصد ارجاع می‌شود؛ پاسخ به «مکاتبات» پنل عمومی بازمی‌گردد. گزارش جلسات هیئت فداییان در تب «گزارش جلسات» همین پنل و گزارش جلسات هیئت امنا در پنل دبیر هیئت امنا ثبت می‌شود (§۳-۷).</p>'+
+   btn('heyTajhiz','inbox','درخواست تجهیزات از عمران و پشتیبانی','اقلام، تجهیزات صوتی و پشتیبانی فنی مراسم')+
+   btn('heyBudje','wallet','درخواست بودجه از معاونت مالی','تخصیص اعتبار مراسم و برنامه‌های هیئت')+
+   btn('heyHamkari','users','هماهنگی برنامه مشترک با معاونت فرهنگی','برنامه‌های مشترک — تشکل‌ها مستقل‌اند')+
+   btn('heyDabir','mail','ارسال گزارش به دبیرخانه مرکزی','گزارش فعالیت و موضوعات پیشنهادی برای هیئت امنا')+
+   '</div>'+
+   '<div class="card pad"><h3>'+icon('mail',17)+' نامه‌های مرتبط با هیئت</h3><p class="tiny muted" style="margin:6px 0 10px">نامه‌هایی که مقصد یا مبدأ آن‌ها هیئت فداییان است (فهرست کامل در «مکاتبات» پنل عمومی).</p>'+
+   (L.length?'<div class="table-wrap"><table class="tbl"><thead><tr><th>شماره</th><th>موضوع</th><th>فرستنده</th><th>گیرنده</th><th>وضعیت</th></tr></thead><tbody>'+
+    L.map(function(x){ return '<tr><td class="tiny">'+esc(x.number)+'</td><td>'+esc(x.subject)+'</td><td class="tiny">'+esc(x.sender||'—')+'</td><td class="tiny">'+esc(x.assigned_role||'دبیرخانه')+'</td><td><span class="badge '+entBadgeCls(x.status)+'">'+esc(x.status)+'</span></td></tr>'; }).join('')+
+    '</tbody></table></div>':emptyState('نامه‌ای یافت نشد'))+'</div>';
+}
+/* ۷) پیگیری مصوبات و مأموریت‌ها */
+function heyFollow(){
+  const t=todayIso();
+  const decs=all("SELECT d.*, t.id AS tid, t.status AS tstatus, t.deadline_iso AS tdead, m.number AS mnum FROM decisions d LEFT JOIN tasks t ON t.id=d.task_id JOIN meetings m ON m.id=d.meeting_id WHERE m.org='heyat' ORDER BY d.id DESC");
+  const open=decs.filter(function(d){ return d.tstatus!=='انجام‌شده'; });
+  const late=open.filter(function(d){ return d.tdead&&d.tdead<t; });
+  const done=decs.filter(function(d){ return d.tstatus==='انجام‌شده'; });
+  const mine=all("SELECT t.*, m.number AS mnum FROM tasks t LEFT JOIN meetings m ON m.id=t.meeting_id WHERE t.assignee_username=? AND t.status!='انجام‌شده' ORDER BY t.deadline_iso",[session.username]);
+  return ''+
+   '<div class="grid-stats">'+
+    heyStat('کل مصوبات هیئت',decs.length,'','')+
+    heyStat('در جریان',open.length,'','در حال اجرا')+
+    heyStat('معوق',late.length,late.length?'accent-danger':'','فراتر از مهلت')+
+    heyStat('انجام‌شده',done.length,'accent-success','')+
+   '</div>'+
+   '<div class="card pad" style="margin:12px 0 14px"><h3>'+icon('check',17)+' مصوبات جلسات هیئت ('+faNum(decs.length)+')</h3>'+
+    (decs.length?'<div style="margin-top:10px" class="table-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>مصوبه</th><th>جلسه</th><th>مسئول اجرا</th><th>مهلت</th><th>وضعیت</th><th></th></tr></thead><tbody>'+
+     decs.map(function(d){ const isLate=d.tdead&&d.tdead<t&&d.tstatus!=='انجام‌شده'; return '<tr'+(isLate?' class="row-ov"':'')+'><td>'+esc(d.title)+'</td><td class="tiny">'+esc(d.mnum||'—')+'</td><td>'+esc(d.assignee||'—')+'</td><td>'+(d.tdead?faDate(d.tdead):'—')+'</td>'+
+      '<td>'+(d.tstatus==='انجام‌شده'?'<span class="badge b-success">انجام‌شده</span>':(isLate?'<span class="badge b-danger">معوق</span>':'<span class="badge b-info">'+esc(d.tstatus||'در انتظار')+'</span>'))+'</td>'+
+      '<td>'+(d.tid&&d.tstatus!=='انجام‌شده'?'<button class="btn btn-outline btn-sm" data-act="remindTask" data-id="'+d.tid+'">'+icon('bell',13)+' یادآوری</button>':'')+'</td></tr>'; }).join('')+
+     '</tbody></table></div>':emptyState('مصوبه‌ای ثبت نشده است — گزارش جلسات را در تب «گزارش جلسات» ثبت کنید'))+'</div>'+
+   '<div class="card pad"><h3>'+icon('inbox',17)+' مأموریت‌های ارجاعی به هیئت ('+faNum(mine.length)+' باز)</h3>'+
+    '<p class="tiny muted" style="margin:6px 0 10px">وظایف و مصوباتی که سایر واحدها (دبیرخانه، معاونت‌ها) به هیئت ارجاع داده‌اند؛ یادآوری از همین بخش و ثبت اقدام در «مأموریت‌ها» پنل عمومی انجام می‌شود.</p>'+
+    (mine.length?'<div class="table-wrap"><table class="tbl"><thead><tr><th>وظیفه</th><th>منشأ</th><th>مهلت</th><th>وضعیت</th><th></th></tr></thead><tbody>'+
+     mine.map(function(x){ const isLate=x.deadline_iso&&x.deadline_iso<t; return '<tr'+(isLate?' class="row-ov"':'')+'><td>'+esc(x.title)+'</td><td class="tiny">'+esc(x.mnum||'—')+'</td><td>'+(x.deadline_iso?faDate(x.deadline_iso):'—')+'</td>'+
+      '<td><span class="badge '+(isLate?'b-danger':'b-info')+'">'+(isLate?'معوق':esc(x.status||'در انتظار'))+'</span></td>'+
+      '<td><button class="btn btn-outline btn-sm" data-act="remindTask" data-id="'+x.id+'">'+icon('bell',13)+' یادآوری</button></td></tr>'; }).join('')+
+     '</tbody></table></div>':emptyState('مأموریت ارجاعی بازی وجود ندارد'))+'</div>';
+}
+/* ۸) گزارش عملکرد هیئت */
+function heyPerf(){
+  const cers=all('SELECT * FROM ceremonies ORDER BY date_iso');
+  const doneC=cers.filter(function(c){ return c.report; });
+  const meets=all("SELECT * FROM meetings WHERE org='heyat' ORDER BY date_iso");
+  const decDone=one("SELECT COUNT(*) c FROM decisions d JOIN tasks t ON t.id=d.task_id JOIN meetings m ON m.id=d.meeting_id WHERE m.org='heyat' AND t.status='انجام‌شده'").c;
+  const decAll=one("SELECT COUNT(*) c FROM decisions d JOIN meetings m ON m.id=d.meeting_id WHERE m.org='heyat'").c;
+  const pct=decAll?Math.round(decDone*100/decAll):0;
+  const mems=all('SELECT * FROM org_members');
+  const byM={};
+  doneC.forEach(function(c){ if(!c.date_iso) return; const j=isoToJ(c.date_iso); const k=j.jy+'/'+('0'+j.jm).slice(-2); const row=byM[k]=byM[k]||{n:0}; row.n++; });
+  const months=Object.keys(byM).sort().reverse();
+  return ''+
+   '<div class="grid-stats">'+
+    heyStat('مراسم دارای گزارش',doneC.length,'accent-success','')+
+    heyStat('گزارش جلسات',meets.length,'','')+
+    heyStat('مصوبات اجراشده',faNum(decDone)+(decAll?' از '+faNum(decAll):''),'','')+
+    heyStat('نرخ اجرای مصوبات',faNum(pct)+'٪','',decAll?'از کل مصوبات هیئت':'بدون مصوبه')+
+    heyStat('اعضای هیئت',mems.length,'','')+
+   '</div>'+
+   '<div class="card pad" style="margin:12px 0 14px"><h3 style="display:flex;align-items:center;gap:8px">'+icon('chart',18)+' گزارش تفصیلی مراسم و جلسات'+
+    '<button class="btn btn-outline btn-sm no-print" data-act="heyPerfPrint" style="margin-inline-start:auto">'+icon('printer',14)+' چاپ گزارش عملکرد هیئت</button></h3>'+
+    (cers.length?'<div style="margin-top:10px" class="table-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>مراسم</th><th>تاریخ</th><th>مداح</th><th>سخنران</th><th>گزارش برگزاری</th></tr></thead><tbody>'+
+     cers.map(function(c){ return '<tr><td>'+esc(c.title)+'</td><td class="tiny">'+faDate(c.date_iso)+'</td><td class="tiny">'+esc(c.maddah||'—')+'</td><td class="tiny">'+esc(c.speaker||'—')+'</td><td class="tiny">'+(c.report?esc(String(c.report).slice(0,60))+(String(c.report).length>60?'…':''):'<span class="badge b-warn">بدون گزارش</span>')+'</td></tr>'; }).join('')+
+     '</tbody></table></div>':emptyState('مراسمی ثبت نشده است'))+'</div>'+
+   '<div class="card pad"><h3>'+icon('calendar',17)+' خلاصه ماهانه</h3>'+
+    (months.length?'<div style="margin-top:10px" class="table-wrap"><table class="tbl"><thead><tr><th>ماه</th><th>مراسم دارای گزارش</th></tr></thead><tbody>'+
+     months.map(function(m){ const p=m.split('/'); return '<tr><td><b>'+faNum(p[0])+'/'+faNum(+p[1])+'</b></td><td>'+faNum(byM[m].n)+'</td></tr>'; }).join('')+
+     '</tbody></table></div>':emptyState('آمار ماهانه پس از ثبت گزارش مراسم‌ها تشکیل می‌شود'))+'</div>';
+}
+/* قالب‌بندی ۸ بخشی — پنل هیئت فداییان حضرت زینب (س) */
 function renderHeyatPanel(root){
-  const cfg=PANEL_KIND.heyat;
-  root.innerHTML=imamPanelTabs()+
-   '<div class="page-head"><div><h2>'+cfg.title+'</h2><p class="muted">'+cfg.desc+'</p></div></div>'+
-   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><p class="tiny muted"><b>ساختار هیئت:</b> مکاتبات هیئت دقیقاً مثل سایر معاونت‌ها (مثل معاونت فرهنگی) از «مکاتبات» پنل عمومی و در جریان دبیرخانه مرکزی انجام می‌شود؛ گزارش جلسات هیئت فداییان در همین پنل و گزارش جلسات هیئت امنا در پنل دبیر هیئت امنا ثبت می‌شود (§۳-۷).</p></div>'+
-   heyatMeetSection()+
-   cfg.ents.map(entSection).join('');
+  const tab=window._heyTab||'dash';
+  const tabs='<div class="seg" style="margin-bottom:14px;flex-wrap:wrap">'+HEY_TABS.map(function(t){
+    return '<button class="seg-btn '+(tab===t.id?'on':'')+'" data-act="heyTab" data-k="'+t.id+'">'+t.label+'</button>';
+  }).join('')+'</div>';
+  const head='<div class="page-head"><div><h2>پنل هیئت فداییان حضرت زینب (س)</h2><p class="muted">پنل تخصصی هیئت در ۸ بخش: داشبورد، گزارش جلسات با مصوبات و تصاویر، مراسم و مناسبت‌ها، اعضا و مسئولیت‌ها، تجهیزات، مکاتبات و هماهنگی، پیگیری مصوبات و مأموریت‌ها، گزارش عملکرد — سند مأموریت §۳-۷ (مکاتبات هیئت مثل سایر معاونت‌ها از پنل عمومی و دبیرخانه مرکزی)</p></div></div>';
+  const fn=tab==='meets'?heyatMeetSection:tab==='cer'?heyCer:tab==='mem'?heyMem:tab==='eq'?heyEq:tab==='coord'?heyCoord:tab==='follow'?heyFollow:tab==='perf'?heyPerf:heyDash;
+  root.innerHTML=imamPanelTabs()+head+tabs+'<div>'+fn()+'</div>';
 }
 
 /* ---------- بخش ۴: هماهنگی و پیگیری امور اداری ---------- */
@@ -6999,7 +7225,7 @@ function openExtPrintEditor(id){
 const PANEL_KIND={
  culture:{title:'پنل معاونت فرهنگی',desc:'کارگروه‌ها، برنامه‌ها و بانک ایده — طبق سند مأموریت §۳-۳ (بدون حق مدیریت جلسات هیئت امنا)',ents:['wg','cprog','occ','idea']},
  support:{title:'معاونت عمران و پشتیبانی',desc:'پنل تخصصی عمران و پشتیبانی — داشبورد، پروژه‌ها، املاک، اموال، تعمیرات، پشتیبانی برنامه‌ها، نیروی انسانی، قراردادها، قبوض و گزارش‌ها',ents:[]},
- heyat:{title:'پنل هیئت فداییان حضرت زینب (س)',desc:'مراسم، اعضا و تجهیزات اختصاصی — طبق سند مأموریت §۳-۷ (مکاتبات هیئت مثل سایر واحدها از پنل عمومی)',ents:['cer','hmem','heq']},
+ heyat:{title:'پنل هیئت فداییان حضرت زینب (س)',desc:'پنل تخصصی هیئت در ۸ بخش — داشبورد، گزارش جلسات (مصوبات و تصاویر)، مراسم و مناسبت‌ها، اعضا و مسئولیت‌ها، تجهیزات، مکاتبات و هماهنگی، پیگیری مصوبات و مأموریت‌ها، گزارش عملکرد — طبق سند مأموریت §۳-۷',ents:['cer','hmem','heq']},
  education:{title:'پنل معاونت تعلیم و تربیت',desc:'کلاس‌ها، حضور و غیاب، مربیان، حلقه‌های تربیتی، اردوها و پرونده تربیتی اعضا',ents:['ecoach','ecirc','ecamp']}
 };
 
@@ -7893,7 +8119,7 @@ function entSection(k){
    ارتباط مالی: قرارداد اجاره و اطلاعات املاک این‌جاست؛ ثبت دریافت و تأیید
    درآمد و پرداخت‌ها فقط در پنل معاونت امور مالی انجام می‌شود.
    ============================================================ */
-const MSZ_VERSION='v3.4';
+const MSZ_VERSION='v3.5';
 const OMR_TABS=[
  {id:'dash',label:'داشبورد'},
  {id:'proj',label:'پروژه‌های عمرانی'},
