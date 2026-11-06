@@ -682,7 +682,7 @@ tr.row-ov td{color:#8E2020}
     </form>
     <a class="apk-link" href="app/app.apk" download>📥 دانلود اپلیکیشن اندروید (APK)</a>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۱</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۲</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -734,7 +734,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۱ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۲ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -1729,6 +1729,12 @@ function ensureSchema(){
         markDirty();
       }
     }catch(e){ console.warn('om migrate',e); }
+    /* v3.2 — فرستندهٔ قابل ویرایش نامهٔ برون‌سازمانی + جدول مأموریت‌های درون‌سازمانی دبیر هیئت امنا */
+    try{ addCol('ext_letters','sender_from',"TEXT DEFAULT ''"); }catch(e){}
+    try{ addCol('om_supreq','letter_no',"TEXT DEFAULT ''"); }catch(e){}
+    try{
+      run("CREATE TABLE IF NOT EXISTS sec_missions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, descr TEXT DEFAULT '', target_username TEXT DEFAULT '', target_role TEXT DEFAULT '', deadline_iso TEXT DEFAULT '', priority TEXT DEFAULT 'عادی', status TEXT DEFAULT 'ثبت‌شده', result_note TEXT DEFAULT '', created_by TEXT DEFAULT '', created_at_fa TEXT)");
+    }catch(e){ console.warn('sec_missions',e); }
   }catch(e){ console.warn('ensureSchema migrate',e); }
   try{ run("CREATE TABLE IF NOT EXISTS user_perms(username TEXT NOT NULL, module TEXT NOT NULL, lvl INTEGER NOT NULL, updated_at_fa TEXT DEFAULT '', PRIMARY KEY(username,module))"); }catch(e){}
   try{
@@ -1872,13 +1878,14 @@ const NAV=[
  {id:'panel',label:'پنل اختصاصی',icon:'inbox',roles:['secretary','culture','heyat','imam','education'],group:'پنل اختصاصی',desc:'بخش‌های تخصصی واحد شما'},
  {id:'omran',label:'معاونت عمران و پشتیبانی',icon:'home',roles:['support','imam'],group:'پنل اختصاصی',desc:'پنل تخصصی عمران و پشتیبانی: داشبورد، پروژه‌های عمرانی، مغازه‌ها و املاک، اموال، تعمیرات، پشتیبانی برنامه‌ها، نیروی انسانی، قراردادها، قبوض و گزارش‌ها'},
  {id:'finance',label:'معاونت امور مالی',icon:'wallet',roles:['finance','imam'],group:'پنل اختصاصی',desc:'پنل اختصاصی معاونت امور مالی: داشبورد، درآمد، هزینه، بودجه، حساب‌ها، اسناد، بدهی‌ها، حسابداری و قالب‌ها'},
- {id:'media',label:'رسانه و اطلاعیه‌ها',icon:'send',roles:['imam','media_admin'],group:'پنل اختصاصی',desc:'مدیریت محتوای رسانه'},
- {id:'meetings',label:'جلسات هیئت (داخلی)',icon:'users',roles:['heyat'],group:'پنل اختصاصی',desc:'صورت‌جلسه‌های داخلی هیئت فداییان؛ جلسات هیئت امنا فقط در پنل دبیر (§۳-۲)'}
+ {id:'media',label:'رسانه و اطلاعیه‌ها',icon:'send',roles:['imam','media_admin'],group:'پنل اختصاصی',desc:'مدیریت محتوای رسانه'}
+ /* v3.2 — جلسات داخلی هیئت از منوی جدا حذف شد و داخل پنل اختصاصی هیئت قرار گرفت */
 ];
 function navAllowed(n){ return !!n && (n.roles ? n.roles.includes(session.username) : pm(n.id,n.min)); }
 function buildSidebar(){
   const order=['اصلی','پنل عمومی — امکانات مشترک','پنل اختصاصی'];
-  const items=NAV.filter(n=>navAllowed(n));
+  /* v3.2 — برای امام جماعت دکمه‌های جداگانهٔ عمران/مالی از منو حذف شد؛ از تب‌های «پنل اختصاصی» باز می‌شوند */
+  const items=NAV.filter(n=>navAllowed(n)).filter(n=>!(session&&session.username==='imam'&&(n.id==='omran'||n.id==='finance')));
   let html='';
   order.forEach(g=>{
     const gi=items.filter(n=>(n.group||'عملیاتی')===g);
@@ -2009,7 +2016,8 @@ VIEWS.letters=function(root){
   const canNew=pm('letters',2)&&!session.isMedia;
   root.innerHTML=
    '<div class="page-head"><div><h2>'+hd.t+'</h2><p class="muted">'+hd.d+'</p></div>'+
-   (canNew?'<button class="btn btn-primary no-print" data-act="letterNew">'+icon('plus')+' ثبت نامه جدید</button>':'')+'</div>'+
+   (canNew?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary no-print" data-act="letterNew">'+icon('plus')+' ثبت نامه جدید</button>'+
+    '<button class="btn btn-outline no-print" data-act="supReqNew" title="ثبت نامهٔ رسمی درخواست اقلام از معاونت عمران و پشتیبانی">'+icon('home')+' درخواست اقلام پشتیبانی</button></div>':'')+'</div>'+
    ((myOrg()!=='center'&&session.username!=='heyat')?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>مکاتبات از طریق دبیرخانه مرکزی:</b> نامه‌های ثبت‌شده شما (از جمله نامه‌های هیئت) وارد صف بررسی دبیرخانه مرکزی مسجد می‌شود؛ فقط نامه‌های خودتان را می‌بینید و پاسخ زیر همان نامه نمایش داده می‌شود (گردش دوازده‌مرحله‌ای §۴-۲).</p></div>':'')+
    '<div class="card pad fbar no-print">'+
      '<div class="field grow"><label>جست‌وجو</label><input id="lfQ" class="inp" placeholder="موضوع، فرستنده یا شماره نامه…" value="'+esc(letterFilter.q)+'"></div>'+
@@ -2102,6 +2110,27 @@ function openLetterModal(preset){
   });
 }
 
+/* v3.2 — نمای رسمی نامه‌های درون‌سامانه‌ای مثل نامه برون‌سازمانی (سربرگ، شماره/تاریخ، موضوع) — واکنش‌گرا برای موبایل */
+function letterOfficialPreview(L){
+  return '<div class="no-print" style="max-width:100%;overflow:hidden;margin-bottom:14px;border:1px solid #444;border-radius:4px;background:#fff;padding:12px 10px;outline:3px double #B49A60;outline-offset:-6px">'+
+   '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px;border-bottom:3px double #B49A60;padding-bottom:8px;margin-bottom:8px">'+
+    '<div style="flex:1 1 64px;min-width:56px;text-align:center"><img src="'+MSZ_LOGO+'" alt="" style="height:50px;max-width:60px;object-fit:contain"></div>'+
+    '<div style="flex:2 1 140px;min-width:120px;text-align:center"><img src="'+MSZ_EMBLEM+'" alt="" style="height:38px;max-width:60px;object-fit:contain">'+
+     '<div style="font-weight:bold;font-size:12px;color:#245743">مسجد صاحب‌الزمان (عج)</div>'+
+     '<div style="font-size:9px;color:#777;line-height:1.6">سامانه یکپارچه مدیریت مسجد</div></div>'+
+    '<div style="flex:1 1 76px;min-width:64px;font-size:9.5px;color:#444;line-height:1.9;text-align:left">شماره: '+esc(L.number||'—')+'<br>تاریخ: '+esc(L.created_at_fa||faDate(L.created_at)||'—')+'<br>نوع: '+esc(L.type||'—')+'</div>'+
+   '</div>'+
+   '<div style="font-size:11.5px;line-height:2;color:#222;overflow-wrap:break-word">'+
+    '<div><b>از:</b> '+esc(L.sender||'—')+'</div>'+
+    '<div><b>به:</b> '+esc(L.assigned_role||'دبیرخانه مرکزی مسجد')+'</div>'+
+    '<div style="margin:4px 0"><b>موضوع:</b> <b style="text-decoration:underline">'+esc(L.subject||'—')+'</b></div>'+
+    '<div style="text-align:justify;border-top:1px dashed #bbb;padding-top:6px">'+esc(L.summary||'متن نامه ثبت نشده است.').replace(/\n/g,'<br>')+'</div>'+
+    (L.file_name?'<div style="margin-top:6px;font-size:10px;color:#666">پیوست: '+esc(L.file_name)+'</div>':'')+
+   '</div>'+
+   '<div style="text-align:left;font-size:10px;color:#555;margin-top:10px;padding-top:6px;border-top:1px dashed #bbb">با احترام — '+esc(L.sender||'فرستنده')+'</div>'+
+  '</div>';
+}
+
 function openLetterDetail(id){
   const L=one('SELECT * FROM letters WHERE id=?',[id]); if(!L) return;
   if(!letterCanSee(L)){ toast('به این نامه دسترسی ندارید — محدوده دبیرخانه شما نیست','error'); return; }
@@ -2110,6 +2139,7 @@ function openLetterDetail(id){
   const allowed=LETTER_STATUSES.filter(s=>canDec||!DECISION_ONLY.includes(s));
   const orgTag=' <span class="badge b-neutral">دبیرخانه مرکزی</span>';
   const html=
+   letterOfficialPreview(L)+
    '<div class="detail-grid">'+
     '<div><small>شماره نامه</small><b class="ltr-num">'+esc(L.number)+'</b></div>'+
     '<div><small>نوع</small>'+typeBadge(L.type)+'</div>'+
@@ -2226,9 +2256,13 @@ function openMeetingModal(){
       '<b style="font-size:12.5px;color:var(--primary-dark);display:block;margin-bottom:8px">محتوای گزارش جلسه</b>'+
       fld('دستور جلسه','<textarea name="agenda" class="inp" rows="2" placeholder="موارد دستور جلسه…"></textarea>')+
       fld('حاضران (نقش‌ها)','<div class="att-grid">'+ROLES.map(r=>'<label class="chk"><input type="checkbox" data-role="'+esc(r)+'"> '+esc(r)+'</label>').join('')+'</div>')+
+      '<div class="frow2">'+
+        fld('افزودن حاضر اضافی (خارج از فهرست)','<textarea name="attExtra" class="inp" rows="2" placeholder="هر نام در یک سطر — مثال: استاد کاظمی\nحاج آقا موسوی"></textarea>')+
+        fld('افزودن مدعو اضافی (خارج از فهرست)','<textarea name="invExtra" class="inp" rows="2" placeholder="هر نام در یک سطر"></textarea>')+
+      '</div>'+
       fld('مدعوین — غایبان = مدعوین منهای حاضران','<div class="att-grid">'+ROLES.map(r=>'<label class="chk"><input type="checkbox" data-invrole="'+esc(r)+'"> '+esc(r)+'</label>').join('')+'</div>')+
       fld('مذاکرات و صورت‌جلسه','<textarea name="minutes" class="inp" rows="3" placeholder="خلاصه مذاکرات و صورت‌جلسه…"></textarea>')+
-      '<p class="tiny muted">وضعیت این جلسه «برگزار شد» ذخیره می‌شود؛ پس از ثبت گزارش، مصوبات با «مسئول اجرا» و «مهلت انجام مصوبه» در صفحهٔ جلسه اضافه می‌گردد.</p>'+
+      '<p class="tiny muted">وضعیت این جلسه «برگزار شد» ذخیره می‌شود؛ پس از ثبت گزارش، مصوبات — هر مصوبه به‌صورت مستقل و جداگانه — با «مسئول اجرا» و «مهلت انجام» در صفحهٔ جلسه اضافه می‌گردد.</p>'+
     '</div>'+
     '<div id="unitPlan">'+
       fld('وضعیت','<select name="status" class="inp"><option>برنامه‌ریزی‌شده</option><option>برگزار شد</option><option>لغو شد</option></select>')+
@@ -2260,9 +2294,14 @@ function openMeetingModal(){
     if(k==='board'){
       const att=Array.from(ov.querySelectorAll('input[data-role]')).filter(x=>x.checked).map(x=>x.dataset.role);
       const inv=Array.from(ov.querySelectorAll('input[data-invrole]')).filter(x=>x.checked).map(x=>x.dataset.invrole);
+      /* v3.2 — افزودن دستی حاضرین/مدعوین خارج از فهرست نقش‌ها */
+      const extraAtt=(form.attExtra?form.attExtra.value:'').split('\n').map(function(s){return s.trim()}).filter(Boolean);
+      const extraInv=(form.invExtra?form.invExtra.value:'').split('\n').map(function(s){return s.trim()}).filter(Boolean);
+      extraAtt.forEach(function(n){ if(!att.includes(n)) att.push(n); });
+      extraInv.forEach(function(n){ if(!inv.includes(n)) inv.push(n); });
       run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by,org,kind,unit,time_fa,place,invitees,agenda,minutes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         [num,form.title.value.trim(),iso,faDate(iso),'برگزار شد',JSON.stringify(att),session.username,org,k,unit,form.timefa.value.trim(),form.place.value.trim(),JSON.stringify(inv),form.agenda.value.trim(),form.minutes.value.trim()]);
-      logActivity('ثبت گزارش جلسه هیئت امنا','گزارش «'+form.title.value.trim()+'» با شماره '+num+' ثبت شد ('+faNum(att.length)+' حاضر).');
+      logActivity('ثبت گزارش جلسه هیئت امنا','گزارش «'+form.title.value.trim()+'» با شماره '+num+' ثبت شد ('+faNum(att.length)+' حاضر'+(extraAtt.length?' + '+faNum(extraAtt.length)+' حاضر اضافی':'')+').');
       if(session.username!=='imam') addNotif('imam','گزارش جلسه هیئت امنا ثبت شد','گزارش «'+form.title.value.trim()+'» ('+num+') در دبیرخانه ثبت شد؛ ثبت مصوبات با مسئول و مهلت انجام از صفحهٔ جلسه انجام می‌شود.');
       renderNotifBadge();
     }else{
@@ -2299,10 +2338,12 @@ function openMeetingDetail(id){
    '</div>'+
    (isBoard&&!canMng?'<div class="card pad" style="border-right:4px solid var(--warning);margin:10px 0"><p class="tiny muted">این جلسه در صلاحیت دبیرخانه مرکزی است؛ شما فقط مشاهده می‌کنید (سند مأموریت §۳-۲ — قانون قطعی).</p></div>':'')+
    '<div class="divider"></div>'+
-   '<h4 style="font-size:13.5px;color:var(--primary-dark);margin-bottom:8px">حاضرین (نقش‌ها)'+(canMng?' <span class="tiny muted">— با تغییر، ذخیره می‌شود</span>':' <span class="tiny muted">— فقط نمایش</span>')+'</h4>'+
+   '<h4 style="font-size:13.5px;color:var(--primary-dark);margin-bottom:8px">حاضرین (نقش‌ها و افراد اضافه‌شده)'+(canMng?' <span class="tiny muted">— با تغییر، ذخیره می‌شود</span>':' <span class="tiny muted">— فقط نمایش</span>')+'</h4>'+
    '<div class="att-grid">'+ROLES.map(r=>
      '<label class="chk'+(canMng?'':' dis')+'"><input type="checkbox" data-role="'+esc(r)+'" '+(att.includes(r)?'checked':'')+(canMng?'':' disabled')+'> '+esc(r)+'</label>'
    ).join('')+'</div>'+
+   (att.filter(function(a){return !ROLES.includes(a)}).length?'<p class="tiny" style="margin-top:6px"><b>افراد اضافه‌شده:</b> '+att.filter(function(a){return !ROLES.includes(a)}).map(esc).join('، ')+'</p>':'')+
+   (canMng?'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><input id="attExtraName" class="inp" style="flex:1;min-width:180px" placeholder="نام فرد حاضر خارج از فهرست…"><button class="btn btn-outline btn-sm" data-act="attAddExtra" data-id="'+M.id+'">'+icon('plus',13)+' افزودن به حاضران</button></div>':'')+
    '<div class="divider"></div>'+
    '<h4 style="font-size:13.5px;color:var(--primary-dark);margin-bottom:8px">مدعوین (حضور بر اساس علامت بالا تعیین می‌شود)'+(canMng?' <span class="tiny muted">— قابل ویرایش</span>':'')+'</h4>'+
    '<div class="att-grid">'+ROLES.map(r=>
@@ -2341,7 +2382,7 @@ function openMeetingDetail(id){
    :'<p class="muted tiny">مصوبه‌ای ثبت نشده است.</p>')+
    (canMng?
    '<div class="inline-box" style="margin-top:14px">'+
-     '<b style="font-size:12.5px;color:var(--primary-dark);display:block;margin-bottom:10px">افزودن مصوبه (مسئول اجرا و مهلت انجام مصوبه — وظیفه به‌صورت خودکار ایجاد می‌شود)</b>'+
+     '<b style="font-size:12.5px;color:var(--primary-dark);display:block;margin-bottom:10px">ثبت مصوبات دانه‌به‌دانه — هر مصوبه به‌صورت رکورد مستقل با مسئول و مهلت ثبت و پیگیری می‌شود</b>'+
      '<form id="decForm" novalidate>'+
        fld('عنوان مصوبه *','<input name="title" class="inp" placeholder="عنوان مصوبه…">')+
        '<div class="frow2">'+
@@ -2896,7 +2937,7 @@ function renderFinPanel(root){
   else if(tab==='debt') body=finDebts();
   else if(tab==='acct') body=finAcct();
   else body=finForms();
-  root.innerHTML=head+tabs+body;
+  root.innerHTML=imamPanelTabs()+head+tabs+body;
   const fy=root.querySelector('#finYr');
   if(fy) fy.addEventListener('change',function(){ window._finYear=+fy.value||window._finYear; renderView(); });
 }
@@ -3363,6 +3404,7 @@ function finForms(){
 /* ---------- VIEWS.finance ---------- */
 VIEWS.finance=function(root){
   if(!finGuard()){ VIEWS.myexp(root); return; }
+  if(session&&session.username==='imam') window._panelTab='finance';
   renderFinPanel(root);
 };
 function openTxModal(){
@@ -4121,6 +4163,12 @@ const ACTIONS={
     markDirty(); saveNow(true); toast('ثبت شد'); renderView();
   },
   secTab:d=>{ window._secTab=d.k; renderView(); },
+  /* v3.2 — مأموریت‌های درون‌سازمانی دبیر */
+  secMissNew:()=>openSecMissionModal(),
+  secMissAdv:d=>{ const m=one('SELECT * FROM sec_missions WHERE id=?',[+d.id]); if(!m) return; run('UPDATE sec_missions SET status=? WHERE id=?',['در حال انجام',m.id]); addNotif(m.target_username,'وضعیت مأموریت','مأموریت «'+m.title+'» به وضعیت «در حال انجام» رسید.'); logActivity('پیگیری مأموریت','مأموریت «'+m.title+'» در حال انجام شد.'); markDirty(); saveNow(true); toast('وضعیت به‌روزرسانی شد ✓'); renderView(); },
+  secMissDone:d=>secMissDone(+d.id),
+  secMissDel:async d=>{ const m=one('SELECT * FROM sec_missions WHERE id=?',[+d.id]); if(!m) return; const ok=await confirmDlg('حذف مأموریت','مأموریت «'+m.title+'» حذف شود؟'); if(!ok) return; run('DELETE FROM sec_missions WHERE id=?',[m.id]); logActivity('حذف مأموریت','مأموریت «'+m.title+'» حذف شد.'); markDirty(); saveNow(true); toast('حذف شد'); renderView(); },
+  misAck:d=>{ const m=one('SELECT * FROM sec_missions WHERE id=?',[+d.id]); if(!m) return; if(!(m.target_username===session.username||m.target_role===session.role)){ toast('این مأموریت برای شما نیست','error'); return; } run('UPDATE sec_missions SET status=? WHERE id=?',['در حال انجام',m.id]); addNotif(m.created_by||'secretary','مأموریت دریافت شد','مأموریت «'+m.title+'» توسط گیرنده در حال انجام اعلام شد.'); logActivity('مأموریت درون‌سازمانی','مأموریت «'+m.title+'» توسط گیرنده در حال انجام اعلام شد.'); markDirty(); saveNow(true); toast('وضعیت مأموریت به‌روزرسانی شد ✓'); renderView(); },
   /* v2.9 — جلسات هیئت فداییان در پنل هیئت + خروجی جلسات هیئت امنا */
   heyatMeetNew:()=>openHeyatReportModal(),
   meetDel:async d=>{
@@ -4367,6 +4415,19 @@ const ACTIONS={
   orgNew:()=>openOrgExpModal(),
   /* meetings */
   meetingNew:()=>openMeetingModal(),
+  /* v3.2 — افزودن حاضر اضافی خارج از فهرست نقش‌ها در صفحهٔ جلسه */
+  attAddExtra:d=>{
+    const M=one('SELECT * FROM meetings WHERE id=?',[+d.id]); if(!M) return;
+    if(!meetingCanManage(M)){ toast('مدیریت این جلسه در اختیار شما نیست','error'); return; }
+    const inp=document.querySelector('#attExtraName'); const name=inp?inp.value.trim():'';
+    if(!name){ toast('نام فرد را وارد کنید','error'); return; }
+    let att=[]; try{ att=JSON.parse(M.attendees||'[]'); }catch(e){}
+    if(att.includes(name)){ toast('این نام قبلاً اضافه شده است','info'); return; }
+    att.push(name);
+    run('UPDATE meetings SET attendees=? WHERE id=?',[JSON.stringify(att),M.id]);
+    logActivity('حاضرین جلسه','«'+name+'» به حاضرین جلسه '+M.number+' اضافه شد.');
+    markDirty(); toast('به حاضران اضافه شد ✓'); openMeetingDetail(M.id);
+  },
   meetingView:d=>openMeetingDetail(+d.id),
   /* tasks */
   taskSet:d=>{
@@ -5202,7 +5263,7 @@ const ACTIONS={
 
   myexpNew:()=>openMyExpModal(),
   growthOpen:d=>openGrowthModal(+d.id),
-  panelTab:d=>{ window._panelTab=d.k; renderView(); },
+  panelTab:d=>{ window._panelTab=d.k; if(currentView!=='panel'){ currentView='panel'; $('#viewTitle').textContent='پنل اختصاصی'; } renderView(); },
   entNew:d=>entOpen(d.ent,null),
   entEdit:d=>entOpen(d.ent,+d.id),
   entDel:async d=>{
@@ -5239,7 +5300,7 @@ const ACTIONS={
   omFixArchive:d=>{ if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; } const x=one('SELECT * FROM repairs WHERE id=?',[+d.id]); if(!x) return; run('UPDATE repairs SET status=?,confirmed=1 WHERE id=?',['بایگانی',x.id]); logActivity('تعمیرات و نگهداری','درخواست «'+x.title+'» تأیید و بایگانی شد.'); markDirty(); saveNow(true); toast('تأیید و بایگانی شد ✓'); renderView(); },
   omFixSendFin:d=>omFixSendFin(+d.id),
   omFixDel:d=>omDel('repairs',+d.id,'درخواست تعمیر'),
-  omSupNew:()=>omSupReqModal(),
+  supReqNew:()=>openSupReqLetterModal(),
   omSupReview:d=>omSupFieldModal(+d.id,'review'),
   omSupDeliver:d=>omSupFieldModal(+d.id,'deliver'),
   omSupReturn:d=>omSupFieldModal(+d.id,'ret'),
@@ -5442,11 +5503,34 @@ VIEWS.missions=function(root){
     (note?'<p class="tiny muted" style="margin:6px 0 10px">'+note+'</p>':'')+
     (list.length?list.map(card).join(''):'<p class="muted tiny">موردی ثبت نشده است.</p>')+'</div>';
   root.innerHTML=
-   '<div class="page-head"><div><h2>مأموریت‌ها (مصوبات)</h2><p class="muted">مصوبات جلسات هیئت امنا و واحدها — برای هر معاونت فقط مأموریت‌های مرتبط با مسئولیت خودش نمایش داده می‌شود</p></div></div>'+
-   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><h3 style="font-size:14px;color:var(--primary-dark)">'+icon('home',17)+' درخواست پشتیبانی از معاونت عمران و پشتیبانی</h3>'+
-    '<p class="tiny muted" style="margin:6px 0 10px">برای برنامه‌ها و مصوبات واحد خود، اقلام و پشتیبانی موردنیاز (تجهیزات، تعمیرات، خدمات) را ثبت کنید؛ بررسی، تحویل و بازگشت اقلام در پنل تخصصی معاونت عمران پیگیری می‌شود.</p>'+
-    '<button class="btn btn-primary btn-sm" data-act="omSupNew">'+icon('plus',16)+' ثبت درخواست پشتیبانی</button></div>'+
-   (pm('meetings',1)?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><p class="tiny muted"><b>گردش کار:</b> مصوبات در بخش «جلسات و مصوبات» ثبت می‌شوند و به‌صورت مأموریت برای واحد مسئول در همین تابلو مشخص می‌شوند؛ وضعیت اجرا از وظیفهٔ متصل پیگیری می‌شود.</p></div>':'')+
+   '<div class="page-head"><div><h2>مأموریت‌ها (مصوبات)</h2><p class="muted">مصوبات جلسات هیئت امنا، مأموریت‌های درون‌سازمانی دبیر و مصوبات واحدها — برای هر معاونت فقط مأموریت‌های مرتبط با مسئولیت خودش نمایش داده می‌شود</p></div></div>'+
+   (function(){
+     /* v3.2 — مأموریت‌های درون‌سازمانی دبیر هیئت امنا در همین تابلو (درخواست اقلام پشتیبانی به «مکاتبات» منتقل شد) */
+     const un=session.username;
+     const isMgr=['imam','secretary'].includes(un);
+     const sm=all('SELECT * FROM sec_missions ORDER BY id DESC').filter(function(x){ return isMgr||x.target_username===un||x.target_role===session.role; });
+     if(!sm.length) return '';
+     const mineS=sm.filter(function(x){ return !isMgr&&(x.target_username===un||x.target_role===session.role); });
+     const otherS=sm.filter(function(x){ return isMgr&&!(x.target_username===un||x.target_role===session.role); });
+     const uRow=all('SELECT username,display_name FROM users WHERE active=1');
+     const uname=function(u){ const r=uRow.find(function(z){return z.username===u}); return r?r.display_name:(u||'—'); };
+     const sCard=function(x,isMine){
+       let st=x.status;
+       if(!['انجام‌شده','لغوشده'].includes(st)&&x.deadline_iso&&x.deadline_iso<todayIso()) st='عقب‌افتاده';
+       const cls={'ثبت‌شده':'b-neutral','در حال انجام':'b-info','انجام‌شده':'b-success','عقب‌افتاده':'b-danger','لغوشده':'b-danger'}[st]||'b-neutral';
+       return '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b>'+esc(x.title)+'</b><span class="badge '+cls+'">'+esc(st)+'</span>'+
+        (x.priority&&x.priority!=='عادی'?'<span class="badge '+(x.priority==='فوری'?'b-danger':'b-warn')+'">'+esc(x.priority)+'</span>':'')+
+        '<span class="badge b-gold">مأموریت دبیر</span>'+
+        (isMine&&!['انجام‌شده','لغوشده'].includes(x.status)?'<span style="margin-right:auto"><button class="btn btn-outline btn-sm" data-act="misAck" data-id="'+x.id+'">در حال انجام</button></span>':'')+
+        '</div>'+
+        (x.descr?'<p class="tiny">'+esc(x.descr)+'</p>':'')+
+        '<p class="tiny muted">صادرکننده: دبیر هیئت امنا'+(isMgr?' · گیرنده: '+esc(x.target_role||uname(x.target_username)):'')+(x.deadline_iso?' · مهلت: <b>'+faDate(x.deadline_iso)+'</b>':'')+' · '+esc(x.created_at_fa||'')+'</p>'+
+        (x.result_note?'<p class="tiny"><b>نتیجه:</b> '+esc(x.result_note)+'</p>':'')+'</div>';
+     };
+     return (mineS.length?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><h3 style="font-size:14px;color:var(--primary-dark)">'+icon('send',17)+' مأموریت‌های درون‌سازمانی شما ('+faNum(mineS.length)+')</h3><p class="tiny muted" style="margin:6px 0 10px">مأموریت‌هایی که دبیر هیئت امنا مستقیماً برای واحد شما صادر کرده است (غیر از مصوبات جلسات).</p>'+mineS.map(function(x){return sCard(x,true)}).join('')+'</div>':'')+
+            (isMgr&&otherS.length?'<div class="card pad" style="margin-bottom:14px"><h3 style="font-size:14px;color:var(--primary-dark)">'+icon('file',17)+' سایر مأموریت‌های درون‌سازمانی ('+faNum(otherS.length)+')</h3>'+otherS.map(function(x){return sCard(x,false)}).join('')+'</div>':'');
+   })()+
+   (pm('meetings',1)?'<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:14px"><p class="tiny muted"><b>گردش کار:</b> مصوبات در بخش «جلسات و مصوبات» ثبت می‌شوند و به‌صورت مأموریت برای واحد مسئول در همین تابلو مشخص می‌شوند؛ وضعیت اجرا از وظیفهٔ متصل پیگیری می‌شود. درخواست اقلام پشتیبانی نیز از بخش «مکاتبات» به‌صورت نامهٔ رسمی ثبت می‌شود (v3.2).</p></div>':'')+
    grp('مأموریت‌های شما و واحد شما',mine,'مصوباتی که مسئول اجرای آن‌ها شما یا واحد شما هستید.')+
    (['imam','secretary','board'].includes(session.username)||myOrg()!=='center'?
      grp('سایر مصوبات مرتبط',related,''):grp('سایر مصوبات مرتبط',related,'مصوبات جلساتِ مجاز شما (بدون جزئیات جلسات هیئت امنا).'));
@@ -5676,6 +5760,7 @@ const SEC_TABS=[
  {id:'sec',label:'دبیرخانه مرکزی'},
  {id:'ext',label:'مکاتبات برون‌سازمانی'},
  {id:'meet',label:'دبیر جلسات هیئت امنا'},
+ {id:'imiss',label:'مأموریت‌های درون‌سازمانی'},
  {id:'follow',label:'هماهنگی و پیگیری'},
  {id:'arch',label:'بایگانی مدارک'}
 ];
@@ -5715,8 +5800,12 @@ function openOfficialMulti(docTitle,parts,opts){
    '.tb button{background:#B49A60;border:none;color:#183D30;border-radius:8px;padding:8px 20px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer}'+
    '.tb button.sz{background:#fff} .tb button.sz.on{background:#B49A60}'+
    '.sheet{position:relative;width:210mm;min-height:296mm;margin:5mm auto;background:#fff;padding:18mm 17mm 22mm;box-shadow:0 2px 14px rgba(0,0,0,.18);font-size:13.5pt}'+
-   'body.s5 .sheet{width:148mm;min-height:203mm;padding:10mm 10mm 12mm;font-size:10.5pt;line-height:1.8}'+
+   'body.s5 .sheet{width:148mm;min-height:203mm;margin:4mm auto;padding:13mm 12mm 14mm;font-size:10.5pt;line-height:1.75;box-shadow:0 2px 10px rgba(0,0,0,.15)}'+
    'body.s5{font-size:10.5pt}'+
+   'body.s5 .fr1{top:4.5mm;bottom:4.5mm;left:4.5mm;right:4.5mm}'+
+   'body.s5 .fr2{top:5.7mm;bottom:5.7mm;left:5.7mm;right:5.7mm;border-width:.85mm}'+
+   'body.s5 .fr3{top:8.2mm;bottom:8.2mm;left:8.2mm;right:8.2mm}'+
+   'body.s5 .body{min-height:24mm} body.s5 .regards{margin-top:7mm}'+
    '.fr{position:absolute;pointer-events:none}'+
    '.fr1{top:5mm;bottom:5mm;left:5mm;right:5mm;border:1px solid #000}'+
    '.fr2{top:6.4mm;bottom:6.4mm;left:6.4mm;right:6.4mm;border:1.15mm solid #000}'+
@@ -5727,7 +5816,7 @@ function openOfficialMulti(docTitle,parts,opts){
    '.meta{display:flex;justify-content:space-between;font-size:11pt;border-bottom:1px solid #999;padding:6px 0;margin-bottom:18px}'+
    'body.s5 .meta{font-size:9pt;margin-bottom:10px}'+
    '.to{font-weight:bold;margin:6mm 0 0} .subj{margin:4mm 0} .subj b{text-decoration:underline}'+
-   'body.s5 .to{margin:3mm 0 0} body.s5 .subj{margin:2mm 0}'+
+   'body.s5 .to{margin:3.5mm 0 0} body.s5 .subj{margin:2.5mm 0}'+
    '.greet{font-weight:bold;margin:2mm 0 0} .greet2{margin:0 0 3mm}'+
    '.body{text-align:justify;min-height:40mm}'+
    '.regards{font-weight:bold;margin-top:12mm}'+
@@ -5756,7 +5845,7 @@ function openOfficialMulti(docTitle,parts,opts){
    '.sig-img-note{font-size:9.5pt;color:#777}'+
    'table.min{width:100%;border-collapse:collapse;margin:5mm 0} table.min th,table.min td{border:1px solid #666;padding:7px 9px;font-size:11.5pt;text-align:right} table.min th{background:#f0ece1}'+
    'body.s5 table.min th,body.s5 table.min td{padding:4px 6px;font-size:9pt}'+
-   '@media print{ body{background:#fff} .sheet{margin:0;box-shadow:none} .tb{display:none!important} }'+
+   '@media print{ body{background:#fff} .sheet{margin:0;box-shadow:none} .tb{display:none!important} body.s5 .sheet{margin:0} }'+
    '.sheet{page-break-after:always} .sheet:last-child{page-break-after:auto}'+
    '.mphoto{width:58mm;height:42mm;object-fit:cover;border:1px solid #999;border-radius:2mm}'+
    '</style></head><body class="'+(size0==='A5'?'s5':'')+'">'+
@@ -5945,7 +6034,9 @@ function openExtLetterModal(id){
       fld('تاریخ (شمسی) *','<input name="datefa" class="inp" value="'+(r?esc(r.date_fa):faDate(todayIso()))+'" placeholder="۱۴۰۵/۰۸/۱۴">')+
     '</div>'+
     fld('به: مخاطب *','<input name="rec" class="inp" list="ctList" value="'+esc(r?r.recipient:'')+'" placeholder="مثال: فرمانده محترم ناحیه مقاومت بسیج یاسر"><datalist id="ctList">'+cons.map(function(c){return '<option value="'+esc(c.name)+'">'}).join('')+'</datalist>')+
-    '<p class="tiny muted" style="margin:2px 0 10px">از: امام جماعت مسجد صاحب‌الزمان (عج) — ثابت در سربرگ قالب</p>'+
+    /* v3.2 — عبارت «از» قابل ویرایش شد */
+    fld('از (قابل ویرایش)','<input name="frm" class="inp" value="'+esc(r?(r.sender_from||''):'')+'" placeholder="امام جماعت مسجد صاحب‌الزمان (عج)">')+
+    '<p class="tiny muted" style="margin:2px 0 10px">در صورت خالی بودن، عبارت پیش‌فرض «امام جماعت مسجد صاحب‌الزمان (عج)» در سربرگ درج می‌شود.</p>'+
     fld('موضوع *','<input name="subj" class="inp" value="'+esc(r?r.subject:'')+'" placeholder="مثال: درخواست مساعدت فوری جهت رفع معضل رفاهی مسجد…">')+
     fld('متن نامه','<textarea name="body" class="inp" rows="6" placeholder="بدون «سلام علیکم» بنویسید؛ سلام و صلوات به‌صورت خودکار درج می‌شود…">'+esc(r?r.body:'')+'</textarea>')+
     '<div class="frow2">'+
@@ -5977,12 +6068,12 @@ function openExtLetterModal(id){
     const recV=form.rec.value.trim(), subjV=form.subj.value.trim(), bodyV=form.body.value.trim();
     const ccV=form.cc.value.split('\n').map(function(s){return s.trim()}).filter(Boolean).join('\n');
     if(r){
-      run('UPDATE ext_letters SET recipient=?,subject=?,body=?,date_fa=?,status=?,signed_imam=?,tracking_no=?,attach=?,cc=?,signer_name=?,signer_title=? WHERE id=?',
-        [recV,subjV,bodyV,form.datefa.value.trim(),form.st.value,sig,form.trk.value.trim(),form.attach.value.trim(),ccV,form.sname.value.trim(),form.stitle.value.trim(),r.id]);
+      run('UPDATE ext_letters SET recipient=?,subject=?,body=?,date_fa=?,status=?,signed_imam=?,tracking_no=?,attach=?,cc=?,signer_name=?,signer_title=?,sender_from=? WHERE id=?',
+        [recV,subjV,bodyV,form.datefa.value.trim(),form.st.value,sig,form.trk.value.trim(),form.attach.value.trim(),ccV,form.sname.value.trim(),form.stitle.value.trim(),form.frm.value.trim(),r.id]);
       logActivity('ویرایش نامه رسمی','نامه «'+subjV+'» ویرایش شد.');
     }else{
-      run('INSERT INTO ext_letters (number,recipient,subject,body,date_fa,status,signed_imam,tracking_no,attach,cc,signer_name,signer_title,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-        [num,recV,subjV,bodyV,form.datefa.value.trim(),form.st.value,sig,form.trk.value.trim(),form.attach.value.trim(),ccV,form.sname.value.trim(),form.stitle.value.trim(),session.username,faStamp()]);
+      run('INSERT INTO ext_letters (number,recipient,subject,body,date_fa,status,signed_imam,tracking_no,attach,cc,signer_name,signer_title,created_by,created_at_fa,sender_from) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        [num,recV,subjV,bodyV,form.datefa.value.trim(),form.st.value,sig,form.trk.value.trim(),form.attach.value.trim(),ccV,form.sname.value.trim(),form.stitle.value.trim(),session.username,faStamp(),form.frm.value.trim()]);
       logActivity('تنظیم نامه رسمی','نامه برون‌سازمانی «'+subjV+'» برای '+recV+' تنظیم شد.');
     }
     try{ if(recV&&!cons.some(function(c){return c.name===recV})) run('INSERT INTO contacts (name) VALUES (?)',[recV]); }catch(e){}
@@ -5997,7 +6088,7 @@ function extLetterHtml(x){
   return extLetterHead(x)+
    (isDraft?'<div class="draftmark">پیش‌نویس — فاقد امضا و اعتبار</div>':'')+
    '<div class="to">به: '+esc(x.recipient)+'</div>'+
-   '<div class="to">از: امام جماعت مسجد صاحب‌الزمان (عج)</div>'+
+   '<div class="to">از: '+esc(x.sender_from||'امام جماعت مسجد صاحب‌الزمان (عج)')+'</div>'+
    '<div class="subj">موضوع: <b>'+esc(x.subject)+'</b></div>'+
    '<div class="greet">سلام علیکم؛</div>'+
    '<div class="greet2">اللهم صل علی محمد و آل محمد و عجل فرجهم؛</div>'+
@@ -6124,9 +6215,13 @@ function openHeyatReportModal(){
     '</div>'+
     fld('دستور جلسه','<textarea name="agenda" class="inp" rows="2" placeholder="موارد دستور جلسه…"></textarea>')+
     fld('حاضران (نقش‌ها)','<div class="att-grid">'+ROLES.map(r=>'<label class="chk"><input type="checkbox" data-role="'+esc(r)+'"> '+esc(r)+'</label>').join('')+'</div>')+
+    '<div class="frow2">'+
+      fld('افزودن حاضر اضافی (خارج از فهرست)','<textarea name="attExtra" class="inp" rows="2" placeholder="هر نام در یک سطر"></textarea>')+
+      fld('افزودن مدعو اضافی (خارج از فهرست)','<textarea name="invExtra" class="inp" rows="2" placeholder="هر نام در یک سطر"></textarea>')+
+    '</div>'+
     fld('مدعوین — غایبان = مدعوین منهای حاضران','<div class="att-grid">'+ROLES.map(r=>'<label class="chk"><input type="checkbox" data-invrole="'+esc(r)+'"> '+esc(r)+'</label>').join('')+'</div>')+
     fld('مذاکرات و صورت‌جلسه','<textarea name="minutes" class="inp" rows="3" placeholder="خلاصه مذاکرات و صورت‌جلسه…"></textarea>')+
-    '<p class="tiny muted">وضعیت «برگزار شد» ذخیره می‌شود؛ پس از ثبت، مصوبات با «مسئول اجرا» و «مهلت انجام مصوبه» و همچنین تصاویر جلسه در صفحهٔ جلسه اضافه می‌شود.</p>'+
+    '<p class="tiny muted">وضعیت «برگزار شد» ذخیره می‌شود؛ پس از ثبت، مصوبات — هر مصوبه جداگانه — با «مسئول اجرا» و «مهلت انجام» و تصاویر جلسه در صفحهٔ جلسه اضافه می‌شود.</p>'+
     '<button type="submit" class="btn btn-primary btn-block">ثبت گزارش جلسه</button>'+
    '</form>',{width:'720px'});
   const form=ov.querySelector('#hyMtForm');
@@ -6140,6 +6235,9 @@ function openHeyatReportModal(){
     const iso=jToIso(jd.jy,jd.jm,jd.jd);
     const att=Array.from(ov.querySelectorAll('input[data-role]')).filter(x=>x.checked).map(x=>x.dataset.role);
     const inv=Array.from(ov.querySelectorAll('input[data-invrole]')).filter(x=>x.checked).map(x=>x.dataset.invrole);
+    /* v3.2 — افزودن دستی حاضرین/مدعوین خارج از فهرست نقش‌ها */
+    (form.attExtra?form.attExtra.value:'').split('\n').map(function(s){return s.trim()}).filter(Boolean).forEach(function(n){ if(!att.includes(n)) att.push(n); });
+    (form.invExtra?form.invExtra.value:'').split('\n').map(function(s){return s.trim()}).filter(Boolean).forEach(function(n){ if(!inv.includes(n)) inv.push(n); });
     run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by,org,kind,unit,time_fa,place,invitees,agenda,minutes,photos) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       [num,form.title.value.trim(),iso,faDate(iso),'برگزار شد',JSON.stringify(att),session.username,'heyat','org','',form.timefa.value.trim(),form.place.value.trim(),JSON.stringify(inv),form.agenda.value.trim(),form.minutes.value.trim(),'[]']);
     logActivity('ثبت گزارش جلسه هیئت فداییان','گزارش «'+form.title.value.trim()+'» با شماره '+num+' ثبت شد ('+faNum(att.length)+' حاضر).');
@@ -6243,8 +6341,105 @@ function renderSecPanel(root){
     return '<button class="seg-btn '+(tab===t.id?'on':'')+'" data-act="secTab" data-k="'+t.id+'">'+t.label+'</button>';
   }).join('')+'</div>';
   const head='<div class="page-head"><div><h2>پنل دبیر هیئت امنا و دبیرخانه مرکزی</h2><p class="muted">یک حساب با سه مسئولیت تجمیع‌شده: مدیر دبیرخانه مرکزی · مسئول امور اداری و مکاتبات برون‌سازمانی · دبیر جلسات هیئت امنا (سند مأموریت §۳-۲)</p></div></div>';
-  const fn=tab==='sec'?renderSecSec:tab==='ext'?renderSecExt:tab==='meet'?renderSecMeet:tab==='arch'?renderSecArch:renderSecFollow;
+  const fn=tab==='sec'?renderSecSec:tab==='ext'?renderSecExt:tab==='meet'?renderSecMeet:tab==='imiss'?renderSecMissions:tab==='arch'?renderSecArch:renderSecFollow;
   root.innerHTML=imamPanelTabs()+head+tabs+fn();
+}
+
+/* ============================================================
+   v3.2 — مدیریت مأموریت‌های درون‌سازمانی دبیر هیئت امنا
+   دبیر علاوه بر مأموریت‌های ناشی از مصوبات هیئت امنا، مأموریت مستقل برای معاونت‌ها تعریف می‌کند؛
+   مأموریت در «مأموریت‌ها» پنل عمومی مسئول مربوطه نمایش داده می‌شود و اعلان همزمان ارسال می‌شود.
+   ============================================================ */
+const SM_ST_CLS={'ثبت‌شده':'b-neutral','در حال انجام':'b-info','انجام‌شده':'b-success','عقب‌افتاده':'b-danger','لغوشده':'b-danger'};
+function smStatus(x){
+  if(x.status==='انجام‌شده'||x.status==='لغوشده') return x.status;
+  if(x.deadline_iso&&x.deadline_iso<todayIso()) return 'عقب‌افتاده';
+  return x.status;
+}
+function renderSecMissions(){
+  const rows=all('SELECT * FROM sec_missions ORDER BY id DESC');
+  const open=rows.filter(function(x){return !['انجام‌شده','لغوشده'].includes(x.status)});
+  const done=rows.filter(function(x){return x.status==='انجام‌شده'});
+  const late=rows.filter(function(x){return smStatus(x)==='عقب‌افتاده'});
+  const users=all('SELECT username,display_name,role FROM users WHERE active=1 ORDER BY display_name');
+  const uname=function(u){ const r=users.find(function(z){return z.username===u}); return r?r.display_name:(u||'—'); };
+  const card=function(x,actions){
+    const st=smStatus(x);
+    return '<div class="comment" style="margin-bottom:10px"><div class="c-head"><b>'+esc(x.title)+'</b>'+
+     '<span class="badge '+(SM_ST_CLS[st]||'b-neutral')+'">'+esc(st)+'</span>'+
+     (x.priority&&x.priority!=='عادی'?'<span class="badge '+(x.priority==='فوری'?'b-danger':'b-warn')+'">'+esc(x.priority)+'</span>':'')+
+     '<span style="margin-right:auto;display:flex;gap:6px;flex-wrap:wrap">'+actions+'</span></div>'+
+     (x.descr?'<p class="tiny">'+esc(x.descr)+'</p>':'')+
+     '<p class="tiny muted">گیرنده: <b>'+esc(x.target_role||uname(x.target_username))+'</b> · صادرکننده: دبیر هیئت امنا'+(x.deadline_iso?' · مهلت: <b>'+faDate(x.deadline_iso)+'</b>':'')+' · '+esc(x.created_at_fa||'')+'</p>'+
+     (x.result_note?'<p class="tiny"><b>نتیجه/گزارش:</b> '+esc(x.result_note)+'</p>':'')+'</div>';
+  };
+  return ''+
+   '<div class="page-head"><div><h2>مدیریت مأموریت‌های درون‌سازمانی</h2><p class="muted">ارسال مأموریت مستقل به معاونت‌ها (غیر از مصوبات هیئت امنا) — مأموریت ثبت‌شده به‌صورت خودکار در بخش «مأموریت‌ها» پنل عمومی مسئول مربوطه و همراه با اعلان نمایش داده می‌شود</p></div>'+
+   '<button class="btn btn-primary no-print" data-act="secMissNew">'+icon('plus')+' مأموریت جدید</button></div>'+
+   '<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px"><p class="tiny muted"><b>گردش مأموریت درون‌سازمانی:</b> ۱) دبیر مأموریت را برای معاونت/مسئول تعریف می‌کند؛ ۲) اعلان برای گیرنده ارسال و مأموریت در تابلوی «مأموریت‌ها» او درج می‌شود؛ ۳) وضعیت (در حال انجام / انجام‌شده / عقب‌افتاده) همین‌جا و در پنل گیرنده دیده می‌شود؛ ۴) نتیجه و گزارش پیگیری در همین بخش ثبت می‌شود. ساختار پنل‌ها و سطح دسترسی‌ها بدون تغییر مانده است.</p></div>'+
+   '<div class="grid-stats">'+
+    '<div class="stat-card"><span class="stat-label">مأموریت‌های باز</span><b class="stat-num">'+faNum(open.length)+'</b><small class="muted">در جریان پیگیری</small></div>'+
+    '<div class="stat-card accent-success"><span class="stat-label">انجام‌شده</span><b class="stat-num c-success">'+faNum(done.length)+'</b><small class="muted">بسته‌شده</small></div>'+
+    '<div class="stat-card accent-danger"><span class="stat-label">از مهلت گذشته</span><b class="stat-num c-danger">'+faNum(late.length)+'</b><small class="muted">نیازمند یادآوری</small></div>'+
+   '</div>'+
+   '<div class="card pad" style="margin-bottom:14px"><h3>'+icon('check',17)+' مأموریت‌های در جریان ('+faNum(open.length)+')</h3>'+
+    (open.length?open.map(function(x){
+      const st=smStatus(x);
+      return card(x,
+       (x.status==='ثبت‌شده'?'<button class="btn btn-outline btn-sm" data-act="secMissAdv" data-id="'+x.id+'">در حال انجام شد</button>':'')+
+       '<button class="btn btn-primary btn-sm" data-act="secMissDone" data-id="'+x.id+'">ثبت نتیجه و بستن</button>'+
+       '<button class="icon-btn danger" data-act="secMissDel" data-id="'+x.id+'" title="حذف" style="color:var(--danger)">'+icon('trash',13)+'</button>');
+    }).join(''):emptyState('مأموریت بازی وجود ندارد'))+'</div>'+
+   '<div class="card pad"><h3>'+icon('archive',17)+' مأموریت‌های انجام‌شده ('+faNum(done.length)+')</h3>'+
+    (done.length?done.map(function(x){ return card(x,'<button class="icon-btn danger" data-act="secMissDel" data-id="'+x.id+'" title="حذف" style="color:var(--danger)">'+icon('trash',13)+'</button>'); }).join(''):emptyState('مأموریتی بسته نشده است'))+'</div>';
+}
+function openSecMissionModal(){
+  const users=all('SELECT username,display_name,role FROM users WHERE active=1 ORDER BY display_name');
+  const ov=openModal('ثبت مأموریت درون‌سازمانی — دبیر هیئت امنا',
+   '<form id="smForm" novalidate>'+
+    fld('عنوان مأموریت *','<input name="title" class="inp" placeholder="مثال: تهیه گزارش آمادگی سالن برای مراسم نیمه شعبان">')+
+    fld('شرح مأموریت','<textarea name="descr" class="inp" rows="3" placeholder="شرح خواسته، محدوده و خروجی موردانتظار…"></textarea>')+
+    '<div class="frow2">'+
+      fld('گیرنده (معاونت / مسئول) *','<select name="target" class="inp">'+users.map(function(u){ return '<option value="'+esc(u.username)+'">'+esc(u.display_name)+' — '+esc(u.role)+'</option>'; }).join('')+'</select>')+
+      fld('اولویت','<select name="prio" class="inp"><option>عادی</option><option>مهم</option><option>فوری</option></select>')+
+    '</div>'+
+    fld('مهلت انجام (شمسی)','<input name="deadline" class="inp" value="" placeholder="۱۴۰۵/۰۹/۰۱ (اختیاری)">')+
+    '<div class="badge b-warn" style="margin-bottom:12px">پس از ثبت: اعلان برای گیرنده ارسال و مأموریت در بخش «مأموریت‌ها» پنل عمومی او درج می‌شود؛ وضعیت از همین تب قابل پیگیری است.</div>'+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت و ارسال مأموریت</button>'+
+   '</form>',{width:'660px'});
+  const form=ov.querySelector('#smForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    if(!form.title.value.trim()){ setErr(form.title,'عنوان مأموریت الزامی است.'); return; }
+    let dl='';
+    if(form.deadline.value.trim()){ const jd=parseJDate(form.deadline.value); if(!jd){ setErr(form.deadline,'تاریخ شمسی معتبر نیست.'); return; } dl=jToIso(jd.jy,jd.jm,jd.jd); }
+    const tu=one('SELECT * FROM users WHERE username=?',[form.target.value]);
+    run('INSERT INTO sec_missions (title,descr,target_username,target_role,deadline_iso,priority,status,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?)',
+     [form.title.value.trim(),form.descr.value.trim(),form.target.value,tu?tu.role:'',dl,form.prio.value,'ثبت‌شده',session.username,faStamp()]);
+    addNotif(form.target.value,'مأموریت درون‌سازمانی جدید','مأموریت «'+form.title.value.trim()+'» توسط دبیر هیئت امنا برای شما ثبت شد'+(dl?' (مهلت: '+faDateLong(dl)+')':'')+' — در بخش «مأموریت‌ها» قابل مشاهده است.');
+    logActivity('ثبت مأموریت درون‌سازمانی','مأموریت «'+form.title.value.trim()+'» برای '+(tu?tu.display_name:'—')+' ثبت شد.');
+    renderNotifBadge(); markDirty(); saveNow(true); closeModal(); toast('مأموریت ثبت و برای گیرنده ارسال شد ✓'); renderView();
+  });
+}
+function secMissDone(id){
+  const m=one('SELECT * FROM sec_missions WHERE id=?',[id]); if(!m) return;
+  const ov=openModal('ثبت نتیجه مأموریت — '+esc(m.title),
+   '<form id="smDoneForm" novalidate>'+
+    fld('نتیجه / گزارش پیگیری','<textarea name="note" class="inp" rows="3" placeholder="خلاصه نتیجه و اقدام انجام‌شده…">'+esc(m.result_note||'')+'</textarea>')+
+    '<div class="frow2">'+
+      fld('وضعیت نهایی','<select name="st" class="inp"><option'+(m.status==='انجام‌شده'?' selected':'')+'>انجام‌شده</option><option'+(m.status==='لغوشده'?' selected':'')+'>لغوشده</option></select>')+
+      '<div></div>'+
+    '</div>'+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت و بستن مأموریت</button>'+
+   '</form>');
+  const form=ov.querySelector('#smDoneForm');
+  form.addEventListener('submit',function(e){
+    e.preventDefault(); clearErrs(form);
+    run('UPDATE sec_missions SET result_note=?,status=? WHERE id=?',[form.note.value.trim(),form.st.value,m.id]);
+    if(m.target_username&&m.target_username!==session.username) addNotif(m.target_username,'وضعیت مأموریت به‌روزرسانی شد','مأموریت «'+m.title+'» به وضعیت «'+form.st.value+'» رسید'+(form.note.value.trim()?': '+form.note.value.trim():'.'));
+    logActivity('پیگیری مأموریت درون‌سازمانی','مأموریت «'+m.title+'» — '+form.st.value);
+    markDirty(); saveNow(true); closeModal(); toast('وضعیت مأموریت ثبت شد ✓'); renderView();
+  });
 }
 
 /* ============================================================
@@ -6389,7 +6584,7 @@ function openExtPrintEditor(id){
     '</div>'+
     '<div class="frow2">'+
       fld('به: *','<input name="rec" class="inp" value="'+esc(x.recipient)+'" placeholder="مخاطب…">')+
-      fld('از:','<input name="from" class="inp" value="امام جماعت مسجد صاحب‌الزمان (عج)">')+
+      fld('از:','<input name="from" class="inp" value="'+esc(x.sender_from||'امام جماعت مسجد صاحب‌الزمان (عج)')+'">')+
     '</div>'+
     fld('موضوع *','<input name="subj" class="inp" value="'+esc(x.subject)+'">')+
     fld('متن نامه','<textarea name="body" class="inp" rows="9" style="line-height:2" placeholder="متن نامه… (سلام و صلوات خودکار درج می‌شود)">'+esc(x.body||'')+'</textarea>')+
@@ -6418,13 +6613,14 @@ function openExtPrintEditor(id){
       date_fa:form.datefa.value.trim(), attach:form.attach.value.trim(), tracking_no:form.trk.value.trim(),
       cc:form.cc.value.split('\n').map(function(s2){return s2.trim()}).filter(Boolean).join('\n'),
       signer_name:form.sname.value.trim(), signer_title:form.stitle.value.trim(),
+      sender_from:form.from.value.trim(),
       signed_imam:(form.sig.checked&&x.status==='صادرشده')?1:0
     };
   };
   const saveAll=function(){
     const v=collect();
-    run('UPDATE ext_letters SET recipient=?,subject=?,body=?,date_fa=?,attach=?,tracking_no=?,cc=?,signer_name=?,signer_title=?,signed_imam=? WHERE id=?',
-      [v.recipient,v.subject,v.body,v.date_fa,v.attach,v.tracking_no,v.cc,v.signer_name,v.signer_title,v.signed_imam,id]);
+    run('UPDATE ext_letters SET recipient=?,subject=?,body=?,date_fa=?,attach=?,tracking_no=?,cc=?,signer_name=?,signer_title=?,sender_from=?,signed_imam=? WHERE id=?',
+      [v.recipient,v.subject,v.body,v.date_fa,v.attach,v.tracking_no,v.cc,v.signer_name,v.signer_title,v.sender_from,v.signed_imam,id]);
     logActivity('ویرایش نامه رسمی','ساختار نامه '+x.number+' ویرایش و ذخیره شد.');
     markDirty(); saveNow(true);
   };
@@ -6470,8 +6666,8 @@ const CULT_TABS=[
 ];
 function imamPanelTabs(){
   if(!session||session.username!=='imam') return '';
-  const tabDefs=[['secretary','دبیر هیئت امنا'],['culture','معاونت فرهنگی'],['heyat','هیئت فداییان (س)'],['education','معاونت تعلیم و تربیت']];
-  /* v3.1 — عمران و پشتیبانی و امور مالی به پنل‌های اختصاصی مستقل منتقل شدند (NAV: omran / finance) */
+  /* v3.2 — معاونت‌های عمران/مالی داخل پنل اختصاصی امام جماعت آمدند (بدون دکمهٔ جدا در منوی کنار) */
+  const tabDefs=[['secretary','دبیر هیئت امنا'],['culture','معاونت فرهنگی'],['heyat','هیئت فداییان (س)'],['education','معاونت تعلیم و تربیت'],['omran','معاونت عمران و پشتیبانی'],['finance','معاونت امور مالی']];
   return '<div class="seg" style="margin-bottom:12px;flex-wrap:wrap">'+tabDefs.map(function(td){
     return '<button class="seg-btn '+((window._panelTab===td[0])||(!window._panelTab&&td[0]==='culture')?'on':'')+'" data-act="panelTab" data-k="'+td[0]+'">'+td[1]+'</button>';
   }).join('')+'</div>';
@@ -7344,7 +7540,7 @@ function entSection(k){
    ارتباط مالی: قرارداد اجاره و اطلاعات املاک این‌جاست؛ ثبت دریافت و تأیید
    درآمد و پرداخت‌ها فقط در پنل معاونت امور مالی انجام می‌شود.
    ============================================================ */
-const MSZ_VERSION='v3.1';
+const MSZ_VERSION='v3.2';
 const OMR_TABS=[
  {id:'dash',label:'داشبورد'},
  {id:'proj',label:'پروژه‌های عمرانی'},
@@ -7408,9 +7604,9 @@ function renderOmranPanel(root){
   else if(tab==='ctr') body=omrCtr();
   else if(tab==='bill') body=omrBill();
   else body=omrRep();
-  root.innerHTML=head+tabs+body;
+  root.innerHTML=imamPanelTabs()+head+tabs+body;
 }
-VIEWS.omran=function(root){ renderOmranPanel(root); };
+VIEWS.omran=function(root){ if(session&&session.username==='imam') window._panelTab='omran'; renderOmranPanel(root); };
 function omStat(l,n,cls,sub){ return '<div class="stat-card '+(cls||'')+'"><span class="stat-label">'+l+'</span><b class="stat-num">'+faNum(n)+'</b><small class="muted">'+(sub||'')+'</small></div>'; }
 function omTable(cols,rows,emptyMsg){
   return '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr>'+cols.map(function(c){return '<th>'+c+'</th>'}).join('')+'</tr></thead><tbody>'+
@@ -7854,7 +8050,8 @@ function omFixSendFin(id){
 /* ---------- ۶) پشتیبانی برنامه‌ها ---------- */
 function omrSupp(){
   const rows=all('SELECT * FROM om_supreq ORDER BY id DESC').map(function(s){
-    return '<tr><td><b>'+esc(s.program||'—')+'</b><br><small class="muted">درخواست‌کننده: '+esc(s.org||'—')+(s.requester?' — '+esc(s.requester):'')+'</small></td>'+
+    return '<tr><td><b>'+esc(s.program||'—')+'</b><br><small class="muted">درخواست‌کننده: '+esc(s.org||'—')+(s.requester?' — '+esc(s.requester):'')+'</small>'+
+     (s.letter_no?'<br><span class="badge b-gold" title="نامهٔ رسمی مرتبط در مکاتبات">'+icon('mail',11)+' نامه '+esc(s.letter_no)+'</span>':'')+'</td>'+
      '<td>'+(s.date_iso?faDate(s.date_iso):'—')+'<br><small class="muted">'+esc(s.place||'—')+'</small></td>'+
      '<td class="tiny">'+esc(s.items||'—')+'</td>'+
      '<td><span class="badge '+omBadge(s.status)+'">'+esc(s.status)+'</span>'+(s.damage?'<br><small class="muted">'+esc(s.damage)+'</small>':'')+'</td>'+
@@ -7864,11 +8061,13 @@ function omrSupp(){
       (s.status==='تحویل‌شده'?'<button class="btn btn-outline btn-sm" data-act="omSupReturn" data-id="'+s.id+'">ثبت بازگشت</button> <button class="btn btn-outline btn-sm" data-act="omSupDamage" data-id="'+s.id+'">خسارت/کسری</button> ':'')+
       '<button class="btn btn-danger btn-sm" data-act="omSupDel" data-id="'+s.id+'">حذف</button></td></tr>';
   });
-  return '<div class="page-head"><div><h3>پشتیبانی برنامه‌ها</h3><p class="muted">دریافت درخواست از معاونت‌ها و تشکل‌ها (از تابلوی مأموریت‌ها) ← انتخاب برنامه، تاریخ و مکان و اقلام موردنیاز ← بررسی ← تحویل ← بازگشت ← ثبت خسارت یا کسری</p></div></div>'+
+  return '<div class="page-head"><div><h3>پشتیبانی برنامه‌ها</h3><p class="muted">درخواست معاونت‌ها و تشکل‌ها به‌صورت نامهٔ رسمی از «مکاتبات» ثبت می‌شود (شمارهٔ نامهٔ هر درخواست کنار آن نمایش داده می‌شود) ← بررسی ← تحویل ← بازگشت ← ثبت خسارت یا کسری</p></div></div>'+
    omTable(['درخواست','تاریخ و مکان','اقلام موردنیاز','وضعیت','عملیات'],rows,'درخواست پشتیبانی ثبت نشده است');
 }
-function omSupReqModal(){
-  const ov=openModal('ثبت درخواست پشتیبانی از معاونت عمران و پشتیبانی',
+/* v3.2 — درخواست اقلام پشتیبانی از «مکاتبات»: ثبت به‌صورت نامهٔ رسمی داخلی به معاونت عمران + ردیف پیگیری در پنل عمران */
+function openSupReqLetterModal(){
+  const senderTxt=UNIT_LABELS[myUnit()]||session.role;
+  const ov=openModal('درخواست اقلام پشتیبانی — ثبت به‌صورت نامهٔ رسمی در مکاتبات',
    '<form id="omSupForm" novalidate>'+
     fld('عنوان برنامه یا نیاز *','<input name="prog" class="inp" placeholder="مثال: همایش هفته وحدت — تجهیزات صوتی">')+
     '<div class="frow2">'+
@@ -7876,18 +8075,31 @@ function omSupReqModal(){
      fld('مکان','<input name="place" class="inp" placeholder="مثال: سالن اصلی">')+
     '</div>'+
     fld('اقلام موردنیاز *','<textarea name="items" class="inp" rows="3" placeholder="هر قلم در یک سطر: سیستم صوتی، ۵۰ عدد صندلی، …"></textarea>')+
-    '<button type="submit" class="btn btn-primary btn-block">ارسال درخواست به معاونت عمران</button></form>');
+    '<div class="badge b-warn" style="margin-bottom:12px">درخواست شما با شمارهٔ نامه در «مکاتبات» ثبت، برای دبیرخانه/معاونت عمران ارسال و وضعیت پیگیری آن در همین بخش (مشاهده نامه) قابل مشاهده است.</div>'+
+    '<button type="submit" class="btn btn-primary btn-block">ثبت نامهٔ درخواست اقلام</button></form>');
   const form=ov.querySelector('#omSupForm');
   form.addEventListener('submit',function(e){
     e.preventDefault(); clearErrs(form);
     if(!form.prog.value.trim()){ setErr(form.prog,'عنوان برنامه الزامی است.'); return; }
     if(!form.items.value.trim()){ setErr(form.items,'اقلام موردنیاز را بنویسید.'); return; }
     const d=parseJDate(form.date.value);
-    run('INSERT INTO om_supreq (org,requester,program,date_iso,place,items,status,created_by,created_at_fa) VALUES (?,?,?,?,?,?,?,?,?)',
-     [session.role,session.name,form.prog.value.trim(),d?jToIso(d.jy,d.jm,d.jd):'',form.place.value.trim(),form.items.value.trim(),'ثبت‌شده',session.username,faStamp()]);
-    all('SELECT username FROM users WHERE username IN (\'support\',\'imam\')').forEach(function(u){ addNotif(u.username,'درخواست پشتیبانی جدید','واحد «'+session.role+'» برای «'+form.prog.value.trim()+'» درخواست پشتیبانی ثبت کرد.'); });
-    logActivity('درخواست پشتیبانی عمران','واحد «'+session.role+'» برای «'+form.prog.value.trim()+'» درخواست ثبت کرد.');
-    renderNotifBadge(); markDirty(); saveNow(true); closeModal(); toast('درخواست به معاونت عمران و پشتیبانی ارسال شد ✓'); renderView();
+    const iso=d?jToIso(d.jy,d.jm,d.jd):'';
+    const num=nextNumber('letters',letterPrefix());
+    const subj='درخواست اقلام پشتیبانی — '+form.prog.value.trim();
+    const summary='برنامه: '+form.prog.value.trim()+' | مکان: '+(form.place.value.trim()||'—')+' | تاریخ نیاز: '+(iso?faDate(iso):'—')+'\nاقلام موردنیاز:\n'+form.items.value.trim();
+    run('INSERT INTO letters (number,subject,sender,type,summary,status,assigned_role,file_name,created_by,created_at,created_at_fa,org) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+     [num,subj,senderTxt,'داخلی',summary,'ثبت‌شده','معاون عمران و پشتیبانی','',session.username,todayIso(),faStamp(),'center']);
+    const lid=lastId();
+    run('INSERT INTO om_supreq (org,requester,program,date_iso,place,items,status,created_by,created_at_fa,letter_no) VALUES (?,?,?,?,?,?,?,?,?,?)',
+     [session.role,session.name,form.prog.value.trim(),iso,form.place.value.trim(),form.items.value.trim(),'ثبت‌شده',session.username,faStamp(),num]);
+    all("SELECT username FROM users WHERE username IN ('support','secretary','imam')").forEach(function(u){
+      if(u.username===session.username) return;
+      addNotif(u.username,'درخواست اقلام پشتیبانی (نامهٔ رسمی)','نامهٔ '+num+' از '+senderTxt+' برای «'+form.prog.value.trim()+'» در مکاتبات ثبت شد و در انتظار بررسی است.');
+    });
+    logActivity('درخواست اقلام پشتیبانی','نامهٔ '+num+' برای «'+form.prog.value.trim()+'» در مکاتبات ثبت شد.');
+    renderNotifBadge(); markDirty(); saveNow(true); closeModal(); toast('نامهٔ درخواست با شماره '+faNum(num)+' در مکاتبات ثبت شد ✓');
+    if(currentView==='letters'&&typeof pendingDetail!=='undefined'){ pendingDetail={kind:'letter',id:lid}; }
+    renderView();
   });
 }
 function omSupFieldModal(id,field){
@@ -8228,6 +8440,9 @@ VIEWS.panel=function(root){
   if(kind==='culture'){ renderCultPanel(root); return; }
   if(kind==='education'){ renderEduPanel(root); return; }
   if(kind==='heyat'){ renderHeyatPanel(root); return; }
+  /* v3.2 — پنل‌های معاونت‌ها برای امام جماعت از داخل پنل اختصاصی (تب‌ها) باز می‌شوند؛ هر پنل خودش تب‌های امام را بالای صفحه می‌گذارد */
+  if(kind==='omran'){ renderOmranPanel(root); return; }
+  if(kind==='finance'){ renderFinPanel(root); return; }
   if(kind==='support'){ renderOmranPanel(root); return; }
   const cfg=PANEL_KIND[kind];
   const tabs=imamPanelTabs();
