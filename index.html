@@ -682,7 +682,7 @@ tr.row-ov td{color:#8E2020}
     </form>
     <a class="apk-link" href="app/app.apk" download>📥 دانلود اپلیکیشن اندروید (APK)</a>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۳</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۴</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -734,7 +734,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۳ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب الزمان (عج) — نسخه عملیاتی ۳.۴ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -1209,11 +1209,19 @@ async function cloudPush(reason,manual){
     const ver=Date.now();
     const meta={app:'msz',sync:1,ver:ver,dev:DEVICE_ID,by:(session&&session.username)||'',reason:String(reason||'').slice(0,40),iv:payload.iv,cipher:payload.cipher};
     const content=b64(new TextEncoder().encode(JSON.stringify(meta)));
-    let sha=null;
+    let sha=null, cloudMeta=null;
     const gr=await fetch(cloudApi(),{headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json'},cache:'no-store'});
-    if(gr.status===200){ sha=(await gr.json()).sha; }
+    if(gr.status===200){ const gj=await gr.json(); sha=gj.sha; try{ if(gj.content&&gj.content.length>10) cloudMeta=JSON.parse(new TextDecoder().decode(ub64(String(gj.content).replace(/\s/g,'')))); }catch(e){} }
     else if(gr.status!==404){ throw new Error('sha http '+gr.status); }
     if(sha&&reason==='initial'&&!manual){ cloudState('ok','همگام است'); return false; }
+    /* v3.4 — رفع ضعف A1 (قاعدهٔ «یک ویرایشگر فعال»): اگر دستگاه دیگری نسخهٔ تازه‌تری به ابر فرستاده و این دستگاه هنوز آن را دریافت نکرده است،
+       ارسالِ خودکار متوقف می‌شود تا ابتدا دریافت شود و داده‌های دستگاه دیگر بی‌سبب بازنویسی نشود (ارسال دستیِ آگاهانهٔ کاربر مستثناست) */
+    const myVer=Number(localStorage.getItem('msz_cloud_ver')||0);
+    if(cloudMeta&&cloudMeta.ver&&cloudMeta.dev!==DEVICE_ID&&cloudMeta.ver>myVer&&reason!=='manual'&&reason!=='initial'&&reason!=='adoption'){
+      cloudState('busy','نسخهٔ تازه‌تر در ابر — دریافت خودکار…');
+      setTimeout(function(){ if(!cloudLock) cloudPull(false); },800);
+      return false;
+    }
     const pr=await fetch(cloudApi(),{method:'PUT',headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
       body:JSON.stringify({message:'sync['+DEVICE_ID+']: '+(reason||'data update'),content:content,branch:CLOUD.branch,sha:sha})});
     if(!pr.ok){ throw new Error('push http '+pr.status); }
@@ -1260,7 +1268,7 @@ async function cloudPull(manual){
     cloudAdopted=true;
     cloudState('ok','دریافت شد ✓');
     if(session){ renderView(); try{ refreshTicker(); }catch(e){} try{ renderNotifBadge(); }catch(e){} }
-    if(manual||meta.dev!==DEVICE_ID) toast('داده‌های تازه از فضای ابری دریافت شد ✓');
+    if(manual||meta.dev!==DEVICE_ID) toast('داده‌های تازه از ابر دریافت شد ✓'+(meta.by?' (آخرین ویرایش: '+meta.by+')':''));
     return meta.ver;
   }catch(e){ console.warn('cloudPull',e); cloudState('off','دریافت ناموفق'); return null; }
 }
@@ -1759,6 +1767,30 @@ function ensureSchema(){
         markDirty();
       }
     }catch(e){ console.warn('pwreveal migrate',e); }
+    /* v3.4 — نمایش همهٔ گذرواژه‌ها (به درخواست صریح کارفرما): گذرواژهٔ حساب‌هایی که پیش از فعال‌شدن قابلیت نمایش تغییر یافته و فقط هش آن‌ها موجود بود،
+       با گذرواژهٔ جدید الگودار بازسازی می‌شود تا از این پس همهٔ گذرواژه‌ها — حتی اولیه‌ها — در سامانه قابل بازدید باشند */
+    try{
+      const pr2flag=one('SELECT value FROM sys_flags WHERE name=?',['pwreveal2_1405_v1']);
+      if(!pr2flag){
+        [
+          ['secretary','Sec!1405S2','d81d9fbcf650b77f40364b98c6834ca6a2751e109ccf02217274bd96c763683a'],
+          ['finance','Fin!1405F3','769d73a0e8a6e74c8c9c2882bc55a0b89830519825ac8714da87e987c8c569ec'],
+          ['culture','Cul!1405C4','0bc92844f60ab4755832f13d33038dc426174cd1a4f3d23cc6074d082fbd2305'],
+          ['support','Sup!1405S5','f5b92ab3d40cb5ffb177a93569bb5f6ae8b274c3aaed55b37f41788b1c0d2785'],
+          ['education','Edu!1405E6','8bdd8e9206dda8d364b8c3091a1bfb00cecce64ed397099a937933cbf73b53ae'],
+          ['sisters','Sis!1405S7','2d0f011ab63b410e87b1ca9735faf2746cb9c955f68e18c3df03b6f81d98966c'],
+          ['basij_brothers','Bas!1405B8','6d6d2e900948b785b2e0b6c3a098a803306edcd91416cb382d3e02667ed6c501'],
+          ['basij_sisters','Bsi!1405B9','1fcb3b26dc15c502bf01fa36d2eeabdbd7b8effea475d044d194d220a81e180d'],
+          ['heyat','Hey!1405H1','74bea92fbc55eb17d50d23087c4644256656166a6b17852c825693a92afd62aa'],
+          ['charity','Cha!1405C2','b79509d1b729209569b3bb72200d6ffd56a89fdbbd02e98e985dce9260777749'],
+          ['media_admin','Med!1405M4','21cd56138108ef412baced4ce1f2fcdd9a04e961318f2168b8c6cac41b00fb51']
+        ].forEach(function(k){
+          run("UPDATE users SET pass_hash=?,pass_plain=? WHERE username=? AND (pass_plain IS NULL OR pass_plain='')",[k[2],k[1],k[0]]);
+        });
+        run('INSERT OR REPLACE INTO sys_flags(name,value) VALUES (?,?)',['pwreveal2_1405_v1',faStamp()]);
+        markDirty();
+      }
+    }catch(e){ console.warn('pwreveal2 migrate',e); }
   }catch(e){ console.warn('ensureSchema migrate',e); }
   try{ run("CREATE TABLE IF NOT EXISTS user_perms(username TEXT NOT NULL, module TEXT NOT NULL, lvl INTEGER NOT NULL, updated_at_fa TEXT DEFAULT '', PRIMARY KEY(username,module))"); }catch(e){}
   try{
@@ -2287,7 +2319,13 @@ function openMeetingModal(){
       '</div>'+
       fld('مدعوین — غایبان = مدعوین منهای حاضران','<div class="att-grid">'+ROLES.map(r=>'<label class="chk"><input type="checkbox" data-invrole="'+esc(r)+'"> '+esc(r)+'</label>').join('')+'</div>')+
       fld('مذاکرات و صورت‌جلسه','<textarea name="minutes" class="inp" rows="3" placeholder="خلاصه مذاکرات و صورت‌جلسه…"></textarea>')+
-      '<p class="tiny muted">وضعیت این جلسه «برگزار شد» ذخیره می‌شود؛ پس از ثبت گزارش، مصوبات — هر مصوبه به‌صورت مستقل و جداگانه — با «مسئول اجرا» و «مهلت انجام» در صفحهٔ جلسه اضافه می‌گردد.</p>'+
+      '<div class="inline-box" style="margin:10px 0 6px">'+
+        '<b style="font-size:12.5px;color:var(--primary-dark);display:block;margin-bottom:8px">مصوبات جلسه — تک‌تک و دانه‌به‌دانه ثبت می‌شوند (نه به‌صورت کلی)</b>'+
+        '<div id="decRows"></div>'+
+        '<button type="button" id="decAddRow" class="btn btn-outline btn-sm">'+icon('plus',14)+' افزودن مصوبه</button>'+
+        '<div id="decRowsErr" style="color:var(--danger);font-size:12px;font-weight:700;min-height:16px;margin-top:6px"></div>'+
+        '<p class="tiny muted" style="margin-top:6px">هر مصوبه به‌صورت رکورد مستقل با «مسئول اجرا» و «مهلت انجام» ثبت و وظیفهٔ جداگانه می‌شود و اعلان برای مسئول ارسال می‌گردد؛ پس از ثبت گزارش هم می‌توانید از صفحهٔ جلسه مصوبه اضافه کنید.</p>'+
+      '</div>'+
     '</div>'+
     '<div id="unitPlan">'+
       fld('وضعیت','<select name="status" class="inp"><option>برنامه‌ریزی‌شده</option><option>برگزار شد</option><option>لغو شد</option></select>')+
@@ -2304,6 +2342,24 @@ function openMeetingModal(){
   }
   if(needKindSel) $('#mtKind').addEventListener('change',syncKind);
   syncKind();
+  /* v3.4 — ثبت مصوبات در خودِ فرم گزارش جلسه، تک‌تک و دانه‌به‌دانه (درخواست کارفرما) */
+  const usersOpt=all('SELECT username,display_name FROM users WHERE active=1 ORDER BY display_name');
+  const decRows=ov.querySelector('#decRows');
+  function decRowHtml(){
+    return '<div class="dec-row" style="border:1px dashed #c9c2b2;border-radius:10px;padding:8px 10px;margin-bottom:8px;background:var(--soft)">'+
+     '<div style="display:flex;align-items:center;margin-bottom:6px"><b style="font-size:11.5px;color:var(--primary-dark)">مصوبه <span class="dr-n"></span></b>'+
+     '<button type="button" class="btn btn-ghost btn-sm dr-del" style="margin-right:auto;color:var(--danger)">حذف</button></div>'+
+     '<input class="inp dr-title" style="margin-bottom:6px" placeholder="عنوان مصوبه… مثال: تعمیر نورپردازی سالن اصلی">'+
+     '<div class="frow2">'+
+       '<select class="inp dr-asg">'+usersOpt.map(u=>'<option value="'+esc(u.username)+'">'+esc(u.display_name)+'</option>').join('')+'</select>'+
+       '<input class="inp dr-dl" placeholder="مهلت انجام: ۱۴۰۵/۰۸/۲۰">'+
+     '</div></div>';
+  }
+  function decRenum(){ Array.from(decRows.querySelectorAll('.dr-n')).forEach(function(el,i){ el.textContent=faNum(i+1); }); }
+  function decBindDel(){ Array.from(decRows.querySelectorAll('.dr-del')).forEach(function(b){ if(b.dataset.b) return; b.dataset.b='1'; b.addEventListener('click',function(){ b.closest('.dec-row').remove(); decRenum(); if(!decRows.children.length) decAddRow(); }); }); }
+  function decAddRow(){ decRows.insertAdjacentHTML('beforeend',decRowHtml()); decBindDel(); decRenum(); }
+  ov.querySelector('#decAddRow').addEventListener('click',decAddRow);
+  decAddRow();
   form.addEventListener('submit',e=>{
     e.preventDefault(); clearErrs(form);
     let ok=true;
@@ -2326,8 +2382,32 @@ function openMeetingModal(){
       extraInv.forEach(function(n){ if(!inv.includes(n)) inv.push(n); });
       run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by,org,kind,unit,time_fa,place,invitees,agenda,minutes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         [num,form.title.value.trim(),iso,faDate(iso),'برگزار شد',JSON.stringify(att),session.username,org,k,unit,form.timefa.value.trim(),form.place.value.trim(),JSON.stringify(inv),form.agenda.value.trim(),form.minutes.value.trim()]);
-      logActivity('ثبت گزارش جلسه هیئت امنا','گزارش «'+form.title.value.trim()+'» با شماره '+num+' ثبت شد ('+faNum(att.length)+' حاضر'+(extraAtt.length?' + '+faNum(extraAtt.length)+' حاضر اضافی':'')+').');
-      if(session.username!=='imam') addNotif('imam','گزارش جلسه هیئت امنا ثبت شد','گزارش «'+form.title.value.trim()+'» ('+num+') در دبیرخانه ثبت شد؛ ثبت مصوبات با مسئول و مهلت انجام از صفحهٔ جلسه انجام می‌شود.');
+      const mid=lastId();
+      /* v3.4 — ثبت تک‌تک مصوبات واردشده در فرم گزارش */
+      const dErr=ov.querySelector('#decRowsErr'); if(dErr) dErr.textContent='';
+      const items=[]; let dBad=false;
+      Array.from(ov.querySelectorAll('#decRows .dec-row')).forEach(function(r){
+        const t=r.querySelector('.dr-title').value.trim();
+        if(!t) return;
+        const dlv=r.querySelector('.dr-dl').value.trim();
+        const jd2=dlv?parseJDate(dlv):null;
+        if(!dlv||!jd2){ r.querySelector('.dr-dl').style.borderColor='var(--danger)'; dBad=true; return; }
+        items.push({t:t,a:r.querySelector('.dr-asg').value,dl:jToIso(jd2.jy,jd2.jm,jd2.jd)});
+      });
+      if(dBad){ if(dErr) dErr.textContent='برای هر مصوبه، «مهلت انجام» شمسی معتبر الزامی است (نمونه: ۱۴۰۵/۰۸/۲۰).'; return; }
+      items.forEach(function(it){
+        const au=one('SELECT * FROM users WHERE username=?',[it.a]);
+        run('INSERT INTO tasks (title,assignee,assignee_username,deadline_iso,status,meeting_id,created_at_fa) VALUES (?,?,?,?,?,?,?)',
+          [it.t,au?au.display_name:'',it.a,it.dl,'در انتظار',mid,faStamp()]);
+        const tid=lastId();
+        run('INSERT INTO decisions (meeting_id,title,assignee,assignee_username,task_id) VALUES (?,?,?,?,?)',
+          [mid,it.t,au?au.display_name:'',it.a,tid]);
+        if(au&&it.a!==session.username) addNotif(it.a,'وظیفه جدید برای شما','وظیفه «'+it.t+'» از مصوبات جلسه '+num+' به شما واگذار شد (مهلت: '+faDateLong(it.dl)+').');
+        logActivity('ثبت مصوبه','مصوبه «'+it.t+'» در گزارش جلسه '+num+' به‌صورت تک‌تک ثبت شد.');
+      });
+      renderNotifBadge();
+      logActivity('ثبت گزارش جلسه هیئت امنا','گزارش «'+form.title.value.trim()+'» با شماره '+num+' ثبت شد ('+faNum(att.length)+' حاضر'+(extraAtt.length?' + '+faNum(extraAtt.length)+' حاضر اضافی':'')+'، '+faNum(items.length)+' مصوبه تک‌تک).');
+      if(session.username!=='imam') addNotif('imam','گزارش جلسه هیئت امنا ثبت شد','گزارش «'+form.title.value.trim()+'» ('+num+') با '+faNum(items.length)+' مصوبه در دبیرخانه ثبت شد؛ افزودن مصوبه‌های بیشتر از صفحهٔ جلسه امکان‌پذیر است.');
       renderNotifBadge();
     }else{
       run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by,org,kind,unit,time_fa,place) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
@@ -3584,9 +3664,50 @@ function openGalleryModal(){
 function userLevelBadge(l){
   return '<span class="badge '+(l>=4?'b-gold':(l===3?'b-info':(l===2?'b-warn':'b-neutral')))+'">'+levelName(l)+'</span>';
 }
+/* v3.4 — برچسب واحد/سازمان برای نمایش در فهرست حساب‌ها */
+function orgLabel(o){ if(o==='ALL') return 'کل سامانه'; return ORG_LABELS[o]||'ستاد مسجد'; }
 /* true if there is NO other active level-4 account besides «except» */
 function lastActiveL4(except){
   return one('SELECT COUNT(*) AS c FROM users WHERE level=4 AND active=1 AND username<>?',[except||'']).c===0;
+}
+/* v3.4 — گیت امنیتی دوم بخش «کاربران و دسترسی‌ها» (به درخواست کارفرما): برای امام جماعت و مسئول فنی،
+   ورود به این بخش علاوه بر گذرواژهٔ حساب نیازمند گذرواژهٔ امنیتی دوم است؛ فلگ عبور فقط در حافظهٔ همین بار صفحه معتبر است */
+const USERS_GATE_SHA256='dd0ee3fe0e5b6f5d7b56964465699296b7924c64a3be42d621ee31d09b114af2';
+let usersGateFails=0, usersGateLockUntil=0;
+function usersGatePassed(){ return window.__usersGateOk===true; }
+function renderUsersGate(root){
+  const locked=Date.now()<usersGateLockUntil;
+  root.innerHTML='<div class="card pad" style="max-width:470px;margin:36px auto;border-top:3px solid var(--gold);text-align:center">'+
+   '<div style="display:flex;justify-content:center;color:var(--gold);margin-bottom:6px">'+icon('shield',30)+'</div>'+
+   '<h2 style="margin:0 0 6px">بخش محافظت‌شده — کاربران و دسترسی‌ها</h2>'+
+   '<p class="tiny muted" style="margin-bottom:14px">این بخش با گیت امنیتی دوم محافظت می‌شود. گذرواژهٔ امنیتی دوم را وارد کنید (ویژهٔ امام جماعت و مسئول فنی).</p>'+
+   '<form id="ugForm" novalidate style="text-align:right">'+
+    fld('گذرواژهٔ امنیتی دوم','<input id="ugPass" class="inp" type="password" dir="ltr" style="text-align:right" autocomplete="off" autofocus>')+
+    '<div id="ugErr" style="color:var(--danger);font-size:12px;font-weight:700;min-height:18px"></div>'+
+    '<button type="submit" class="btn btn-primary btn-block" style="margin-top:8px">'+icon('key',16)+' '+(locked?'قفل موقت — چند لحظه بعد تلاش کنید':'ورود به بخش')+'</button>'+
+   '</form>'+
+   '<p class="tiny muted" style="margin-top:12px;margin-bottom:0">پس از تأیید، تا پایان همین نشست (خروج یا بازآوری صفحه) نیازی به تکرار نیست؛ همهٔ مشاهده‌های گذرواژه در گزارش فعالیت ثبت می‌شود.</p>'+
+  '</div>';
+  const f=root.querySelector('#ugForm');
+  f.addEventListener('submit',async ev=>{
+    ev.preventDefault();
+    const err=root.querySelector('#ugErr'); err.textContent='';
+    if(Date.now()<usersGateLockUntil){ err.textContent='به دلیل تلاش‌های ناموفق، ورود موقتاً قفل شده است. کمی بعد تلاش کنید.'; return; }
+    const v=root.querySelector('#ugPass').value||'';
+    const h=await sha256Hex(PASS_SALT+v);
+    if(h===USERS_GATE_SHA256){
+      window.__usersGateOk=true; usersGateFails=0;
+      logActivity('گیت امنیتی کاربران','عبور موفق از گیت امنیتی دوم بخش «کاربران و دسترسی‌ها».');
+      markDirty(); saveNow(true);
+      toast('گیت امنیتی تأیید شد ✓');
+      renderView();
+    }else{
+      usersGateFails++;
+      logActivity('گیت امنیتی کاربران','تلاش ناموفق برای عبور از گیت امنیتی دوم ('+faNum(usersGateFails)+').');
+      if(usersGateFails>=5){ usersGateLockUntil=Date.now()+30000; usersGateFails=0; err.textContent='پنج تلاش ناموفق — ورود به مدت ۳۰ ثانیه قفل شد.'; }
+      else err.textContent='گذرواژهٔ امنیتی نادرست است. تلاش '+faNum(usersGateFails)+' از ۵.';
+    }
+  });
 }
 VIEWS.users=function(root){
   const isImam=session.username==='imam';
@@ -3595,6 +3716,8 @@ VIEWS.users=function(root){
     root.innerHTML='<div class="card pad" style="border-right:4px solid var(--danger)"><b style="color:var(--danger);display:flex;align-items:center;gap:8px">'+icon('alert',17)+' دسترسی محدود</b><p class="tiny muted" style="margin-top:8px">مدیریت کاربران، نقش‌ها و اختیارات فقط در اختیار امام جماعت است (سند مأموریت §۵). مدیر فنی فقط مسئول زیرساخت فنی است و اختیار سازمانی ندارد.</p></div>';
     return;
   }
+  /* v3.4 — گیت امنیتی دوم پیش از نمایش فهرست حساب‌ها و گذرواژه‌ها */
+  if(!usersGatePassed()){ renderUsersGate(root); return; }
   const us=all('SELECT * FROM users ORDER BY level DESC, id');
   function pwCell(u){
     return u.pass_plain
@@ -3605,10 +3728,11 @@ VIEWS.users=function(root){
     /* v3.3 — مدیر فنی: فقط مشاهدهٔ فهرست حساب‌ها و گذرواژه‌ها؛ بدون هیچ اختیار تغییر */
     root.innerHTML=
      '<div class="page-head"><div><h2>حساب‌های کاربری — مشاهده گذرواژه‌ها</h2><p class="muted">نمایش فهرست حساب‌ها و گذرواژه‌ها صرفاً برای پشتیبانی فنی؛ هرگونه تغییر حساب، عنوان نقش یا سطح دسترسی فقط از پنل امام جماعت انجام می‌شود.</p></div></div>'+
-     '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>فعال</th><th>گذرواژه</th></tr></thead><tbody>'+
+     '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>واحد</th><th>فعال</th><th>گذرواژه</th></tr></thead><tbody>'+
       us.map(u=>'<tr><td><b>'+esc(u.display_name)+'</b></td>'+
         '<td><code style="font-size:11px;background:var(--soft);padding:2px 7px;border-radius:6px;direction:ltr;display:inline-block">'+esc(u.username)+'</code></td>'+
         '<td>'+esc(u.role)+'</td>'+
+        '<td class="tiny">'+esc(orgLabel(u.org))+'</td>'+
         '<td>'+(u.active?'<span class="badge b-success">فعال</span>':'<span class="badge b-neutral">غیرفعال</span>')+'</td>'+
         '<td>'+pwCell(u)+'</td></tr>').join('')+
      '</tbody></table></div></div>';
@@ -3618,10 +3742,11 @@ VIEWS.users=function(root){
    '<div class="page-head"><div><h2>مدیریت کاربران و دسترسی‌ها</h2><p class="muted">'+(isImam?'مدیریت کامل حساب‌ها، گذرواژه‌ها و تعیین اختیارات جزئی هر کاربر':'مدیریت حساب‌های کاربری سامانه')+'</p></div>'+
    '<button class="btn btn-primary" data-act="userAdd">'+icon('plus',16)+' افزودن حساب</button></div>'+
    (isMedia?'<div class="card pad" style="border-right:4px solid var(--warning);margin-bottom:14px"><p style="font-size:12.5px;font-weight:700;color:var(--warning);display:flex;align-items:center;gap:8px">'+icon('alert',16)+'<span>این پنل فقط مدیریت حساب‌ها را انجام می‌دهد؛ تغییر سطح دسترسی فقط از پنل امام جماعت انجام می‌شود.</span></p></div>':'')+
-   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>گذرواژه</th><th>سطح دسترسی</th><th>فعال</th><th>عملیات</th></tr></thead><tbody>'+
+   '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>واحد</th><th>گذرواژه</th><th>سطح دسترسی</th><th>فعال</th><th>عملیات</th></tr></thead><tbody>'+
     us.map(u=>'<tr><td><b>'+esc(u.display_name)+'</b>'+(u.username==='media_admin'?'<span class="u-med">دسترسی محدود رسانه (بدون اختیار سازمانی)</span>':'')+'</td>'+
       '<td><code style="font-size:11px;background:var(--soft);padding:2px 7px;border-radius:6px;direction:ltr;display:inline-block">'+esc(u.username)+'</code></td>'+
       '<td>'+esc(u.role)+'</td>'+
+      '<td class="tiny">'+esc(orgLabel(u.org))+'</td>'+
       '<td>'+pwCell(u)+'</td>'+
       '<td>'+userLevelBadge(u.level)+'</td>'+
       '<td><label class="switch"><input type="checkbox" data-toggle-user="'+esc(u.username)+'" '+(u.active?'checked':'')+' aria-label="فعال/غیرفعال '+esc(u.username)+'"><i></i></label></td>'+
@@ -3668,6 +3793,9 @@ function openUserModal(mode,origUn){
   const u=mode==='edit'?one('SELECT * FROM users WHERE username=?',[origUn]):null;
   if(mode==='edit' && !u){ toast('حساب یافت نشد','error'); return; }
   const lvlSel='<select id="uLevel" class="inp">'+[1,2,3,4].map(l=>'<option value="'+l+'"'+(u&&u.level===l?' selected':'')+'>'+levelName(l)+'</option>').join('')+'</select>';
+  /* v3.4 — انتخاب واحد/سازمان هنگام افزودن حساب (رفع ضعف B2: پیش‌فرض «مرکزی» بدون انتخاب) */
+  const curOrg=u?((u.org&&u.org!=='')?u.org:(ORG_BY_UN[u.username]||'center')):'center';
+  const orgSel='<select id="uOrg" class="inp">'+Object.keys(ORG_LABELS).map(function(o){ return '<option value="'+o+'"'+(curOrg===o?' selected':'')+'>'+esc(ORG_LABELS[o])+'</option>'; }).join('')+'</select>';
   openModal(mode==='edit'?'ویرایش حساب کاربری':'افزودن حساب کاربری',
    '<form id="userForm" novalidate>'+
     fld('نام کاربری *','<input id="uUser" class="inp" dir="ltr" style="text-align:right" value="'+esc(u?u.username:'')+'" autocomplete="off" spellcheck="false">')+
@@ -3675,6 +3803,7 @@ function openUserModal(mode,origUn){
     (mode==='add'
       ? fld('عنوان نقش *','<input id="uRoleInput" class="inp" placeholder="مثال: مسئول کمیته خیریه">')
       : fld('عنوان نقش *','<input id="uRoleInput" class="inp" value="'+esc(u.role)+'">'))+
+    (isImam?fld('واحد / سازمان',orgSel):'')+
     (isImam?fld('سطح دسترسی',lvlSel):'')+
     (mode==='edit'
       ? (u.pass_plain
@@ -3717,9 +3846,10 @@ function openUserModal(mode,origUn){
     const dupe=one('SELECT username FROM users WHERE username=? AND username<>?',[un,mode==='edit'?origUn:'']);
     if(dupe){ errEl.textContent='این نام کاربری قبلاً ثبت شده است.'; return; }
     const hash=pw?await sha256Hex(PASS_SALT+pw):null;
+    const orgVal=isImam?(($('#uOrg')?$('#uOrg').value:'center')):(mode==='edit'?(u.org||ORG_BY_UN[origUn]||'center'):'center');
     if(mode==='add'){
-      run('INSERT INTO users (username,pass_hash,pass_plain,display_name,role,level,active) VALUES (?,?,?,?,?,?,?)',
-        [un,hash,pw,dn,rl,isMedia?2:lvl,act]);
+      run('INSERT INTO users (username,pass_hash,pass_plain,display_name,role,level,active,org) VALUES (?,?,?,?,?,?,?,?)',
+        [un,hash,pw,dn,rl,isMedia?2:lvl,act,orgVal]);
       logActivity('افزودن کاربر','حساب «'+un+'» با نقش «'+rl+'» ایجاد شد.');
       toast('حساب «'+dn+'» ایجاد شد ✓');
     }else{
@@ -3727,8 +3857,23 @@ function openUserModal(mode,origUn){
         if(hash) run('UPDATE users SET username=?,pass_hash=?,pass_plain=?,display_name=?,active=? WHERE username=?',[un,hash,pw,dn,act,origUn]);
         else run('UPDATE users SET username=?,display_name=?,active=? WHERE username=?',[un,dn,act,origUn]);
       }else{
-        if(hash) run('UPDATE users SET username=?,pass_hash=?,pass_plain=?,display_name=?,role=?,level=?,active=? WHERE username=?',[un,hash,pw,dn,rl,lvl,act,origUn]);
-        else run('UPDATE users SET username=?,display_name=?,role=?,level=?,active=? WHERE username=?',[un,dn,rl,lvl,act,origUn]);
+        if(hash) run('UPDATE users SET username=?,pass_hash=?,pass_plain=?,display_name=?,role=?,level=?,active=?,org=? WHERE username=?',[un,hash,pw,dn,rl,lvl,act,orgVal,origUn]);
+        else run('UPDATE users SET username=?,display_name=?,role=?,level=?,active=?,org=? WHERE username=?',[un,dn,rl,lvl,act,orgVal,origUn]);
+      }
+      if(mode==='edit' && un!==origUn){
+        /* v3.4 — همگام‌سازی همهٔ ارجاع‌های نام کاربری (رفع ضعف B5؛ مشابه همگام‌سازی عنوان نقش در v3.3):
+           وگرنه اعلان‌ها، تأیید گیرندهٔ مأموریت و وظایف سپرده‌شده قطع می‌شود */
+        run('UPDATE tasks SET assignee_username=? WHERE assignee_username=?',[un,origUn]);
+        run('UPDATE decisions SET assignee_username=? WHERE assignee_username=?',[un,origUn]);
+        run('UPDATE sec_missions SET target_username=? WHERE target_username=?',[un,origUn]);
+        run('UPDATE notifications SET username=? WHERE username=?',[un,origUn]);
+        run('UPDATE user_perms SET username=? WHERE username=?',[un,origUn]);
+        run('UPDATE letters SET created_by=? WHERE created_by=?',[un,origUn]);
+        run('UPDATE meetings SET created_by=? WHERE created_by=?',[un,origUn]);
+        run('UPDATE events SET created_by=? WHERE created_by=?',[un,origUn]);
+        run('UPDATE transactions SET created_by=? WHERE created_by=?',[un,origUn]);
+        run('UPDATE announcements SET created_by=? WHERE created_by=?',[un,origUn]);
+        logActivity('تغییر نام کاربری','نام کاربری «'+origUn+'» به «'+un+'» تغییر یافت و ارجاع‌های وظایف، مأموریت‌ها، اعلان‌ها، نامه‌ها و اختیارات به‌روزرسانی شد.');
       }
       if(mode==='edit' && rl!==u.role){
         /* v3.3 — همگام‌سازی همهٔ ارجاع‌های متنی به عنوان نقش قدیمی با عنوان جدید */
@@ -3834,12 +3979,50 @@ async function deleteUserFlow(un){
     toast('حذف آخرین حساب فعال سطح ۴ امکان‌پذیر نیست','error');
     return;
   }
-  if(!await confirmDlg('حذف حساب کاربری','حساب «'+u.display_name+'» ('+un+') برای همیشه حذف شود؟ این عمل بازگشت‌پذیر نیست.',{danger:true,okText:'حذف'})) return;
-  run('DELETE FROM users WHERE username=?',[un]);
-  run('DELETE FROM notifications WHERE username=?',[un]);
-  logActivity('حذف کاربر','حساب «'+un+'» حذف شد.');
-  markDirty(); saveNow(true); renderView();
-  toast('حساب «'+u.display_name+'» حذف شد ✓');
+  /* v3.4 — شمارش موارد بازِ سپرده‌شده به این حساب؛ پیش از حذف به حساب دیگر منتقل می‌شود تا رکورد بی‌صاحب باقی نماند (رفع ضعف B4) */
+  const openTasks=all("SELECT * FROM tasks WHERE assignee_username=? AND status NOT IN ('انجام‌شده','لغو شد')",[un]);
+  const openMis=all("SELECT * FROM sec_missions WHERE target_username=? AND status NOT IN ('انجام‌شده','لغوشده')",[un]);
+  const ownLetters=one('SELECT COUNT(*) AS c FROM letters WHERE created_by=?',[un]).c;
+  const others=all("SELECT username,display_name,role FROM users WHERE username<>? AND active=1 ORDER BY level DESC, display_name",[un]);
+  if(!others.length){ toast('برای انتقال موارد باز، حداقل یک حساب فعال دیگر لازم است','error'); return; }
+  const ov=openModal('حذف حساب کاربری — «'+esc(u.display_name)+'»',
+   '<div class="grid-stats" style="margin-bottom:12px">'+
+     '<div class="stat-card'+(openTasks.length?' accent-danger':'')+'"><span class="stat-label">وظیفهٔ باز</span><b class="stat-num'+(openTasks.length?' c-danger':'')+'">'+faNum(openTasks.length)+'</b><small class="muted">سپرده‌شده به این حساب</small></div>'+
+     '<div class="stat-card'+(openMis.length?' accent-danger':'')+'"><span class="stat-label">مأموریت باز</span><b class="stat-num'+(openMis.length?' c-danger':'')+'">'+faNum(openMis.length)+'</b><small class="muted">درون‌سازمانی</small></div>'+
+     '<div class="stat-card"><span class="stat-label">نامهٔ ثبت‌شده</span><b class="stat-num">'+faNum(ownLetters)+'</b><small class="muted">مالکیت با این حساب</small></div>'+
+   '</div>'+
+   '<p class="tiny muted" style="margin-bottom:12px">با حذف حساب، موارد بازِ بالا بی‌صاحب می‌مانند و جریان کاری قطع می‌شود. آن‌ها را به حساب دیگری منتقل کنید:</p>'+
+   '<form id="udForm" novalidate>'+
+    fld('انتقال به *','<select id="udTarget" class="inp">'+others.map(o=>'<option value="'+esc(o.username)+'">'+esc(o.display_name)+' — '+esc(o.role)+'</option>').join('')+'</select>')+
+    '<div id="udErr" style="color:var(--danger);font-size:12px;font-weight:700;min-height:18px"></div>'+
+    '<div style="display:flex;gap:10px;margin-top:8px"><button type="submit" class="btn btn-danger" style="flex:1">'+icon('trash',16)+' حذف حساب و انتقال موارد</button><button type="button" class="btn btn-ghost" data-act="closeModal">انصراف</button></div>'+
+   '</form>',{width:'560px'});
+  ov.querySelector('#udForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    const errEl=ov.querySelector('#udErr'); errEl.textContent='';
+    const tgt=one('SELECT * FROM users WHERE username=?',[ov.querySelector('#udTarget').value]);
+    if(!tgt){ errEl.textContent='حساب مقصد را انتخاب کنید.'; return; }
+    if(openTasks.length){
+      run("UPDATE tasks SET assignee_username=?,assignee=? WHERE assignee_username=? AND status NOT IN ('انجام‌شده','لغو شد')",[tgt.username,tgt.display_name,un]);
+      run('UPDATE decisions SET assignee_username=?,assignee=? WHERE assignee_username=?',[tgt.username,tgt.display_name,un]);
+    }
+    if(openMis.length){
+      run("UPDATE sec_missions SET target_username=?,target_role=? WHERE target_username=? AND status NOT IN ('انجام‌شده','لغوشده')",[tgt.username,tgt.role,un]);
+    }
+    if(ownLetters>0){
+      run('UPDATE letters SET created_by=? WHERE created_by=?',[tgt.username,un]);
+    }
+    if(tgt.username!==session.username && (openTasks.length||openMis.length)){
+      addNotif(tgt.username,'موارد باز به شما منتقل شد','موارد باز حساب حذف‌شده «'+u.display_name+'» ('+faNum(openTasks.length)+' وظیفه، '+faNum(openMis.length)+' مأموریت) به حساب شما منتقل شد.');
+    }
+    run('DELETE FROM users WHERE username=?',[un]);
+    run('DELETE FROM notifications WHERE username=?',[un]);
+    run('DELETE FROM user_perms WHERE username=?',[un]);
+    logActivity('حذف کاربر','حساب «'+un+'» حذف شد؛ '+faNum(openTasks.length)+' وظیفهٔ باز، '+faNum(openMis.length)+' مأموریت باز و '+faNum(ownLetters)+' نامه به حساب «'+tgt.username+'» منتقل شد.');
+    renderNotifBadge();
+    markDirty(); saveNow(true); closeModal(); renderView();
+    toast('حساب «'+u.display_name+'» حذف و موارد باز منتقل شد ✓');
+  });
 }
 /* ---------- self-service password change (all users) ---------- */
 function openChangePassModal(){
@@ -3963,9 +4146,11 @@ VIEWS.settings=function(root){
     '</div>'+
     '<div class="card pad" style="border:1.5px solid #BFE3CD"><h3 style="color:var(--primary-dark)">'+icon('cloud')+' همگام‌سازی ابری (وب‌سایت ↔ اپلیکیشن)</h3>'+
      '<p class="tiny muted" style="margin-bottom:10px">تمام دستگاه‌ها (کامپیوتر، گوشی، اپ اندروید) روی یک منبع مشترک رمزنگاری‌شده در گیت‌هاب همگام می‌شوند؛ هر تغییر حداکثر تا ۲ دقیقه بعد در همه دستگاه‌ها اعمال می‌شود. پیش از جایگزینی، نسخه قبلی به‌صورت خودکار پشتیبان می‌شود.</p>'+
+     '<div class="card pad" style="border-right:4px solid var(--gold);background:var(--soft);margin-bottom:10px;padding:10px"><p class="tiny muted" style="margin:0"><b>قاعدهٔ «یک ویرایشگر فعال» (v3.4):</b> همگام‌سازی، «آخرین نویسنده» را می‌پذیرد؛ برای جلوگیری از بازنویسی داده‌ها، در هر بازه فقط روی یک دستگاه ویرایش کنید یا پیش از شروع کار «دریافت از ابر» را بزنید. اگر دستگاه دیگری نسخهٔ تازه‌تری فرستاده باشد، ارسال خودکار متوقف و ابتدا دریافت انجام می‌شود.</p></div>'+
      '<div class="act-row">'+
        '<button class="btn btn-primary btn-sm" data-act="cloudPushBtn">'+icon('upload',16)+' ارسال به ابر</button>'+
        '<button class="btn btn-outline btn-sm" data-act="cloudPullBtn">'+icon('download',16)+' دریافت از ابر</button>'+
+       '<button class="btn btn-outline btn-sm" data-act="cloudRestoreBtn">'+icon('refresh',16)+' بازگردانی پشتیبان پیش از آخرین دریافت</button>'+
      '</div>'+
      '<p class="tiny muted" style="margin-top:10px">آخرین همگام‌سازی موفق: <b id="cloudStamp" style="color:var(--primary-dark)">—</b></p>'+
     '</div>'+
@@ -4571,8 +4756,25 @@ const ACTIONS={
   importBtn:()=>$('#importFile').click(),
   resetData:()=>resetData(),
   saveNowBtn:()=>{ saveNow(false); toast('داده‌ها ذخیره شد ✓'); },
-  cloudPushBtn:async()=>{ const ok=await confirmDlg('ارسال به فضای ابری','دیتابیس فعلی این دستگاه به‌صورت رمزنگاری‌شده در فضای ابری ذخیره و مبنای همه دستگاه‌ها می‌شود. ادامه می‌دهید؟'); if(ok){ const r=await cloudPush('manual',true); toast(r?'ارسال به ابر انجام شد ✓':'ارسال ناموفق بود — بعداً تلاش کنید',r?'success':'error'); const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText(); } },
-  cloudPullBtn:async()=>{ const ok=await confirmDlg('دریافت از فضای ابری','آخرین نسخه ابری جایگزین داده‌های این دستگاه می‌شود (نسخه فعلی به‌صورت خودکار پشتیبان گرفته می‌شود). ادامه می‌دهید؟'); if(ok){ const r=await cloudPull(true); const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText(); if(r!==null) toast('دریافت از ابر انجام شد ✓'); } },
+  cloudPushBtn:async()=>{ const ok=await confirmDlg('ارسال به فضای ابری','دیتابیس فعلی این دستگاه به‌صورت رمزنگاری‌شده در فضای ابری ذخیره و مبنای همه دستگاه‌ها می‌شود. اگر دستگاه دیگری تغییرات ارسال‌نشده داشته باشد، بازنویسی می‌شود (قاعدهٔ «آخرین نویسنده برنده»). ادامه می‌دهید؟'); if(ok){ const r=await cloudPush('manual',true); toast(r?'ارسال به ابر انجام شد ✓':'ارسال ناموفق بود — بعداً تلاش کنید',r?'success':'error'); const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText(); } },
+  cloudPullBtn:async()=>{ const ok=await confirmDlg('دریافت از فضای ابری','آخرین نسخهٔ ابری به‌صورت کامل جایگزین داده‌های این دستگاه می‌شود (قاعدهٔ «آخرین نویسنده برنده») — تغییراتی که از دستگاه‌های دیگر به ابر ارسال نشده باشند از بین می‌روند. نسخهٔ فعلی به‌صورت خودکار پشتیبان گرفته می‌شود و از همین بخش قابل بازگردانی است. ادامه می‌دهید؟'); if(ok){ const r=await cloudPull(true); const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText(); if(r!==null) toast('دریافت از ابر انجام شد ✓'); } },
+  cloudRestoreBtn:async()=>{ /* v3.4 — بازگردانی پشتیبان خودکار پیش از آخرین دریافت ابر (رفع ضعف A1) */
+    try{
+      const cur=await idbGet('db_pre_cloud');
+      if(!cur||!cur.cipher){ toast('هنوز پشتیبانی ثبت نشده است (پشتیبان هنگام دریافت از ابر ثبت می‌شود)','error'); return; }
+      const ok=await confirmDlg('بازگردانی پشتیبان خودکار','داده‌های پشتیبان‌شده پیش از آخرین «دریافت از ابر» جایگزین داده‌های فعلی می‌شوند. ادامه می‌دهید؟',{danger:true,okText:'بازگردانی'});
+      if(!ok) return;
+      const bytes=await decryptPayload(cur,cryptoKey);
+      const nd=new window.SQL.Database(bytes);
+      try{ db.close(); }catch(e){}
+      db=nd; ensureSchema();
+      await idbPut('db',await encryptBytes(bytes,cryptoKey));
+      logActivity('بازگردانی پشتیبان','نسخهٔ پشتیبان پیش از آخرین دریافت ابر بازگردانی شد.');
+      markDirty(); saveNow(true);
+      if(session){ renderView(); try{ refreshTicker(); }catch(e){} try{ renderNotifBadge(); }catch(e){} }
+      toast('پشتیبان بازگردانی شد ✓ (به‌صورت خودکار به ابر نیز اعمال می‌شود)');
+    }catch(e){ console.warn('cloudRestoreBtn',e); toast('بازگردانی ناموفق بود','error'); }
+  },
   /* v2.3 — سند مأموریت */
   eventAppro:d=>{
     const e=one('SELECT * FROM events WHERE id=?',[+d.id]);
@@ -5414,21 +5616,36 @@ function myOrg(){ if(!session) return 'center'; return session.org||'center'; }
 function isCentralSec(){ return !!session&&(session.username==='imam'||session.username==='secretary'); }
 
 /* ---------- نامه‌ها: دبیرخانه مرکزی یکسان برای همه واحدها — مکاتبات هیئت دقیقاً مثل معاونت فرهنگی (v2.9) ---------- */
+/* v3.4 — رفع ضعف A3 (حریم خصوصی §۵): دید نامه‌های ستاد فقط برای سطح ۳ به بالا؛
+   حساب‌های سطح ۱ و ۲ فقط نامه‌های ثبت‌شدهٔ خودشان و نامه‌های ارجاع‌شده به نقش خودشان را می‌بینند */
 function letterCanSee(L){
   const un=session.username;
   if(un==='imam') return true;
   if(un==='secretary') return true;
   if(un==='board') return L.created_by==='board';
-  if(un==='heyat'||myOrg()==='center') return L.org!=='heyat';
-  return L.created_by===un;
+  const lvl=session.level||9;
+  const own=(L.created_by===un)||!!(L.assigned_role&&L.assigned_role===session.role);
+  if(myOrg()!=='center'){
+    if(un==='heyat') return lvl>=3?true:own;
+    return own;
+  }
+  if(lvl>=3) return L.org!=='heyat';
+  return own;
 }
 function letterScope(){
   const un=session.username;
   if(un==='imam') return {sql:'1=1',p:[]};
   if(un==='secretary') return {sql:'1=1',p:[]};
   if(un==='board') return {sql:"created_by='board'",p:[]};
-  if(un==='heyat'||myOrg()==='center') return {sql:"COALESCE(org,'center')<>'heyat'",p:[]};
-  return {sql:'created_by=?',p:[un]};
+  const lvl=session.level||9;
+  const ownSql="(created_by=? OR (COALESCE(assigned_role,'')<>'' AND assigned_role=?))";
+  const ownP=[un,session.role];
+  if(myOrg()!=='center'){
+    if(un==='heyat'&&lvl>=3) return {sql:"COALESCE(org,'center')<>'heyat'",p:[]};
+    return {sql:ownSql,p:ownP};
+  }
+  if(lvl>=3) return {sql:"COALESCE(org,'center')<>'heyat'",p:[]};
+  return {sql:ownSql,p:ownP};
 }
 function letterPrefix(){ const jy=isoToJ(todayIso()).jy; return jy+'/دب/'; }
 function letterHeadInfo(){
@@ -5625,7 +5842,9 @@ VIEWS.orgfin=function(root){
   const stS=k=>rows.filter(t=>(t.tx_status||'تأییدشده')===k).reduce((a,t)=>a+(t.amount||0),0);
   root.innerHTML=
    '<div class="page-head"><div><h2>گزارش مالی واحد</h2><p class="muted">ثبت و پیگیری هزینه‌های '+esc(UNIT_LABELS[u]||'واحد شما')+' — فقط هزینه‌های واحد خودتان قابل مشاهده است</p></div>'+
-   '<button class="btn btn-primary no-print" data-act="orgNew">'+icon('plus')+' ثبت هزینه واحد</button></div>'+
+   (session.level>=3
+     ? '<button class="btn btn-primary no-print" data-act="orgNew">'+icon('plus')+' ثبت هزینه واحد</button>'
+     : '<span class="badge b-warn">ثبت هزینه فقط برای سطح ۳ (مدیریت و ارجاع) به بالا مجاز است</span>')+'</div>'+
    '<div class="grid-stats">'+
     '<div class="stat-card"><span class="stat-label">در انتظار بررسی</span><b class="stat-num">'+faNum(stC('در انتظار بررسی'))+'</b><small class="muted">'+faMoney(stS('در انتظار بررسی'))+' تومان</small></div>'+
     '<div class="stat-card accent-success"><span class="stat-label">تأییدشده</span><b class="stat-num c-success">'+faNum(stC('تأییدشده'))+'</b><small class="muted">'+faMoney(stS('تأییدشده'))+' تومان</small></div>'+
@@ -5646,6 +5865,8 @@ VIEWS.orgfin=function(root){
    '</tbody></table></div></div>';
 };
 function openOrgExpModal(){
+  /* v3.4 — رفع ضعف B3: کنترل سطح دسترسی ثبت هزینه واحد (حداقل سطح ۳) */
+  if(session.level<3){ toast('ثبت هزینه واحد فقط برای سطح دسترسی ۳ به بالا مجاز است','error'); return; }
   const u=myUnit();
   const ov=openModal('ثبت هزینه '+esc(UNIT_LABELS[u]||'واحد')+' (ارسال به بررسی معاونت مالی)',
    '<form id="ogForm" novalidate>'+
@@ -5665,6 +5886,7 @@ function openOrgExpModal(){
   ov.querySelector('#ogFile').addEventListener('change',e=>{ if(e.target.files[0]) $('#ogFileTxt').value=e.target.files[0].name; });
   form.addEventListener('submit',e=>{
     e.preventDefault(); clearErrs(form);
+    if(session.level<3){ toast('ثبت هزینه واحد فقط برای سطح دسترسی ۳ به بالا مجاز است','error'); return; } /* v3.4 — B3 */
     let ok=true;
     if(!form.desc.value.trim()){ setErr(form.desc,'شرح هزینه الزامی است.'); ok=false; }
     const amt=+form.amount.value||0;
@@ -6300,10 +6522,34 @@ function openHeyatReportModal(){
     '</div>'+
     fld('مدعوین — غایبان = مدعوین منهای حاضران','<div class="att-grid">'+ROLES.map(r=>'<label class="chk"><input type="checkbox" data-invrole="'+esc(r)+'"> '+esc(r)+'</label>').join('')+'</div>')+
     fld('مذاکرات و صورت‌جلسه','<textarea name="minutes" class="inp" rows="3" placeholder="خلاصه مذاکرات و صورت‌جلسه…"></textarea>')+
-    '<p class="tiny muted">وضعیت «برگزار شد» ذخیره می‌شود؛ پس از ثبت، مصوبات — هر مصوبه جداگانه — با «مسئول اجرا» و «مهلت انجام» و تصاویر جلسه در صفحهٔ جلسه اضافه می‌شود.</p>'+
+    '<div class="inline-box" style="margin:10px 0 6px">'+
+      '<b style="font-size:12.5px;color:var(--primary-dark);display:block;margin-bottom:8px">مصوبات جلسه — تک‌تک و دانه‌به‌دانه ثبت می‌شوند (نه به‌صورت کلی)</b>'+
+      '<div id="decRows"></div>'+
+      '<button type="button" id="decAddRow" class="btn btn-outline btn-sm">'+icon('plus',14)+' افزودن مصوبه</button>'+
+      '<div id="decRowsErr" style="color:var(--danger);font-size:12px;font-weight:700;min-height:16px;margin-top:6px"></div>'+
+      '<p class="tiny muted" style="margin-top:6px">هر مصوبه به‌صورت رکورد مستقل با «مسئول اجرا» و «مهلت انجام» ثبت و وظیفهٔ جداگانه می‌شود و اعلان برای مسئول ارسال می‌گردد؛ تصاویر جلسه پس از ثبت از صفحهٔ جلسه افزوده می‌شود.</p>'+
+    '</div>'+
     '<button type="submit" class="btn btn-primary btn-block">ثبت گزارش جلسه</button>'+
    '</form>',{width:'720px'});
   const form=ov.querySelector('#hyMtForm');
+  /* v3.4 — ثبت مصوبات در خودِ فرم گزارش جلسه هیئت، تک‌تک و دانه‌به‌دانه (درخواست کارفرما) */
+  const usersOpt=all('SELECT username,display_name FROM users WHERE active=1 ORDER BY display_name');
+  const decRows=ov.querySelector('#decRows');
+  function decRowHtml(){
+    return '<div class="dec-row" style="border:1px dashed #c9c2b2;border-radius:10px;padding:8px 10px;margin-bottom:8px;background:var(--soft)">'+
+     '<div style="display:flex;align-items:center;margin-bottom:6px"><b style="font-size:11.5px;color:var(--primary-dark)">مصوبه <span class="dr-n"></span></b>'+
+     '<button type="button" class="btn btn-ghost btn-sm dr-del" style="margin-right:auto;color:var(--danger)">حذف</button></div>'+
+     '<input class="inp dr-title" style="margin-bottom:6px" placeholder="عنوان مصوبه… مثال: تهیه صندلی برای مراسم">'+
+     '<div class="frow2">'+
+       '<select class="inp dr-asg">'+usersOpt.map(u=>'<option value="'+esc(u.username)+'">'+esc(u.display_name)+'</option>').join('')+'</select>'+
+       '<input class="inp dr-dl" placeholder="مهلت انجام: ۱۴۰۵/۰۸/۲۰">'+
+     '</div></div>';
+  }
+  function decRenum(){ Array.from(decRows.querySelectorAll('.dr-n')).forEach(function(el,i){ el.textContent=faNum(i+1); }); }
+  function decBindDel(){ Array.from(decRows.querySelectorAll('.dr-del')).forEach(function(b){ if(b.dataset.b) return; b.dataset.b='1'; b.addEventListener('click',function(){ b.closest('.dec-row').remove(); decRenum(); if(!decRows.children.length) decAddRow(); }); }); }
+  function decAddRow(){ decRows.insertAdjacentHTML('beforeend',decRowHtml()); decBindDel(); decRenum(); }
+  ov.querySelector('#decAddRow').addEventListener('click',decAddRow);
+  decAddRow();
   form.addEventListener('submit',e=>{
     e.preventDefault(); clearErrs(form);
     let ok=true;
@@ -6319,7 +6565,31 @@ function openHeyatReportModal(){
     (form.invExtra?form.invExtra.value:'').split('\n').map(function(s){return s.trim()}).filter(Boolean).forEach(function(n){ if(!inv.includes(n)) inv.push(n); });
     run('INSERT INTO meetings (number,title,date_iso,date_fa,status,attendees,created_by,org,kind,unit,time_fa,place,invitees,agenda,minutes,photos) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       [num,form.title.value.trim(),iso,faDate(iso),'برگزار شد',JSON.stringify(att),session.username,'heyat','org','',form.timefa.value.trim(),form.place.value.trim(),JSON.stringify(inv),form.agenda.value.trim(),form.minutes.value.trim(),'[]']);
-    logActivity('ثبت گزارش جلسه هیئت فداییان','گزارش «'+form.title.value.trim()+'» با شماره '+num+' ثبت شد ('+faNum(att.length)+' حاضر).');
+    const mid=lastId();
+    /* v3.4 — ثبت تک‌تک مصوبات واردشده در فرم گزارش هیئت */
+    const dErr=ov.querySelector('#decRowsErr'); if(dErr) dErr.textContent='';
+    const items=[]; let dBad=false;
+    Array.from(ov.querySelectorAll('#decRows .dec-row')).forEach(function(r){
+      const t=r.querySelector('.dr-title').value.trim();
+      if(!t) return;
+      const dlv=r.querySelector('.dr-dl').value.trim();
+      const jd2=dlv?parseJDate(dlv):null;
+      if(!dlv||!jd2){ r.querySelector('.dr-dl').style.borderColor='var(--danger)'; dBad=true; return; }
+      items.push({t:t,a:r.querySelector('.dr-asg').value,dl:jToIso(jd2.jy,jd2.jm,jd2.jd)});
+    });
+    if(dBad){ if(dErr) dErr.textContent='برای هر مصوبه، «مهلت انجام» شمسی معتبر الزامی است (نمونه: ۱۴۰۵/۰۸/۲۰).'; return; }
+    items.forEach(function(it){
+      const au=one('SELECT * FROM users WHERE username=?',[it.a]);
+      run('INSERT INTO tasks (title,assignee,assignee_username,deadline_iso,status,meeting_id,created_at_fa) VALUES (?,?,?,?,?,?,?)',
+        [it.t,au?au.display_name:'',it.a,it.dl,'در انتظار',mid,faStamp()]);
+      const tid=lastId();
+      run('INSERT INTO decisions (meeting_id,title,assignee,assignee_username,task_id) VALUES (?,?,?,?,?)',
+        [mid,it.t,au?au.display_name:'',it.a,tid]);
+      if(au&&it.a!==session.username) addNotif(it.a,'وظیفه جدید برای شما','وظیفه «'+it.t+'» از مصوبات جلسه '+num+' به شما واگذار شد (مهلت: '+faDateLong(it.dl)+').');
+      logActivity('ثبت مصوبه','مصوبه «'+it.t+'» در گزارش جلسه '+num+' به‌صورت تک‌تک ثبت شد.');
+    });
+    renderNotifBadge();
+    logActivity('ثبت گزارش جلسه هیئت فداییان','گزارش «'+form.title.value.trim()+'» با شماره '+num+' ثبت شد ('+faNum(att.length)+' حاضر، '+faNum(items.length)+' مصوبه تک‌تک).');
     markDirty(); saveNow(true);
     closeModal();
     toast('گزارش جلسه با شماره '+faNum(num)+' ثبت شد ✓');
@@ -6473,13 +6743,17 @@ function renderSecMissions(){
     (done.length?done.map(function(x){ return card(x,'<button class="icon-btn danger" data-act="secMissDel" data-id="'+x.id+'" title="حذف" style="color:var(--danger)">'+icon('trash',13)+'</button>'); }).join(''):emptyState('مأموریتی بسته نشده است'))+'</div>';
 }
 function openSecMissionModal(){
-  const users=all('SELECT username,display_name,role FROM users WHERE active=1 ORDER BY display_name');
+  const users=all('SELECT username,display_name,role,org FROM users WHERE active=1 ORDER BY display_name');
+  /* v3.4 — رفع ضعف C2: دسته‌بندی گیرنده‌ها بر اساس معاونت/واحد */
+  const uGroups={};
+  users.forEach(function(u){ const g=orgLabel(u.org); (uGroups[g]=uGroups[g]||[]).push(u); });
+  const targetOpts=Object.keys(uGroups).map(function(g){ return '<optgroup label="'+esc(g)+'">'+uGroups[g].map(function(u){ return '<option value="'+esc(u.username)+'">'+esc(u.display_name)+' — '+esc(u.role)+'</option>'; }).join('')+'</optgroup>'; }).join('');
   const ov=openModal('ثبت مأموریت درون‌سازمانی — دبیر هیئت امنا',
    '<form id="smForm" novalidate>'+
     fld('عنوان مأموریت *','<input name="title" class="inp" placeholder="مثال: تهیه گزارش آمادگی سالن برای مراسم نیمه شعبان">')+
     fld('شرح مأموریت','<textarea name="descr" class="inp" rows="3" placeholder="شرح خواسته، محدوده و خروجی موردانتظار…"></textarea>')+
     '<div class="frow2">'+
-      fld('گیرنده (معاونت / مسئول) *','<select name="target" class="inp">'+users.map(function(u){ return '<option value="'+esc(u.username)+'">'+esc(u.display_name)+' — '+esc(u.role)+'</option>'; }).join('')+'</select>')+
+      fld('گیرنده (معاونت / مسئول) *','<select name="target" class="inp">'+targetOpts+'</select>')+
       fld('اولویت','<select name="prio" class="inp"><option>عادی</option><option>مهم</option><option>فوری</option></select>')+
     '</div>'+
     fld('مهلت انجام (شمسی)','<input name="deadline" class="inp" value="" placeholder="۱۴۰۵/۰۹/۰۱ (اختیاری)">')+
@@ -7619,7 +7893,7 @@ function entSection(k){
    ارتباط مالی: قرارداد اجاره و اطلاعات املاک این‌جاست؛ ثبت دریافت و تأیید
    درآمد و پرداخت‌ها فقط در پنل معاونت امور مالی انجام می‌شود.
    ============================================================ */
-const MSZ_VERSION='v3.3';
+const MSZ_VERSION='v3.4';
 const OMR_TABS=[
  {id:'dash',label:'داشبورد'},
  {id:'proj',label:'پروژه‌های عمرانی'},
