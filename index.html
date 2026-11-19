@@ -689,7 +689,7 @@ tr.row-ov td{color:#8E2020}
     </form>
     <a class="apk-link" href="app/app.apk" download>📥 دانلود اپلیکیشن اندروید (APK)</a>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۸</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۹</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -741,7 +741,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۸ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۹ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -1230,6 +1230,20 @@ async function cloudFetchMeta(){
 }
 /* v3.6 — پل نیتیو اندروید: رویدادهای همگام‌سازی ابری به پوستهٔ بومی اعلام می‌شود (در مرورگر بی‌اثر است) */
 function mszNative(evt,msg){ try{ if(window.AndroidBridge&&window.AndroidBridge.onSync) window.AndroidBridge.onSync(String(evt),String(msg||'')); }catch(e){} }
+/* v3.9 — بایگانی ابری: پیش از هر جایگزینیِ دادهٔ ابرِ دستگاه دیگر، نسخهٔ فعلی ابر به پوشهٔ data/sync/archive ذخیره می‌شود (تاریخچهٔ کامل در git هم موجود است) */
+async function cloudArchiveCurrent(note){
+  try{
+    if(!CLOUD.token) return;
+    const r=await fetch(cloudApi(),{headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json'},cache:'no-store'});
+    if(!r.ok) return;
+    const j=await r.json();
+    if(!j||!j.content||!j.content.length) return;
+    const arcApi='https://api.github.com/repos/'+CLOUD.owner+'/'+CLOUD.repo+'/contents/data/sync/archive/db-'+Date.now()+'.mszenc';
+    const ar=await fetch(arcApi,{method:'PUT',headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
+      body:JSON.stringify({message:'archive[auto]: '+String(note||'').slice(0,60),content:String(j.content).replace(/\s/g,''),branch:CLOUD.branch})});
+    if(ar.ok){ try{ localStorage.setItem('msz_last_archive',new Date().toISOString()); }catch(e){} console.info('cloud archived before overwrite'); }
+  }catch(e){ console.warn('cloudArchiveCurrent',e); }
+}
 async function cloudPush(reason,manual){
   if(!db||cloudLock) return false;
   if(manual&&cloudMode==='pull'){ cloudMode='full'; localStorage.setItem('msz_cloud_mode','full'); }
@@ -1239,7 +1253,8 @@ async function cloudPush(reason,manual){
     const bytes=(dirty||!_cloudBytes)?db.export():_cloudBytes;
     _cloudBytes=null;
     const payload=await encryptBytes(bytes,await cloudKey());
-    const ver=Date.now();
+    /* v3.9 — نسخهٔ صعودی یکنواخت: با خطای ساعت دستگاه، ver هرگز کوچک‌تر از نسخهٔ قبلی نمی‌شود تا ابر با نسخهٔ کهنه بازنویسی نشود */
+    const ver=Math.max(Date.now(),(Number(localStorage.getItem('msz_cloud_ver'))||0)+1);
     const meta={app:'msz',sync:1,ver:ver,dev:DEVICE_ID,by:(session&&session.username)||'',reason:String(reason||'').slice(0,40),iv:payload.iv,cipher:payload.cipher};
     const content=b64(new TextEncoder().encode(JSON.stringify(meta)));
     let sha=null, cloudMeta=null;
@@ -1268,11 +1283,33 @@ async function cloudPush(reason,manual){
       setTimeout(function(){ if(!cloudLock) cloudPull(false); },800);
       return false;
     }
+    /* v3.9 — گیت دادهٔ بازنشانی‌شده: تا وقتی «بازنشانی در انتظار» است، ارسال خودکارِ دادهٔ خالی/seed ممنوع؛ تنها ارسال آگاهانهٔ دستی مجاز است */
+    const resetPending=localStorage.getItem('msz_reset_pending')==='1';
+    if(resetPending&&reason!=='manual'){ cloudState('off','دادهٔ بازنشانی‌شده به ابر ارسال نشده — ارسال آگاهانه لازم است'); return false; }
+    if(resetPending&&reason==='manual'){ localStorage.removeItem('msz_reset_pending'); if(sha) await cloudArchiveCurrent('before post-reset overwrite'); }
+    /* v3.9 — پیش از هر جایگزینی دادهٔ ابرِ متعلق به دستگاه دیگر (هر دلیلی)، نسخهٔ فعلی ابر بایگانی می‌شود */
+    if(sha&&cloudMeta&&cloudMeta.dev&&cloudMeta.dev!==DEVICE_ID){
+      await cloudArchiveCurrent('before overwrite by '+DEVICE_ID+' (cloud by '+(cloudMeta.by||cloudMeta.dev)+')');
+    }
+    /* v3.9 — گیت «حذف گروهی»: افت مشکوک تعداد رکوردها نسبت به آخرین وضعیت همگام‌شده → ارسال خودکار متوقف و از کاربر پرسیده می‌شود */
+    if(reason!=='manual'&&reason!=='adoption'&&reason!=='initial'){
+      const spike=countsSpikeCheck();
+      if(!spike.ok){
+        if(!window._mszSpikeAsked){
+          window._mszSpikeAsked=true;
+          cloudState('busy','بررسی حذف گروهی…');
+          const go=await confirmDlg('بررسی حذف گروهی داده‌ها','افت تعداد رکوردها شناسایی شد: '+faNum(spike.dropped)+' مورد در «'+spike.tableFa+'» نسبت به آخرین وضعیت همگام‌شده کاهش یافته است. اگر این حذف عمدی است ادامه دهید؛ در غیر این صورت «انصراف» را بزنید تا دادهٔ تازه‌تر از ابر دریافت شود.',{danger:true,okText:'حذف عمدی بوده — ارسال شود'});
+          if(!go){ cloudState('off','ارسال متوقف شد — دریافت از ابر'); setTimeout(function(){ if(!cloudLock) cloudPull(false); },600); return false; }
+        }
+        await cloudArchiveCurrent('before bulk-delete push by '+DEVICE_ID);
+      }
+    }
     const pr=await fetch(cloudApi(),{method:'PUT',headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
       body:JSON.stringify({message:'sync['+DEVICE_ID+']: '+(reason||'data update'),content:content,branch:CLOUD.branch,sha:sha})});
     if(!pr.ok){ throw new Error('push http '+pr.status); }
     localStorage.setItem('msz_cloud_ver',String(ver));
     localStorage.setItem('msz_cloud_time',new Date().toISOString());
+    countsSnapshotSave(); /* v3.9 */
     cloudAdopted=true;
     cloudState('ok','همگام شد ✓');
     mszNative('push','تغییرات به ابر ارسال شد');
@@ -1311,7 +1348,8 @@ async function cloudPull(manual){
     const localVer=Number(localStorage.getItem('msz_cloud_ver')||0);
     if(meta.ver<=localVer&&!manual){ cloudState('ok','همگام است'); return meta.ver; }
     const bytes=await decryptPayload(meta,await cloudKey());
-    try{ const cur=await idbGet('db'); if(cur&&cur.cipher) await idbPut('db_pre_cloud',cur); }catch(e){}
+    /* v3.9 — زنجیرهٔ پشتیبان دومرحله‌ای: db_pre_cloud + db_backup_1 → db_backup_2 */
+    try{ const cur=await idbGet('db'); if(cur&&cur.cipher){ await idbPut('db_pre_cloud',cur); const b1=await idbGet('db_backup_1'); if(b1&&b1.cipher) await idbPut('db_backup_2',b1); await idbPut('db_backup_1',cur); } }catch(e){}
     const nd=new window.SQL.Database(bytes);
     try{ db.close(); }catch(e){}
     db=nd;
@@ -1319,6 +1357,7 @@ async function cloudPull(manual){
     await idbPut('db',await encryptBytes(bytes,cryptoKey));
     localStorage.setItem('msz_cloud_ver',String(meta.ver));
     localStorage.setItem('msz_cloud_time',new Date().toISOString());
+    countsSnapshotSave(); /* v3.9 */
     cloudAdopted=true;
     cloudState('ok','دریافت شد ✓');
     mszNative('pull','تازه‌ترین داده‌ها از ابر دریافت شد');
@@ -1345,7 +1384,11 @@ function cloudAdoptPrompt(remoteMeta){
       '</div></div>';
     document.body.appendChild(ov);
     ov.querySelector('.pull').onclick=async()=>{ ov.remove(); cloudMode='full'; localStorage.setItem('msz_cloud_mode','full'); await cloudPull(true); res(true); };
-    ov.querySelector('.push').onclick=async()=>{ ov.remove(); cloudMode='full'; localStorage.setItem('msz_cloud_mode','full'); await cloudPush('adoption',true); res(true); };
+    ov.querySelector('.push').onclick=async()=>{ /* v3.9 — گزینهٔ پرخطر: ابتدا هشدار صریح؛ بایگانی ابر درون cloudPush انجام می‌شود */
+      ov.remove();
+      const ok2=await confirmDlg('هشدار جایگزینی دادهٔ ابر','با این انتخاب، نسخهٔ فعلی ابر'+when+' که مبنای دستگاه‌های دیگر است با دادهٔ همین دستگاه جایگزین می‌شود (نسخهٔ فعلی ابر پیش از جایگزینی در بایگانی ذخیره می‌شود). اگر دادهٔ همین دستگاه از ابر کهنه‌تر یا خالی‌تر است، «دریافت از ابر» را انتخاب کنید.',{danger:true,okText:'می‌دانم — ارسال دادهٔ این دستگاه'});
+      if(!ok2){ cloudMode='pull'; localStorage.setItem('msz_cloud_mode','pull'); res(false); return; }
+      cloudMode='full'; localStorage.setItem('msz_cloud_mode','full'); await cloudPush('adoption',true); res(true); };
     ov.querySelector('.later').onclick=()=>{ ov.remove(); cloudMode='pull'; localStorage.setItem('msz_cloud_mode','pull'); cloudState('ok','دریافت خودکار فعال — ارسال از تنظیمات'); res(false); };
   });
 }
@@ -1355,6 +1398,117 @@ function localHasContent(){
     for(let i=0;i<tb.length;i++){ try{ if(one('SELECT COUNT(*) AS c FROM '+tb[i]).c>0) return true; }catch(e){} }
   }catch(e){}
   return false;
+}
+/* ============================================================
+   v3.9 — نگهبان داده: عکس‌برداری از تعداد رکوردهای محتوا پس از هر همگام‌سازی موفق
+   و تشخیص افت مشکوک (جلوگیری از تکرار رخداد جایگزینی دادهٔ واقعی با دادهٔ خالی)
+   ============================================================ */
+function CONTENT_COUNT_TABLES(){ return ['letters','meetings','decisions','tasks','events','transactions','students','attendance','announcements']; }
+function CONTENT_COUNT_FA(){ return {letters:'مکاتبات',meetings:'جلسات',decisions:'مصوبات',tasks:'وظایف',events:'رویدادهای تقویم',transactions:'اسناد مالی',students:'هنرجویان',attendance:'حضور و غیاب',announcements:'اعلان‌ها'}; }
+function contentCounts(){
+  const o={};
+  CONTENT_COUNT_TABLES().forEach(function(t){ try{ o[t]=one('SELECT COUNT(*) AS c FROM '+t).c; }catch(e){ o[t]=null; } });
+  return o;
+}
+function countsSnapshotSave(){
+  try{ localStorage.setItem('msz_cnt_snap',JSON.stringify({ver:localStorage.getItem('msz_cloud_ver')||'',at:Date.now(),c:contentCounts()})); }catch(e){}
+}
+function countsSpikeCheck(){
+  try{
+    const s=JSON.parse(localStorage.getItem('msz_cnt_snap')||'null');
+    if(!s||!s.c) return {ok:true};
+    const cur=contentCounts();
+    let worst=null;
+    CONTENT_COUNT_TABLES().forEach(function(t){
+      const prev=Number(s.c[t]||0), now=Number(cur[t]||0);
+      const d=prev-now;
+      const emptied=prev>0&&now===0&&d>=1;                 /* صفرشدن کامل جدول */
+      const big=d>=2&&d>=Math.ceil(prev*0.5);              /* حذف نیمه به بالا (حداقل ۲ مورد) */
+      if((emptied||big)&&(!worst||d>worst.d)) worst={t:t,d:d};
+    });
+    if(!worst) return {ok:true};
+    return {ok:false,dropped:worst.d,table:worst.t,tableFa:(CONTENT_COUNT_FA()[worst.t]||worst.t)};
+  }catch(e){ return {ok:true}; }
+}
+/* ============================================================
+   v3.9 — بازیابی از تاریخچهٔ ابر: فهرست آخرین تغییرات فایل دادهٔ ابری از API کامیت‌های گیت‌هاب
+   دو حالت: بازیابی کامل (جایگزینی) یا ادغام محتوا (فقط افزودن رکوردهای موجود‌نشدۀ نسخهٔ انتخابی)
+   ============================================================ */
+async function cloudHistoryList(limit){
+  try{
+    const u='https://api.github.com/repos/'+CLOUD.owner+'/'+CLOUD.repo+'/commits?path='+encodeURIComponent(CLOUD.path)+'&per_page='+(limit||12);
+    const r=await fetch(u,{headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json'},cache:'no-store'});
+    if(!r.ok) return null;
+    const j=await r.json();
+    return Array.isArray(j)?j:null;
+  }catch(e){ return null; }
+}
+async function cloudRestoreVersion(sha,mode){
+  try{
+    setLoading(true,'در حال دریافت نسخهٔ پشتیبان ابر…');
+    const r=await fetch(cloudApi()+'?ref='+encodeURIComponent(sha),{headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json'},cache:'no-store'});
+    if(!r.ok) throw new Error('http '+r.status);
+    const j=await r.json();
+    if(!j||!j.content) throw new Error('بدنهٔ خالی از سرور');
+    const meta=JSON.parse(new TextDecoder().decode(ub64(String(j.content).replace(/\s/g,''))));
+    if(!meta||!meta.cipher) throw new Error('قالب نامعتبر');
+    const bytes=await decryptPayload(meta,await cloudKey());
+    const nd=new window.SQL.Database(bytes);
+    let msg='';
+    if(mode==='merge'){
+      const TS=['letters','letter_comments','meetings','decisions','tasks','events','courses','students','attendance','transactions','announcements','gallery_notes','notifications'];
+      let added=0, skipped=0;
+      TS.forEach(function(t){
+        let rows=[], cols=[];
+        try{ const res=nd.exec('SELECT * FROM '+t); if(res.length){ cols=res[0].columns; rows=res[0].values; } }catch(e){ return; }
+        rows.forEach(function(row){
+          try{
+            const idv=row[cols.indexOf('id')];
+            const ex=one('SELECT id FROM '+t+' WHERE id=?',[idv]);
+            if(ex){ skipped++; return; }
+            const ph=cols.map(function(){ return '?'; }).join(',');
+            db.run('INSERT INTO '+t+' ('+cols.join(',')+') VALUES ('+ph+')',row);
+            added++;
+          }catch(e){ skipped++; }
+        });
+      });
+      msg='ادغام انجام شد: '+faNum(added)+' رکورد افزوده شد'+(skipped?'، '+faNum(skipped)+' مورد تکراری نادیده گرفته شد':'');
+      logActivity('بازیابی از تاریخچهٔ ابر','ادغام محتوا از نسخهٔ '+String(sha).slice(0,7));
+    }else{
+      try{ const cur=await idbGet('db'); if(cur&&cur.cipher){ const b1=await idbGet('db_backup_1'); if(b1&&b1.cipher) await idbPut('db_backup_2',b1); await idbPut('db_backup_1',cur); await idbPut('db_pre_cloud',cur); } }catch(e){}
+      await cloudArchiveCurrent('before full restore to '+String(sha).slice(0,7));
+      try{ db.close(); }catch(e){}
+      db=nd; ensureSchema();
+      msg='نسخهٔ انتخابی به‌طور کامل بازگردانی شد';
+      logActivity('بازیابی از تاریخچهٔ ابر','بازگردانی کامل نسخهٔ '+String(sha).slice(0,7));
+    }
+    await idbPut('db',await encryptBytes(db.export(),cryptoKey));
+    localStorage.setItem('msz_cloud_ver',String(Date.now()));
+    countsSnapshotSave();
+    setLoading(false);
+    if(session){ renderView(); try{ refreshTicker(); }catch(e){} try{ renderNotifBadge(); }catch(e){} }
+    toast(msg+' ✓ — پس از ارسال ابری در سایر دستگاه‌ها هم اعمال می‌شود');
+  }catch(e){ setLoading(false); console.warn('cloudRestoreVersion',e); toast('بازیابی ناموفق بود: '+(e&&e.message?e.message:'خطا'),'error'); }
+}
+async function cloudHistoryDlg(){
+  const gate=!!session&&(session.level>=3||['imam','media_admin','secretary'].indexOf(session.username)>-1);
+  if(!gate){ toast('بازیابی تاریخچهٔ ابر فقط برای سطوح مدیریتی مجاز است','error'); return; }
+  setLoading(true,'در حال خواندن تاریخچهٔ ابر…');
+  const list=await cloudHistoryList(12);
+  setLoading(false);
+  if(!list||!list.length){ toast('تاریخچهٔ ابر خوانده نشد یا خالی است','error'); return; }
+  const ov=document.createElement('div');
+  ov.className='modal-ov';
+  const rows=list.map(function(c){
+    const d=new Date(c.commit.author.date);
+    let when='';
+    try{ when=new Intl.DateTimeFormat('fa-IR',{dateStyle:'short',timeStyle:'short'}).format(d); }catch(e){ when=c.commit.author.date; }
+    return '<div class="card pad" style="margin:6px 0;padding:10px"><b>'+when+'</b> <span class="tiny muted">— '+esc(String(c.commit.message).slice(0,60))+'</span><div class="act-row" style="margin-top:8px"><button class="btn btn-outline btn-sm" data-act="cloudRestoreFull" data-sha="'+c.sha+'">بازیابی کامل این نسخه</button><button class="btn btn-ghost btn-sm" data-act="cloudRestoreMerge" data-sha="'+c.sha+'">فقط ادغام محتوا (حفظ نام‌ها و کاربران)</button></div></div>';
+  }).join('');
+  ov.innerHTML='<div class="modal confirm" style="max-width:640px;width:92%" role="dialog" aria-modal="true"><div class="modal-body"><h3>نسخه‌های قبلی دادهٔ ابر</h3><p class="tiny muted">هر ارسال ابری یک نسخهٔ کامل پشتیبان است. «بازیابی کامل» همه‌چیز را به همان تاریخ برمی‌گرداند؛ «فقط ادغام محتوا» نامه‌ها، جلسات، مالی و… را بدون تغییر نام کاربران و تنظیمات فعلی اضافه می‌کند. نسخهٔ فعلی پیش از هر بازیابی به‌طور خودکار بایگانی می‌شود.</p><div style="max-height:55vh;overflow:auto">'+rows+'</div><div class="cbtns"><button class="btn btn-ghost cancel">بستن</button></div></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('.cancel').onclick=()=>ov.remove();
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
 }
 async function cloudInit(){
   if(!window.SQL||!db) return;
@@ -1389,7 +1543,7 @@ async function cloudTick(){
     const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText();
   }catch(e){ console.warn('cloudTick',e); }
 }
-function scheduleCloudPush(){ if(!cloudAdopted||!session||cloudMode==='pull') return; clearTimeout(cloudPushTimer); cloudPushTimer=setTimeout(()=>{ if(!cloudLock) cloudPush('save',false); },CLOUD.pushDelay); }
+function scheduleCloudPush(){ if(!cloudAdopted||!session||cloudMode==='pull') return; /* v3.9 — پس از بازنشانی، ارسال خودکار دادهٔ خالی ممنوع */ try{ if(localStorage.getItem('msz_reset_pending')==='1') return; }catch(e){} clearTimeout(cloudPushTimer); cloudPushTimer=setTimeout(()=>{ if(!cloudLock) cloudPush('save',false); },CLOUD.pushDelay); }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&session) cloudTick(); });
 (function(){ const c=$('#cloudChip'); if(c) c.onclick=()=>{ if(session) nav('settings'); }; })();
 
@@ -4302,11 +4456,12 @@ VIEWS.settings=function(root){
     '</div>'+
     '<div class="card pad" style="border:1.5px solid #BFE3CD"><h3 style="color:var(--primary-dark)">'+icon('cloud')+' همگام‌سازی ابری (وب‌سایت ↔ اپلیکیشن)</h3>'+
      '<p class="tiny muted" style="margin-bottom:10px">تمام دستگاه‌ها (کامپیوتر، گوشی، اپ اندروید) روی یک منبع مشترک رمزنگاری‌شده در گیت‌هاب همگام می‌شوند؛ هر تغییر حداکثر تا ۲ دقیقه بعد در همه دستگاه‌ها اعمال می‌شود. پیش از جایگزینی، نسخه قبلی به‌صورت خودکار پشتیبان می‌شود.</p>'+
-     '<div class="card pad" style="border-right:4px solid var(--gold);background:var(--soft);margin-bottom:10px;padding:10px"><p class="tiny muted" style="margin:0"><b>قاعدهٔ «یک ویرایشگر فعال»:</b> همگام‌سازی، «آخرین نویسنده» را می‌پذیرد؛ برای جلوگیری از بازنویسی داده‌ها، در هر بازه فقط روی یک دستگاه ویرایش کنید یا پیش از شروع کار «دریافت از ابر» را بزنید. اگر دستگاه دیگری نسخهٔ تازه‌تری فرستاده باشد، ارسال خودکار متوقف و ابتدا دریافت انجام می‌شود.</p></div>'+
+     '<div class="card pad" style="border-right:4px solid var(--gold);background:var(--soft);margin-bottom:10px;padding:10px"><p class="tiny muted" style="margin:0"><b>قاعدهٔ «یک ویرایشگر فعال»:</b> همگام‌سازی، «آخرین نویسنده» را می‌پذیرد؛ برای جلوگیری از بازنویسی داده‌ها، در هر بازه فقط روی یک دستگاه ویرایش کنید یا پیش از شروع کار «دریافت از ابر» را بزنید. اگر دستگاه دیگری نسخهٔ تازه‌تری فرستاده باشد، ارسال خودکار متوقف و ابتدا دریافت انجام می‌شود؛ حذف گروهی، بازنشانی و جایگزینی دادهٔ ابر نیز با تأیید صریح و بایگانی خودکار همراه است و از «نسخه‌های قبلی ابر» در هر لحظه قابل بازیابی است.</p></div>'+
      '<div class="act-row">'+
        '<button class="btn btn-primary btn-sm" data-act="cloudPushBtn">'+icon('upload',16)+' ارسال به ابر</button>'+
        '<button class="btn btn-outline btn-sm" data-act="cloudPullBtn">'+icon('download',16)+' دریافت از ابر</button>'+
        '<button class="btn btn-outline btn-sm" data-act="cloudRestoreBtn">'+icon('refresh',16)+' بازگردانی پشتیبان پیش از آخرین دریافت</button>'+
+       '<button class="btn btn-outline btn-sm" data-act="cloudHistoryBtn">'+icon('archive',16)+' نسخه‌های قبلی ابر (بازیابی)</button>'+
      '</div>'+
      '<p class="tiny muted" style="margin-top:10px">آخرین همگام‌سازی موفق: <b id="cloudStamp" style="color:var(--primary-dark)">—</b></p>'+
     '</div>'+
@@ -4372,13 +4527,19 @@ function backupSql(){
 async function resetData(){
   if(!await confirmDlg('بازنشانی کامل داده‌های اولیه','تمام داده‌های فعلی پاک شده و داده‌های اولیه سامانه بازسازی می‌شود. ادامه می‌دهید؟',{danger:true,okText:'ادامه'})) return;
   if(!await confirmDlg('تأیید نهایی','این عمل بازگشت‌پذیر نیست! تمام نامه‌ها، جلسات، وظایف، مالی و آموزش پاک می‌شوند.',{danger:true,okText:'بله، بازنشانی کن'})) return;
+  if(!await confirmDlg('همگام‌سازی ابری','اگر همگام‌سازی ابری فعال باشد، پس از بازنشانی، دادهٔ خالی «به‌صورت خودکار» به ابر ارسال نمی‌شود؛ تا وقتی از تنظیمات «ارسال به ابر» را نزنید، دادهٔ سایر دستگاه‌ها دست‌نخورده می‌ماند و نسخهٔ فعلی ابر در بایگانی ذخیره می‌شود.',{okText:'متوجه‌ام'})) return;
   try{
     setLoading(true,'در حال بازنشانی داده‌ها…');
+    /* v3.9 — حفاظت داده: پیش از بازنشانی، نسخهٔ فعلی محلی در زنجیرهٔ پشتیبان و نسخهٔ فعلی ابر در بایگانی ذخیره می‌شود */
+    try{ const curL=await idbGet('db'); if(curL&&curL.cipher){ const b1=await idbGet('db_backup_1'); if(b1&&b1.cipher) await idbPut('db_backup_2',b1); await idbPut('db_backup_1',curL); await idbPut('db_pre_cloud',curL); } }catch(e){}
+    await cloudArchiveCurrent('before reset by '+(session?session.username:'?'));
     db.close();
     db=await buildSeed();
     await saveNow(true);
+    countsSnapshotSave();
+    localStorage.setItem('msz_reset_pending','1'); /* v3.9 — ارسال خودکار دادهٔ خالی ممنوع */
     setLoading(false);
-    toast('داده‌های اولیه بازسازی شد ✓');
+    toast('داده‌های اولیه بازسازی شد ✓ — دادهٔ ابر دست‌نخورده ماند؛ برای اعمال روی همه دستگاه‌ها از تنظیمات «ارسال به ابر» بزنید');
     refreshTicker(); renderNotifBadge();
     nav('dashboard');
   }catch(e){ console.error(e); setLoading(false); toast('خطا در بازنشانی','error'); }
@@ -4968,6 +5129,10 @@ const ACTIONS={
   saveNowBtn:()=>{ saveNow(false); toast('داده‌ها ذخیره شد ✓'); },
   cloudPushBtn:async()=>{ const ok=await confirmDlg('ارسال به فضای ابری','دیتابیس فعلی این دستگاه به‌صورت رمزنگاری‌شده در فضای ابری ذخیره و مبنای همه دستگاه‌ها می‌شود. اگر دستگاه دیگری تغییرات ارسال‌نشده داشته باشد، بازنویسی می‌شود (قاعدهٔ «آخرین نویسنده برنده»). ادامه می‌دهید؟'); if(ok){ const r=await cloudPush('manual',true); toast(r?'ارسال به ابر انجام شد ✓':'ارسال ناموفق بود — بعداً تلاش کنید',r?'success':'error'); const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText(); } },
   cloudPullBtn:async()=>{ const ok=await confirmDlg('دریافت از فضای ابری','آخرین نسخهٔ ابری به‌صورت کامل جایگزین داده‌های این دستگاه می‌شود (قاعدهٔ «آخرین نویسنده برنده») — تغییراتی که از دستگاه‌های دیگر به ابر ارسال نشده باشند از بین می‌روند. نسخهٔ فعلی به‌صورت خودکار پشتیبان گرفته می‌شود و از همین بخش قابل بازگردانی است. ادامه می‌دهید؟'); if(ok){ const r=await cloudPull(true); const st=$('#cloudStamp'); if(st) st.textContent=cloudStampText(); if(r!==null) toast('دریافت از ابر انجام شد ✓'); } },
+  /* v3.9 — تاریخچهٔ ابر و بازیابی */
+  cloudHistoryBtn:()=>cloudHistoryDlg(),
+  cloudRestoreFull:d=>{ if(!d||!d.sha) return; confirmDlg('بازیابی کامل نسخهٔ ابر','دیتابیس فعلی با نسخهٔ انتخاب‌شده جایگزین می‌شود (نسخهٔ فعلی پیش از بازیابی در بایگانی ابر و پشتیبان محلی ذخیره می‌شود). ادامه می‌دهید؟',{danger:true,okText:'بازیابی'}).then(function(ok){ if(ok) cloudRestoreVersion(d.sha,'full'); }); },
+  cloudRestoreMerge:d=>{ if(!d||!d.sha) return; confirmDlg('ادغام محتوای نسخهٔ ابر','رکوردهای محتوایی نسخهٔ انتخاب‌شده که اکنون در دیتابیس موجود نیستند افزوده می‌شوند؛ کاربران، نام‌ها و تنظیمات فعلی تغییر نمی‌کنند. ادامه می‌دهید؟',{okText:'ادغام'}).then(function(ok){ if(ok) cloudRestoreVersion(d.sha,'merge'); }); },
   cloudRestoreBtn:async()=>{ /* v3.4 — بازگردانی پشتیبان خودکار پیش از آخرین دریافت ابر (رفع ضعف A1) */
     try{
       const cur=await idbGet('db_pre_cloud');
@@ -8330,7 +8495,7 @@ function entSection(k){
    ارتباط مالی: قرارداد اجاره و اطلاعات املاک این‌جاست؛ ثبت دریافت و تأیید
    درآمد و پرداخت‌ها فقط در پنل معاونت امور مالی انجام می‌شود.
    ============================================================ */
-const MSZ_VERSION='v3.8';
+const MSZ_VERSION='v3.9';
 const OMR_TABS=[
  {id:'dash',label:'داشبورد'},
  {id:'proj',label:'پروژه‌های عمرانی'},
