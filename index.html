@@ -583,12 +583,19 @@ tr.row-ov td{color:#8E2020}
   .side-foot{padding-bottom:max(12px,env(safe-area-inset-bottom))}
   .att-btns,.att-grid{gap:8px}
   .tk-viewport{max-height:60dvh}
+  /* v3.8 — رفع خرابی نمای موبایل پنل‌ها (به‌ویژه پنل دبیر هیئت امنا در پنل امام جماعت): تب‌ها به‌جای سرریز افقی می‌شکنند */
+  .seg{flex-wrap:wrap}
+  .seg-btn{padding:7px 11px;white-space:nowrap}
+  .page-head>.btn{width:100%;justify-content:center}
+  .c-head>span[style*="display:flex"]{flex-wrap:wrap}
 }
 @media (max-width:520px){
   .view-root{padding:12px 10px 24px}
   .grid-stats{gap:8px}
   .stat-num{font-size:18px}
   .fbar .field{flex:1 1 100%}
+  /* v3.8 — دکمه‌های اقدام کارت‌ها در موبایل زیر عنوان و تمام‌عرض می‌شوند تا از کادر بیرون نزنند */
+  .c-head>span[style*="display:flex"]{flex:1 1 100%}
   .hero-band{padding:16px 14px}
   .hero-actions{flex-direction:column;align-items:stretch}
   .hero-btn{width:100%;justify-content:center}
@@ -682,7 +689,7 @@ tr.row-ov td{color:#8E2020}
     </form>
     <a class="apk-link" href="app/app.apk" download>📥 دانلود اپلیکیشن اندروید (APK)</a>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۷</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۸</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -734,7 +741,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۷ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۸ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -1080,7 +1087,7 @@ function dotCls(t){ const m={'جلسه':'d-primary','مراسم':'d-gold','کل�
 /* ---------- Crypto (WebCrypto) ---------- */
 const PASSPHRASE='MSZ::SAHEBOLZAMAN::1405::ENCKEY-V1';
 const PASS_SALT='msz-sahibolzaman-fixed-salt::v1::';
-function b64(buf){ const u=new Uint8Array(buf); let s=''; for(let i=0;i<u.length;i++) s+=String.fromCharCode(u[i]); return btoa(s); }
+function b64(buf){ /* v3.8 — تبدیل base64 در بلوک‌های ۳۲KB (تا ۵۰ برابر سریع‌تر برای پایگاه‌داده‌های چندصدهزاربایتی) */ const u=new Uint8Array(buf); const CH=0x8000; let s=''; for(let i=0;i<u.length;i+=CH){ s+=String.fromCharCode.apply(null,u.subarray(i,Math.min(i+CH,u.length))); } return btoa(s); }
 function ub64(str){ const s=atob(str); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
 async function deriveKey(saltBytes){
   const enc=new TextEncoder();
@@ -1129,7 +1136,17 @@ function idbPut(key,val){
 
 /* ---------- sql.js wrappers ---------- */
 let db=null, cryptoKey=null;
-function run(sql,params){ db.run(sql,params||[]); }
+/* v3.8 — گیت حالت مشاهده: در نمای «پنل امام جماعت (مشاهده)» هیچ نوشتاری در پایگاه‌داده انجام نمی‌شود */
+function run(sql,params){
+  if(window._imamRo&&session&&session.username!=='imam'&&db){
+    const q=String(sql).trim().toUpperCase();
+    if((q.indexOf('INSERT')===0||q.indexOf('UPDATE')===0||q.indexOf('DELETE')===0||q.indexOf('DROP')===0||q.indexOf('ALTER')===0)&&q.indexOf('NOTIFICATIONS')<0){
+      toast('حالت مشاهدهٔ پنل امام جماعت — ثبت تغییرات تنها با حساب امام جماعت امکان‌پذیر است','error');
+      throw new Error('READONLY_VIEW');
+    }
+  }
+  db.run(sql,params||[]);
+}
 function all(sql,params){
   const st=db.prepare(sql); st.bind(params||[]);
   const rows=[]; while(st.step()) rows.push(st.getAsObject());
@@ -1140,11 +1157,13 @@ function lastId(){ const r=db.exec('SELECT last_insert_rowid() AS id'); return r
 
 /* ---------- Auto-save (debounce 8s + visibilitychange + beforeunload) ---------- */
 let saveTimer=null, dirty=false;
+let _cloudBytes=null; /* v3.8 — بایت‌های آخرین export برای جلوگیری از export دوم در ارسال ابری */
 function markDirty(){ dirty=true; clearTimeout(saveTimer); saveTimer=setTimeout(()=>saveNow(true),8000); }
 async function saveNow(silent){
   if(!db||!cryptoKey) return;
   try{
     const bytes=db.export();
+    _cloudBytes=bytes;
     const payload=await encryptBytes(bytes,cryptoKey);
     await idbPut('db',payload);
     dirty=false;
@@ -1175,10 +1194,21 @@ function cloudApi(){ return 'https://api.github.com/repos/'+CLOUD.owner+'/'+CLOU
 function cloudRaw(){ return 'https://raw.githubusercontent.com/'+CLOUD.owner+'/'+CLOUD.repo+'/'+CLOUD.branch+'/'+CLOUD.path+'?t='+Date.now(); }
 function cloudState(s,txt){ const c=$('#cloudChip'); if(c){ c.dataset.state=s; const sp=c.querySelector('span'); if(sp) sp.textContent=txt||'همگام'; c.title=txt||'همگام‌سازی ابری'; } }
 async function cloudKey(){
-  const E=new TextEncoder();
-  const base=await crypto.subtle.importKey('raw',E.encode(PASSPHRASE),'PBKDF2',false,['deriveKey']);
-  return crypto.subtle.deriveKey({name:'PBKDF2',salt:ub64(CLOUD.fixedSaltB64),iterations:150000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  /* v3.8 — کلید ابر فقط یک بار مشتق و کش می‌شود (PBKDF2 با ۱۵۰هزار تکرار روی هر push/pull سرعت گوشی را می‌کشت) */
+  if(!cloudKey._p){
+    const E=new TextEncoder();
+    cloudKey._p=(async()=>{
+      const base=await crypto.subtle.importKey('raw',E.encode(PASSPHRASE),'PBKDF2',false,['deriveKey']);
+      return crypto.subtle.deriveKey({name:'PBKDF2',salt:ub64(CLOUD.fixedSaltB64),iterations:150000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+    })();
+  }
+  return cloudKey._p;
 }
+/* v3.8 — کش ETag/sha برای درخواست‌های شرطی: اگر فایل ابر تغییر نکرده باشد GitHub فقط ۳۰۴ برمی‌گرداند
+   و دانلود کامل پایگاه‌داده در هر تیک ۶۰ثانیه‌ای حذف می‌شود (عامل اصلی کندی اینترنت سامانه) */
+function cloudCacheGet(k){ try{ return localStorage.getItem(k)||''; }catch(e){ return ''; } }
+function cloudCacheSet(k,v){ try{ if(v) localStorage.setItem(k,v); else localStorage.removeItem(k); }catch(e){} }
+function cloudHaveEtag(){ return !!(cloudCacheGet('msz_cloud_etag')&&cloudCacheGet('msz_cloud_meta')); }
 async function cloudFetchMeta(){
   if(CLOUD.token){
     try{
@@ -1206,14 +1236,27 @@ async function cloudPush(reason,manual){
   if(!CLOUD.token){ cloudState('off','توکن ابر تنظیم نشده'); return false; }
   cloudLock=true; cloudState('busy','در حال ارسال…');
   try{
-    const bytes=db.export();
+    const bytes=(dirty||!_cloudBytes)?db.export():_cloudBytes;
+    _cloudBytes=null;
     const payload=await encryptBytes(bytes,await cloudKey());
     const ver=Date.now();
     const meta={app:'msz',sync:1,ver:ver,dev:DEVICE_ID,by:(session&&session.username)||'',reason:String(reason||'').slice(0,40),iv:payload.iv,cipher:payload.cipher};
     const content=b64(new TextEncoder().encode(JSON.stringify(meta)));
     let sha=null, cloudMeta=null;
-    const gr=await fetch(cloudApi(),{headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json'},cache:'no-store'});
-    if(gr.status===200){ const gj=await gr.json(); sha=gj.sha; try{ if(gj.content&&gj.content.length>10) cloudMeta=JSON.parse(new TextDecoder().decode(ub64(String(gj.content).replace(/\s/g,'')))); }catch(e){} }
+    /* v3.8 — درخواست شرطی با If-None-Match: فایل بدون تغییر → ۳۰۴ بدون دانلود بدنه */
+    const gh={'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json'};
+    const haveEtag=cloudHaveEtag();
+    if(haveEtag) gh['If-None-Match']=cloudCacheGet('msz_cloud_etag');
+    const gr=await fetch(cloudApi(),{headers:gh,cache:'no-store'});
+    if(gr.status===304&&haveEtag){
+      sha=cloudCacheGet('msz_cloud_sha');
+      try{ cloudMeta=JSON.parse(cloudCacheGet('msz_cloud_meta')||'null'); }catch(e){}
+    } else if(gr.status===200){
+      const gj=await gr.json(); sha=gj.sha;
+      cloudCacheSet('msz_cloud_etag',gj.etag||gr.headers.get('etag')||'');
+      cloudCacheSet('msz_cloud_sha',String(sha||''));
+      try{ if(gj.content&&gj.content.length>10){ cloudMeta=JSON.parse(new TextDecoder().decode(ub64(String(gj.content).replace(/\s/g,'')))); cloudCacheSet('msz_cloud_meta',JSON.stringify({ver:cloudMeta.ver,dev:cloudMeta.dev,by:cloudMeta.by||''})); } }catch(e){}
+    }
     else if(gr.status!==404){ throw new Error('sha http '+gr.status); }
     if(sha&&reason==='initial'&&!manual){ cloudState('ok','همگام است'); return false; }
     /* v3.4 — رفع ضعف A1 (قاعدهٔ «یک ویرایشگر فعال»): اگر دستگاه دیگری نسخهٔ تازه‌تری به ابر فرستاده و این دستگاه هنوز آن را دریافت نکرده است،
@@ -1242,13 +1285,20 @@ async function cloudPull(manual){
     cloudState('busy','در حال دریافت…');
     let meta=null;
     if(CLOUD.token){
-      const r=await fetch(cloudApi(),{headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json'},cache:'no-store'});
+      /* v3.8 — دریافت شرطی: اگر نسخهٔ ابر همان نسخهٔ کش‌شده باشد ۳۰۴ می‌آید و کل پایگاه‌داده دانلود نمی‌شود */
+      const gh={'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github+json'};
+      const haveEtag=cloudHaveEtag();
+      if(haveEtag&&!manual) gh['If-None-Match']=cloudCacheGet('msz_cloud_etag');
+      const r=await fetch(cloudApi(),{headers:gh,cache:'no-store'});
+      if(r.status===304&&haveEtag&&!manual){ cloudState('ok','همگام است'); const v=Number(localStorage.getItem('msz_cloud_ver')||0); return v||null; }
       if(r.status===200){
         const j=await r.json();
+        cloudCacheSet('msz_cloud_etag',j.etag||r.headers.get('etag')||'');
         let rawText=null;
         if(j&&j.content&&j.content.length>10){ rawText=new TextDecoder().decode(ub64(String(j.content).replace(/\s/g,''))); }
         else if(j&&j.url){ const r2=await fetch(j.url,{headers:{'Authorization':'token '+CLOUD.token,'Accept':'application/vnd.github.raw'},cache:'no-store'}); if(r2.ok) rawText=await r2.text(); }
         if(rawText){ try{ meta=JSON.parse(rawText); }catch(e){} }
+        if(meta&&meta.ver) cloudCacheSet('msz_cloud_meta',JSON.stringify({ver:meta.ver,dev:meta.dev,by:meta.by||''}));
       } else if(r.status!==404){ throw new Error('api '+r.status); }
     }
     if(!meta){
@@ -2003,12 +2053,19 @@ const NAV=[
  {id:'reports',label:'گزارش‌ها',icon:'chart',min:1,group:'پنل عمومی — امکانات مشترک',desc:'نمودارها و گزارش‌های کلی'},
  {id:'anns',label:'اعلان‌ها',icon:'bell',min:1,group:'پنل عمومی — امکانات مشترک',desc:'تابلوی اعلان‌ها و پیام‌های دریافتی — انتشار فقط رسانه و امام'},
  {id:'panel',label:'پنل اختصاصی',icon:'inbox',roles:['secretary','culture','heyat','imam','education'],group:'پنل اختصاصی',desc:'بخش‌های تخصصی واحد شما'},
+ /* v3.8 — به درخواست کارفرما: رمزهای معاونت‌ها می‌توانند پنل اختصاصی امام جماعت را فقط‌مشاهده ببینند */
+ {id:'imampanel',label:'پنل امام جماعت (مشاهده)',icon:'shield',roles:'LVL3',group:'پنل اختصاصی',desc:'مشاهدهٔ کامل پنل امام جماعت برای معاونت‌ها — ثبت تغییرات فقط با حساب امام جماعت'},
  {id:'omran',label:'معاونت عمران و پشتیبانی',icon:'home',roles:['support','imam'],group:'پنل اختصاصی',desc:'پنل تخصصی عمران و پشتیبانی: داشبورد، پروژه‌های عمرانی، مغازه‌ها و املاک، اموال، تعمیرات، پشتیبانی برنامه‌ها، نیروی انسانی، قراردادها، قبوض و گزارش‌ها'},
  {id:'finance',label:'معاونت امور مالی',icon:'wallet',roles:['finance','imam'],group:'پنل اختصاصی',desc:'پنل اختصاصی معاونت امور مالی: داشبورد، درآمد، هزینه، بودجه، حساب‌ها، اسناد، بدهی‌ها، حسابداری و قالب‌ها'},
  {id:'media',label:'رسانه و اطلاعیه‌ها',icon:'send',roles:['imam','media_admin'],group:'پنل اختصاصی',desc:'مدیریت محتوای رسانه'}
  /* v3.2 — جلسات داخلی هیئت از منوی جدا حذف شد و داخل پنل اختصاصی هیئت قرار گرفت */
 ];
-function navAllowed(n){ return !!n && (n.roles ? n.roles.includes(session.username) : pm(n.id,n.min)); }
+function navAllowed(n){
+  if(!n) return false;
+  /* v3.8 — حساب‌های سطح معاونت (سطح ۳ به بالا + دبیر/رئیس/رسانه) به نمای مشاهدهٔ پنل امام جماعت دسترسی دارند */
+  if(n.roles==='LVL3') return !!session&&session.username!=='imam'&&(session.level>=3||['secretary','board','media_admin'].includes(session.username));
+  return n.roles ? n.roles.includes(session.username) : pm(n.id,n.min);
+}
 function buildSidebar(){
   const order=['اصلی','پنل عمومی — امکانات مشترک','پنل اختصاصی'];
   /* v3.2 — برای امام جماعت دکمه‌های جداگانهٔ عمران/مالی از منو حذف شد؛ از تب‌های «پنل اختصاصی» باز می‌شوند */
@@ -2040,6 +2097,7 @@ function nav(view){
 }
 function renderView(){
   const root=$('#viewRoot');
+  window._imamRo=false; /* v3.8 — حالت مشاهده فقط در نمای imampanel فعال می‌شود */
   const fn=VIEWS[currentView]||VIEWS.dashboard;
   fn(root);
   /* v3.7 — اصلاح D2: کارت‌های کلیک‌پذیر با صفحه‌کلید قابل فوکوس و فعال‌سازی می‌شوند */
@@ -5708,7 +5766,7 @@ const ACTIONS={
 
   myexpNew:()=>openMyExpModal(),
   growthOpen:d=>openGrowthModal(+d.id),
-  panelTab:d=>{ window._panelTab=d.k; if(currentView!=='panel'){ currentView='panel'; $('#viewTitle').textContent='پنل اختصاصی'; } renderView(); },
+  panelTab:d=>{ window._panelTab=d.k; if(currentView!=='panel'&&currentView!=='imampanel'){ currentView=(session&&session.username==='imam')?'panel':'imampanel'; $('#viewTitle').textContent=(currentView==='imampanel')?'پنل امام جماعت (مشاهده)':'پنل اختصاصی'; } renderView(); },
   entNew:d=>entOpen(d.ent,null),
   entEdit:d=>entOpen(d.ent,+d.id),
   entDel:async d=>{
@@ -5722,7 +5780,7 @@ const ACTIONS={
     toast('حذف شد ✓'); renderView();
   },
   /* v3.1 — پنل معاونت عمران و پشتیبانی */
-  omTab:d=>{ if(!OMR_GUARD()){ toast('اجازه ندارید','error'); return; } window._omTab=d.k; renderView(); },
+  omTab:d=>{ /* v3.8 — در نمای مشاهدهٔ پنل امام جماعت، جابه‌جایی تب برای همهٔ معاونت‌ها مجاز است (نمایش تنها) */ if(!OMR_GUARD()&&!(window._imamRo&&currentView==='imampanel')){ toast('اجازه ندارید','error'); return; } window._omTab=d.k; renderView(); },
   omImg:d=>{ const arr=OM_IMG_REG[+d.s]||[]; const im=arr[+d.i]; if(im) openModal('تصویر مستند','<img src="'+im.d+'" alt="تصویر" style="width:100%;max-height:70vh;object-fit:contain">'); },
   omProjNew:()=>omProjModal(null),
   omProjEdit:d=>omProjModal(+d.id),
@@ -7394,7 +7452,9 @@ const CULT_TABS=[
  {id:'ideas',label:'بانک ایده‌ها'}
 ];
 function imamPanelTabs(){
-  if(!session||session.username!=='imam') return '';
+  if(!session) return '';
+  /* v3.8 — تب‌های پنل امام برای معاونت‌ها در نمای «پنل امام جماعت (مشاهده)» هم نمایش داده می‌شود */
+  if(session.username!=='imam'&&!(window._imamRo&&currentView==='imampanel')) return '';
   /* v3.2 — معاونت‌های عمران/مالی داخل پنل اختصاصی امام جماعت آمدند (بدون دکمهٔ جدا در منوی کنار) */
   const tabDefs=[['secretary','دبیر هیئت امنا'],['culture','معاونت فرهنگی'],['heyat','هیئت فداییان (س)'],['education','معاونت تعلیم و تربیت'],['omran','معاونت عمران و پشتیبانی'],['finance','معاونت امور مالی']];
   return '<div class="seg" style="margin-bottom:12px;flex-wrap:wrap">'+tabDefs.map(function(td){
@@ -7538,7 +7598,8 @@ function cultIdeas(){
 /* قالب‌بندی ۷ بخشی */
 function renderCultPanel(root){
   try{
-    if(one('SELECT COUNT(*) AS c FROM wg_groups').c===0){
+    /* v3.8 — در حالت مشاهدهٔ پنل امام جماعت، مقداردهی اولیهٔ کارگروه‌ها انجام نمی‌شود (فقط‌خواندنی) */
+    if(!(window._imamRo&&session&&session.username!=='imam')&&one('SELECT COUNT(*) AS c FROM wg_groups').c===0){
       ['قرآن و عترت','مناسبت‌ها و مراسم','تبلیغات و اطلاع‌رسانی','فعالیت‌های اجتماعی','کتاب و مطالعات'].forEach(function(nm){
         run('INSERT INTO wg_groups (name,head,members,note,updated_at_fa) VALUES (?,?,?,?,?)',[nm,'','','',faStamp()]);
       });
@@ -8269,7 +8330,7 @@ function entSection(k){
    ارتباط مالی: قرارداد اجاره و اطلاعات املاک این‌جاست؛ ثبت دریافت و تأیید
    درآمد و پرداخت‌ها فقط در پنل معاونت امور مالی انجام می‌شود.
    ============================================================ */
-const MSZ_VERSION='v3.7';
+const MSZ_VERSION='v3.8';
 const OMR_TABS=[
  {id:'dash',label:'داشبورد'},
  {id:'proj',label:'پروژه‌های عمرانی'},
@@ -8316,7 +8377,8 @@ function code39Html(txt,h){
 }
 function renderOmranPanel(root){
   OM_IMG_REG=[];
-  if(!OMR_GUARD()){ root.innerHTML='<div class="card pad"><p class="muted">این پنل تخصصی فقط برای معاون عمران و پشتیبانی و امام جماعت فعال است.</p></div>'; return; }
+  /* v3.8 — در نمای مشاهدهٔ پنل امام جماعت، معاونت‌ها این تابلو را فقط‌خواندنی می‌بینند */
+  if(!OMR_GUARD()&&!(window._imamRo&&currentView==='imampanel')){ root.innerHTML='<div class="card pad"><p class="muted">این پنل تخصصی فقط برای معاون عمران و پشتیبانی و امام جماعت فعال است.</p></div>'; return; }
   const tab=window._omTab||'dash';
   const tabs='<div class="seg" style="margin-bottom:14px;flex-wrap:wrap">'+OMR_TABS.map(function(t){
     return '<button class="seg-btn '+(tab===t.id?'on':'')+'" data-act="omTab" data-k="'+t.id+'">'+t.label+'</button>';
@@ -9182,6 +9244,20 @@ VIEWS.panel=function(root){
    tabs+
    cfg.ents.map(entSection).join('');
 };
+/* v3.8 — نمای «پنل امام جماعت (مشاهده)» برای معاونت‌ها: همان پنل‌ها، در حالت فقط‌خواندنی */
+VIEWS.imampanel=function(root){
+  window._imamRo=(session.username!=='imam');
+  const kind=window._panelTab||'culture';
+  root.innerHTML='<div class="card pad" style="border-right:4px solid var(--gold);margin-bottom:12px;background:var(--warning-bg)"><p class="tiny" style="margin:0;display:flex;align-items:flex-start;gap:8px">'+icon('eye',17)+'<span><b>حالت مشاهده — پنل اختصاصی امام جماعت</b><br><span class="muted">تمام بخش‌های پنل امام جماعت (دبیرخانه، معاونت‌ها، عمران و مالی) برای شما قابل مشاهده است؛ ثبت یا ویرایش اطلاعات فقط با حساب امام جماعت انجام می‌شود.</span></span></p></div>';
+  const wrap=document.createElement('div');
+  root.appendChild(wrap);
+  if(kind==='secretary') return renderSecPanel(wrap);
+  if(kind==='culture') return renderCultPanel(wrap);
+  if(kind==='education') return renderEduPanel(wrap);
+  if(kind==='heyat') return renderHeyatPanel(wrap);
+  if(kind==='omran') return renderOmranPanel(wrap);
+  if(kind==='finance') return renderFinPanel(wrap);
+};
 function entOpen(k,id){
   const cfg=ENT[k]; if(!cfg) return;
   if(!entAllowed(k)){ toast('این بخش در پنل مسئولیت شما نیست','error'); return; }
@@ -9294,11 +9370,17 @@ async function boot(){
 }
 
 /* ---------- global delegation ---------- */
+/* v3.8 — اقدام‌های مجاز در حالت مشاهدهٔ پنل امام جماعت (ناوبری تب‌ها + مشاهده/چاپ/خروجی) */
+const RO_ALLOWED_ACTIONS=new Set(['nav','toggleSidebar','closeSidebar','closeModal','logout','openChangePass','toggleNotif','markAllRead','panelTab','secTab','cultTab','heyTab','heyTabNav','eduTab','omTab','finTab','finAcctTab','finYearSel','calMode','calPrev','calNext','calToday','calDay','letterView','meetingView','archView','finDocView','eduMemView','eduClassDossier','eduAttOpen','attLoad','dashMeet','growthOpen','minPrint','decSumPrint','cultPerfPrint','heyPerfPrint','eduPerfPrint','eduAttPrint','eduMemPrint','extPrint','statusReportPrint','printReport','finRentReport','finRentExcel','finJournalExcel','finLedger','finRep','finForm','omImg','omAssetLbl','backupEnc','backupSql','meetExportSel','meetExportAll','heyMeetExportSel','heyMeetExportAll']);
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');
   if(t && ACTIONS[t.dataset.act]){
     e.preventDefault();
-    ACTIONS[t.dataset.act](t.dataset,t,e);
+    if(window._imamRo&&session&&session.username!=='imam'&&!RO_ALLOWED_ACTIONS.has(t.dataset.act)){
+      toast('حالت مشاهدهٔ پنل امام جماعت — این اقدام فقط با حساب امام جماعت امکان‌پذیر است','error');
+    } else {
+      ACTIONS[t.dataset.act](t.dataset,t,e);
+    }
   }
   if(!e.target.closest('.search-wrap')) hideSearchDrop();
   if(!e.target.closest('.notif-wrap')){ const p=$('#notifPanel'); if(p&&!p.hidden) p.hidden=true; }
