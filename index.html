@@ -703,7 +703,7 @@ tr.row-ov td{color:#8E2020}
       <span id="mirrorStripText"></span>
     </div>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۱۱</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۱۲</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -755,7 +755,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۱۱ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۱۲ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -8561,7 +8561,7 @@ function entSection(k){
    ارتباط مالی: قرارداد اجاره و اطلاعات املاک این‌جاست؛ ثبت دریافت و تأیید
    درآمد و پرداخت‌ها فقط در پنل معاونت امور مالی انجام می‌شود.
    ============================================================ */
-const MSZ_VERSION='v3.11';
+const MSZ_VERSION='v3.12';
 const OMR_TABS=[
  {id:'dash',label:'داشبورد'},
  {id:'proj',label:'پروژه‌های عمرانی'},
@@ -9663,35 +9663,55 @@ const MSZ_HOSTS=(function(){
   var MIRRORS=[
     {id:'jsdelivr',label:'سرور جایگزین (CDN جهانی jsDelivr)',url:'https://cdn.jsdelivr.net/gh/srbazgmnam849-creator/sahibolzaman-mosque@main/index.html'}
   ];
-  var origin='',path='';
-  try{ origin=location.origin; path=location.pathname; }catch(e){}
-  var cur=PRIMARY, curId='primary';
-  if(origin.indexOf('srbazgmnam849-creator.github.io')<0){
-    for(var i=0;i<MIRRORS.length;i++){ if(origin.indexOf('cdn.jsdelivr.net')>=0){ cur=MIRRORS[i].url; curId=MIRRORS[i].id; break; } }
-  }
-  return {primary:PRIMARY,mirrors:MIRRORS,current:cur,currentId:curId,isPrimary:curId==='primary'};
+  var origin='';
+  try{ origin=location.origin; }catch(e){}
+  var onGithubIo=origin.indexOf('srbazgmnam849-creator.github.io')>=0;
+  var mirrorMode=false;
+  try{ mirrorMode=sessionStorage.getItem('msz_mirror_mode')==='1'; }catch(e){}
+  return {primary:PRIMARY,mirrors:MIRRORS,onGithubIo:onGithubIo,isPrimary:onGithubIo&&!mirrorMode,mirrorMode:mirrorMode};
 })();
 function mszSwitchHost(){
-  var target, msg;
-  if(MSZ_HOSTS.isPrimary){ target=MSZ_HOSTS.mirrors[0].url; msg='در حال انتقال به سرور جایگزین…'; try{ localStorage.setItem('msz_host_pref','jsdelivr'); }catch(e){} }
-  else{ target=MSZ_HOSTS.primary; msg='در حال بازگشت به سرور اصلی…'; try{ localStorage.setItem('msz_host_pref',''); }catch(e){} }
-  setLoading(true,msg);
-  setTimeout(function(){ try{ location.href=target; }catch(e){} },300);
+  /* حالت آینه (نسخه از سرور جایگزین بارگذاری شده) → بازگشت به بارگذاری عادی از سرور اصلی */
+  if(MSZ_HOSTS.mirrorMode){
+    try{ sessionStorage.removeItem('msz_mirror_mode'); }catch(e){}
+    setLoading(true,'در حال بازگشت به سرور اصلی…');
+    setTimeout(function(){ try{ location.href=MSZ_HOSTS.primary; }catch(e){} },300);
+    return;
+  }
+  /* هاست فعلی سرور اصلی نیست (مثلاً باز از هاست دیگر) → بازگشت به اصلی */
+  if(!MSZ_HOSTS.onGithubIo){
+    setLoading(true,'در حال بازگشت به سرور اصلی…');
+    setTimeout(function(){ try{ location.href=MSZ_HOSTS.primary; }catch(e){} },300);
+    return;
+  }
+  /* سرور اصلی است اما کاربر/اپ نیاز به سرور جایگزین دارد:
+     jsDelivr فایل HTML را با text/plain می‌فرستد؛ پس متن با fetch دریافت و
+     در همان سند و همان origin (با حفظ کامل داده‌های محلی) رندر می‌شود. */
+  setLoading(true,'در حال دریافت نسخه از سرور جایگزین…');
+  fetch(MSZ_HOSTS.mirrors[0].url,{cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+    .then(function(html){
+      try{ sessionStorage.setItem('msz_mirror_mode','1'); }catch(e){}
+      document.open(); document.write(html); document.close();
+    })
+    .catch(function(){
+      setLoading(false);
+      try{ toast('دریافت از سرور جایگزین ناموفق بود — اتصال اینترنت را بررسی کنید','error'); }catch(e){ alert('دریافت از سرور جایگزین ناموفق بود'); }
+    });
 }
-/* نوار وضعیت سرور در صفحهٔ ورود: فقط وقتی روی آینه هستیم دیده می‌شود؛ سلامت سرور اصلی */
-/* به‌صورت تنبل (پس از نمایش صفحهٔ ورود) بررسی می‌شود تا بارگذاری کند نشود.            */
+/* نوار وضعیت سرور در صفحهٔ ورود: فقط در حالت آینه دیده می‌شود؛ سلامت سرور اصلی */
+/* به‌صورت تنبل (پس از نمایش صفحهٔ ورود) با ping تصویری بررسی می‌شود.           */
 function mszMirrorStrip(){
   try{
     var strip=$('#mirrorStrip'), txt=$('#mirrorStripText');
     if(!strip||!txt) return;
-    if(MSZ_HOSTS.isPrimary) return; /* روی سرور اصلی: نوار لازم نیست */
+    if(MSZ_HOSTS.isPrimary) return; /* روی سرور اصلی به‌صورت عادی: نوار لازم نیست */
     strip.classList.remove('hidden');
-    txt.textContent='⚡ در حال استفاده از سرور جایگزین (دسترسی به سرور اصلی برقرار نیست) — همگام‌سازی داده‌ها از کانال ابری مشترک فعال است و به کدام سرور وابسته نیست.';
+    txt.textContent='⚡ نسخهٔ سامانه از سرور جایگزین بارگذاری شده است (دسترسی مستقیم به سرور اصلی برقرار نیست) — داده‌ها به همان کانال ابری مشترک متصل‌اند و همگام‌سازی به‌کار خود ادامه می‌دهد.';
     var t=setTimeout(function(){
-      var done=false;
       var img=new Image();
-      img.onload=function(){ done=true; txt.innerHTML='✅ اتصال به سرور اصلی برقرار است — <a href="javascript:void(0)" id="mszBackPrimary" style="color:#1a5276;font-weight:700;text-decoration:underline">بازگشت به سرور اصلی</a>'; var a=$('#mszBackPrimary'); if(a) a.onclick=mszSwitchHost; };
-      img.onerror=function(){ /* آینه باقی می‌ماند */ };
+      img.onload=function(){ txt.innerHTML='✅ اتصال به سرور اصلی برقرار است — <a href="javascript:void(0)" id="mszBackPrimary" style="color:#1a5276;font-weight:700;text-decoration:underline">بازگشت به سرور اصلی</a>'; var a=$('#mszBackPrimary'); if(a) a.onclick=mszSwitchHost; };
+      img.onerror=function(){ /* روی آینه می‌مانیم */ };
       img.src='https://srbazgmnam849-creator.github.io/sahibolzaman-mosque/_assets/mirror-ping.png?t='+Date.now();
       setTimeout(function(){ if(!img.complete) img.src=''; },6000);
     },600);

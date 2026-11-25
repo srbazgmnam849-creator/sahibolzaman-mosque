@@ -42,13 +42,14 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.snackbar.Snackbar
 
 /**
- * سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — پوستهٔ نیتیو اندروید v3.11
+ * سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — پوستهٔ نیتیو اندروید v3.12
  *
- * قابلیت‌های نیتیو این نسخه (v3.11 — versionCode 16):
+ * قابلیت‌های نیتیو این نسخه (v3.12 — versionCode 17):
  * ۱) لایهٔ چندسروری کامل برای عبور از اختلال/فیلتر github.io در اینترنت داخلی:
  *    علاوه بر خطای صریح بارگذاری (onReceivedError)، اگر صفحه طی ۱۵ ثانیه کامل نشود
- *    (وقت‌گذران/پاسخ خالیِ فیلترینگ) یا فرایند رندر منجل شود، اپ به‌طور خودکار
- *    آینهٔ jsDelivr را بارگذاری می‌کند.
+ *    (وقت‌گذران/پاسخ خالیِ فیلترینگ) یا فرایند رندر منجل شود، متن index.html از
+ *    آینهٔ jsDelivr به‌صورت نیتیو دریافت و با MIME درست رندر می‌شود
+ *    (jsDelivr فایل‌های HTML را text/plain می‌فرستد؛ رندر مستقیم لینک آینه متن خام نشان می‌دهد).
  * ۲) چاپ و خروجی PDF نیتیو (AndroidBridge.printDoc) — ذخیرهٔ PDF در چارچوب چاپ اندروید (A4/A5).
  * ۳) پشتیبانی چندپنجره‌ای WebView، پل همگام‌سازی، حالت آفلاین، Deep Link،
  *    خروج دومرحله‌ای، اسپلش، کشیدن برای تازه‌سازی، صفحهٔ خطای فارسی، آپلود فایل و DownloadManager.
@@ -160,7 +161,7 @@ class MainActivity : AppCompatActivity() {
     // ------------------------------------------------------------------ //
 
     /**
-     * v3.11 — اگر تابه‌حال سرور جایگزین امتحان نشده، آن را بارگذاری می‌کند.
+     * v3.12 — اگر تابه‌حال سرور جایگزین امتحان نشده، محتوای سامانه از آینه دریافت و رندر می‌شود.
      * خروجی true یعنی میرور در حال بارگذاری است و فراخوان نباید صفحهٔ خطا نشان دهد.
      * همگام‌سازی داده از api.github.com است؛ پس میرور هیچ خطری برای داده ندارد.
      */
@@ -170,9 +171,42 @@ class MainActivity : AppCompatActivity() {
             usedMirror = true
             pageLoading = false
             watchdogHandler.removeCallbacks(loadWatchdogRunnable)
-            webView.loadUrl(mirrorUrl)
+            Snackbar.make(root, "سرور اصلی در دسترس نبود — بارگذاری از سرور جایگزین", Snackbar.LENGTH_LONG).show()
+            loadMirrorContent()
             true
         } else false
+    }
+
+    /**
+     * v3.12 — دریافت متن index.html از آینهٔ jsDelivr و رندر با MIME درست.
+     * jsDelivr فایل‌های HTML را با text/plain می‌فرستد؛ پس به‌جای loadUrl مستقیم
+     * (که متن خام نشان می‌دهد)، متن به‌صورت نیتیو دریافت و با text/html رندر می‌شود؛
+     * baseURL روی پوشهٔ آینه تنظیم می‌شود تا فونت‌ها/تصاویر/APK نیز از آینه بارگذاری شوند.
+     */
+    private fun loadMirrorContent() {
+        Thread {
+            var failure: String? = null
+            var html: String? = null
+            try {
+                val conn = java.net.URL(mirrorUrl).openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 10_000
+                conn.readTimeout = 20_000
+                conn.instanceFollowRedirects = true
+                html = conn.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
+            } catch (e: Exception) {
+                failure = e.message ?: e.javaClass.simpleName
+            }
+            runOnUiThread {
+                val content = html
+                if (content != null && content.length > 1000) {
+                    val base = mirrorUrl.substringBeforeLast('/') + "/"
+                    webView.loadDataWithBaseURL(base, content, "text/html", "UTF-8", mirrorUrl)
+                } else {
+                    isError = true
+                    loadErrorPage("دریافت نسخهٔ جایگزین ناموفق بود" + (failure?.let { " — $it" } ?: ""))
+                }
+            }
+        }.start()
     }
 
     // ------------------------------------------------------------------ //
