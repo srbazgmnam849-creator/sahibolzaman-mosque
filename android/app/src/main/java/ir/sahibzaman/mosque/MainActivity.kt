@@ -14,6 +14,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.os.SystemClock
+import android.print.PrintAttributes
+import android.print.PrintDocumentAdapter
+import android.print.PrintManager
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
@@ -38,20 +41,17 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.snackbar.Snackbar
 
 /**
- * سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — پوستهٔ نیتیو اندروید v3.6
+ * سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — پوستهٔ نیتیو اندروید v3.10
  *
- * قابلیت‌های نیتیو این نسخه (v3.6 — versionCode 11):
- * ۱) پل نیتیو همگام‌سازی (AndroidBridge): هر بار داده‌ها به ابر ارسال یا از ابر
- *    دریافت شود، اسنک‌بار نیتیو متریال وضعیت همگام‌سازی را نشان می‌دهد —
- *    یعنی «هر تغییر در هردو بستر ثبت می‌شود» برای کاربر به‌صورت نیتیو دیده می‌شود.
- * ۲) پایش نیتیو شبکه: قطع اینترنت → نوار هشدار نیتیو + حالت آفلاین (نمایش آخرین
- *    داده‌ها از کش و ادامهٔ کار با پایگاه‌دادهٔ محلی)؛ وصل‌شدن → برداشتن هشدار،
- *    بازگشت به حالت آنلاین و بارگذاری مجدد در صورت صفحهٔ خطا.
- * ۳) لینک مستقیم (Deep Link): پیوندهای سایت مسجد از خارج (مرورگر/پیام‌رسان) در خود اپ باز می‌شوند.
- * ۴) خروج دومرحله‌ای: دکمهٔ بازگشت در ریشه، با تأیید دومرحله‌ای نیتیو برنامه را می‌بندد.
- * ۵) قابلیت‌های نگه‌داشته‌شده از نسخه‌های قبل: اسپلش نیتیو، کشیدن برای تازه‌سازی،
- *    صفحهٔ خطای فارسی با تلاش مجدد، آپلود فایل از حافظهٔ گوشی، دانلود با DownloadManager،
- *    بازگشت درون‌سایتی، مدیریت لینک‌های خارجی (tel/mailto/...) و نشست پایدار کاربر.
+ * قابلیت‌های نیتیو این نسخه (v3.10 — versionCode 15):
+ * ۱) چاپ و خروجی PDF نیتیو (AndroidBridge.printDoc): سند رسمی از وب به پوسته داده می‌شود و
+ *    چارچوب چاپ اندروید (ذخیرهٔ PDF) باز می‌شود — پیش از این window.open در WebView مسدود بود
+ *    و خروجی PDF در موبایل خراب بود؛ اکنون کامل کار می‌کند (A4/A5).
+ * ۲) سرور جایگزین (Mirror): اگر دسترسی به github.io موقتاً قطع باشد (از دسترس خارج‌شدن سامانه و اپ)،
+ *    اپ به‌طور خودکار نسخهٔ آینهٔ jsDelivr را بارگذاری می‌کند و صفحهٔ خطا هم دکمهٔ سرور جایگزین دارد.
+ * ۳) پشتیبانی چندپنجره‌ای WebView: بازشدن window.open/_blank در خود اپ (به‌جای مسدودشدن).
+ * ۴) قابلیت‌های نگه‌داشته‌شده: پل همگام‌سازی، حالت آفلاین، Deep Link، خروج دومرحله‌ای،
+ *    اسپلش، کشیدن برای تازه‌سازی، صفحهٔ خطای فارسی، آپلود فایل، DownloadManager و نشست پایدار.
  *
  * - URL از res/values/strings.xml (app_url) خوانده می‌شود؛ اپ و سایت همیشه از یک
  *   منبع واحد کد و یک مخزن دادهٔ رمزنگاری‌شدهٔ مشترک استفاده می‌کنند.
@@ -63,6 +63,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var mainUrl: String
+
+    /** v3.10 — نشانی سرور جایگزین (آینهٔ jsDelivr) برای مواقع قطع دسترسی به github.io */
+    private lateinit var mirrorUrl: String
+
+    /** v3.10 — WebView جداگانه برای چاپ نیتیو (خروجی PDF) */
+    private var printWebView: WebView? = null
+
+    /** v3.10 — وضعیت تلاش برای سرور جایگزین */
+    private var mirrorTried = false
+    private var usedMirror = false
 
     /** آیا آخرین بارگذاری فریم اصلی با خطا مواجه شده است؟ */
     private var isError = false
@@ -104,6 +114,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         mainUrl = getString(R.string.app_url)
+        mirrorUrl = getString(R.string.app_url_mirror)
         root = findViewById(R.id.root)
         offlineBanner = findViewById(R.id.offlineBanner)
         webView = findViewById(R.id.webView)
@@ -168,6 +179,9 @@ class MainActivity : AppCompatActivity() {
             cacheMode = WebSettings.LOAD_DEFAULT
             allowFileAccess = false
             allowContentAccess = true
+            // v3.10 — پشتیبانی بازشدن لینک‌های _blank/window.open در خود اپ
+            setSupportMultipleWindows(true)
+            javaScriptCanOpenWindowsAutomatically = true
         }
 
         // کوکی‌ها برای نگه‌داشتن نشست کاربر
@@ -209,6 +223,11 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 // توقف انیمیشن «کشیدن برای تازه‌سازی»
                 swipeRefresh.isRefreshing = false
+                // v3.10 — بارگذاری موفق: وضعیت میرور بازنشانی می‌شود
+                if (!url.startsWith("data:") && !url.startsWith("about:")) {
+                    usedMirror = (Uri.parse(url).host == Uri.parse(mirrorUrl).host)
+                    if (!usedMirror) mirrorTried = false
+                }
             }
 
             override fun onReceivedError(
@@ -216,8 +235,18 @@ class MainActivity : AppCompatActivity() {
                 request: WebResourceRequest,
                 error: WebResourceError
             ) {
-                // فقط خطای فریم اصلی (نه تصاویر/اسکریپت‌های فرعی) صفحه خطا را نشان می‌دهد
+                // فقط خطای فریم اصلی (نه تصاویر/اسکریپت‌های فرعی) مدیریت می‌شود
                 if (request.isForMainFrame) {
+                    // v3.10 — اگر سرور اصلی در دسترس نبود، نخست سرور جایگزین امتحان می‌شود
+                    val host = request.url.host
+                    val mainHost = Uri.parse(mainUrl).host
+                    if (!mirrorTried && !usedMirror && host == mainHost && mirrorUrl.isNotBlank()) {
+                        mirrorTried = true
+                        usedMirror = true
+                        Snackbar.make(root, "سرور اصلی در دسترس نبود — سرور جایگزین آزموده می‌شود", Snackbar.LENGTH_LONG).show()
+                        view.loadUrl(mirrorUrl)
+                        return
+                    }
                     isError = true
                     loadErrorPage(error.description?.toString() ?: "")
                 }
@@ -263,6 +292,19 @@ class MainActivity : AppCompatActivity() {
             ) {
                 callback.invoke(origin, false, false)
             }
+
+            /** v3.10 — پنجره‌های جدید (window.open/target=_blank) در خود اپ باز می‌شوند */
+            override fun onCreateWindow(
+                view: WebView,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: android.os.Message
+            ): Boolean {
+                val transport = resultMsg.obj as WebView.WebViewTransport
+                transport.webView = webView
+                resultMsg.sendToTarget()
+                return true
+            }
         }
 
         // دانلود فایل‌ها با DownloadManager
@@ -296,6 +338,53 @@ class MainActivity : AppCompatActivity() {
                 ).show()
             }
         }
+
+        /**
+         * v3.10 — چاپ و خروجی PDF نیتیو.
+         * HTML کامل سند از وب دریافت و در چارچوب چاپ اندروید (ذخیرهٔ PDF) باز می‌شود.
+         * این همان راه‌حل «خروجی PDF موبایل خراب بود» است؛ چون window.open در WebView
+         * مسدود است و window.print() بی‌اثر، چاپ به سطح نیتیو منتقل شد.
+         */
+        @JavascriptInterface
+        fun printDoc(html: String, title: String) {
+            runOnUiThread { printNative(html, title) }
+        }
+    }
+
+    // ------------------------------------------------------------------ //
+    // چاپ نیتیو (v3.10): WebView نامرئی + PrintManager (ذخیرهٔ PDF)
+    // ------------------------------------------------------------------ //
+
+    private fun printNative(html: String, jobName: String) {
+        try {
+            // نسخهٔ قبلی چاپ آزاد می‌شود
+            printWebView?.destroy()
+            val pw = WebView(this)
+            pw.settings.javaScriptEnabled = false
+            pw.setBackgroundColor(ContextCompat.getColor(this, R.color.bg))
+            printWebView = pw
+            val safeName = jobName.take(60).ifBlank { "msz-document" }
+            pw.webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView, url: String) {
+                    super.onPageFinished(view, url)
+                    try {
+                        val adapter: PrintDocumentAdapter = view.createPrintDocumentAdapter(safeName)
+                        val attrs = PrintAttributes.Builder()
+                            .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+                            .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
+                            .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                            .build()
+                        val pm = getSystemService(Context.PRINT_SERVICE) as PrintManager
+                        pm.print(safeName, adapter, attrs)
+                    } catch (e: Exception) {
+                        Toast.makeText(this@MainActivity, "چاپ نیتیو ممکن نشد", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            pw.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+        } catch (e: Exception) {
+            Toast.makeText(this, "خطا در آماده‌سازی چاپ", Toast.LENGTH_SHORT).show()
+        }
     }
 
     // ------------------------------------------------------------------ //
@@ -319,6 +408,8 @@ class MainActivity : AppCompatActivity() {
                         runOnUiThread {
                             offlineBanner.visibility = View.GONE
                             webView.settings.cacheMode = WebSettings.LOAD_DEFAULT
+                            mirrorTried = false
+                            usedMirror = false
                             if (isError) {
                                 isError = false
                                 webView.loadUrl(mainUrl)
@@ -414,17 +505,19 @@ class MainActivity : AppCompatActivity() {
                   margin-top: 12px; word-break: break-all;
                 }
                 button {
-                  margin-top: 28px;
+                  margin-top: 16px;
                   background: #B49A60;
                   color: #183D30;
                   border: none;
                   border-radius: 12px;
-                  padding: 14px 40px;
-                  font-size: 16px;
+                  padding: 14px 32px;
+                  font-size: 15px;
                   font-family: inherit;
                   font-weight: bold;
                   cursor: pointer;
                 }
+                button.secondary { background: #EDEFEA; }
+                button.block { display: block; width: 100%; max-width: 260px; margin-left: auto; margin-right: auto; }
                 button:active { opacity: 0.85; }
               </style>
             </head>
@@ -432,9 +525,10 @@ class MainActivity : AppCompatActivity() {
               <div class="card">
                 <div class="logo">🕌</div>
                 <h1>اتصال برقرار نشد</h1>
-                <p>اتصال به سامانه برقرار نشد.<br>لطفاً اتصال اینترنت و آدرس سرور را بررسی کنید.</p>
+                <p>اتصال به سامانه برقرار نشد.<br>اگر اینترنت وصل است ولی سامانه باز نمی‌شود،<br>احتمالاً دسترسی موقت به سرور قطع است؛ دکمهٔ «سرور جایگزین» را بزنید.</p>
                 <div class="detail">$safeDetail</div>
-                <button onclick="location.href='$mainUrl'">تلاش مجدد</button>
+                <button class="block" onclick="location.href='$mainUrl'">تلاش مجدد</button>
+                <button class="block secondary" onclick="location.href='$mirrorUrl'">سرور جایگزین</button>
               </div>
             </body>
             </html>
@@ -455,6 +549,13 @@ class MainActivity : AppCompatActivity() {
             if (isError) {
                 // اگر صفحه خطا نمایش داده می‌شود، مستقیماً URL اصلی را بارگذاری کن
                 isError = false
+                mirrorTried = false
+                usedMirror = false
+                webView.loadUrl(mainUrl)
+            } else if (usedMirror) {
+                // v3.10 — در حالت سرور جایگزین، تلاش برای بازگشت به سرور اصلی
+                mirrorTried = true
+                usedMirror = false
                 webView.loadUrl(mainUrl)
             } else {
                 webView.reload()
@@ -502,6 +603,8 @@ class MainActivity : AppCompatActivity() {
         if (::webView.isInitialized) {
             webView.destroy()
         }
+        printWebView?.destroy()
+        printWebView = null
         super.onDestroy()
     }
 }

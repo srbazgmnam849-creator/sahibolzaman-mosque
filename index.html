@@ -657,11 +657,17 @@ tr.row-ov td{color:#8E2020}
   </div>
 </div>
 
-<!-- Boot error -->
+<!-- Boot error — v3.10: صفحهٔ خطا دیگر بن‌بست نیست؛ بازیابی خودکار از ابر/پشتیبان محلی + دکمه‌های اکتیو (هیچ داده‌ای پاک نمی‌شود) -->
 <div id="bootError" class="load-ov" hidden>
-  <div class="load-box">
+  <div class="load-box" style="max-width:520px">
     <div class="t1" style="color:var(--danger)">خطا در راه‌اندازی سامانه</div>
     <div class="t2" id="bootErrorMsg"></div>
+    <div id="bootErrBtns" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px">
+      <button type="button" class="btn btn-primary" onclick="mszBootRetry()" style="min-width:150px">تلاش مجدد</button>
+      <button type="button" class="btn btn-outline" onclick="mszBootRecover()" style="min-width:150px">بازیابی از ابر</button>
+      <button type="button" class="btn btn-ghost" onclick="mszBootLocalBackup()" style="min-width:150px">بازیابی از پشتیبان محلی</button>
+    </div>
+    <div class="t2" style="margin-top:10px;font-size:12px;opacity:.8">در همهٔ حالت‌ها داده‌های ثبت‌شدهٔ شما حفظ می‌شود — نسخهٔ خراب پیش از هر جایگزینی بایگانی می‌شود.</div>
   </div>
 </div>
 
@@ -689,7 +695,7 @@ tr.row-ov td{color:#8E2020}
     </form>
     <a class="apk-link" href="app/app.apk" download>📥 دانلود اپلیکیشن اندروید (APK)</a>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۹</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۱۰</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -741,7 +747,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۹ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۱۰ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -5121,7 +5127,7 @@ const ACTIONS={
   },
   galNew:()=>openGalleryModal(),
   /* reports / settings */
-  printReport:()=>window.print(),
+  printReport:()=>mszPrintCurrent(),
   backupEnc:()=>backupEnc(),
   backupSql:()=>backupSql(),
   importBtn:()=>$('#importFile').click(),
@@ -6478,13 +6484,55 @@ function vazirFaceCss(){
   _vazirFace=css; return css;
 }
 function openOfficialDoc(docTitle,bodyHtml,opts){ return openOfficialMulti(docTitle,[bodyHtml],opts); }
+/* ============================================================
+   v3.10 — خروجی چاپ/PDF سازگار با موبایل
+   مشکل قبلی: window.open در WebView اندروید مسدود است و window.print() در وب‌ویو بی‌اثر است؛
+   بنابراین خروجی رسمی در اپ و مرورگرهای موبایل خراب بود.
+   راهکار سه‌لایه:
+     ۱) اپلیکیشن (AndroidBridge.printDoc): سند کامل به پوستهٔ نیتیو داده می‌شود و
+        چارچوب چاپ اندروید (ذخیرهٔ PDF) باز می‌شود — پشتیبانی کامل A4/A5.
+     ۲) مرورگر موبایل: سند در iframe مخفی رندر و همان‌جا print() می‌شود (بدون window.open).
+     ۳) دسکتاپ: همان مسیر قبلی window.open حفظ شده است.
+   ============================================================ */
+function mszIsNativeApp(){ try{ return !!(window.AndroidBridge&&window.AndroidBridge.printDoc); }catch(e){ return false; } }
+function mszIsMobileBrowser(){ try{ if(mszIsNativeApp()) return true; return /Android|iPhone|iPad|iPod|Mobile|Opera Mini/i.test(navigator.userAgent||''); }catch(e){ return false; } }
+function mszPrintDoc(docTitle,fullHtml,filename){
+  if(mszIsNativeApp()){
+    try{
+      AndroidBridge.printDoc(fullHtml,String(filename||docTitle||'msz-document'));
+      toast('صفحهٔ چاپ/PDF اندروید باز شد — گزینهٔ «ذخیره به‌صورت PDF» را انتخاب کنید','success');
+      return true;
+    }catch(e){ console.warn('native printDoc failed',e); }
+  }
+  try{
+    const fr=document.createElement('iframe');
+    fr.setAttribute('title','print-frame');
+    fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+    document.body.appendChild(fr);
+    const fdoc=fr.contentWindow.document;
+    fdoc.open(); fdoc.write(fullHtml); fdoc.close();
+    const go=function(){ try{ fr.contentWindow.focus(); fr.contentWindow.print(); }catch(e){ console.warn('iframe print failed',e); toast('چاپ در این مرورگر موبایل ممکن نشد — گزینهٔ اشتراک‌گذاری/چاپ را از منوی مرورگر استفاده کنید','error'); } };
+    if(fdoc.readyState==='complete') setTimeout(go,500); else fr.onload=function(){ setTimeout(go,400); };
+    setTimeout(function(){ try{ if(fr.parentNode) fr.parentNode.removeChild(fr); }catch(e){} },60000);
+    return true;
+  }catch(e){ console.warn('mszPrintDoc iframe failed',e); return false; }
+}
+function mszPrintCurrent(){
+  if(mszIsNativeApp()){
+    try{
+      AndroidBridge.printDoc('<!DOCTYPE html>'+document.documentElement.outerHTML,'msz-print-'+Date.now());
+      toast('صفحهٔ چاپ اندروید باز شد — «ذخیره به‌صورت PDF» را انتخاب کنید','success');
+      return;
+    }catch(e){ console.warn('native print current failed',e); }
+  }
+  window.print();
+}
 /* v3.0 — خروجی رسمی: انتخاب اندازهٔ A4/A5 + نوار ابزار چاپ؛ هر برگ در برگهٔ مستقل */
 function openOfficialMulti(docTitle,parts,opts){
   const size0=(opts&&opts.size)||'A4';
-  const w=window.open('','_blank');
-  if(!w){ toast('پنجرهٔ چاپ مرورگر مسدود است؛ لطفاً اجازه پاپ‌آپ دهید','error'); return; }
   const faces='@font-face{font-family:"B Zar";src:url('+BZAR_WOFF+') format("woff");font-weight:normal;font-style:normal}\n'+vazirFaceCss();
-  w.document.write('<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="utf-8"><title>'+docTitle+'</title>'+
+  /* v3.10 — ساخت کامل سند در یک رشته؛ سپس انتخاب مسیر موبایل یا دسکتاپ */
+  const fullHtml='<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>'+docTitle+'</title>'+
    '<style>'+faces+
    '@page{size:A4;margin:0} *{box-sizing:border-box} html,body{margin:0;padding:0}'+
    'body{background:#eceae4;font-family:"B Zar","Vazirmatn",Tahoma,sans-serif;direction:rtl;color:#1a1a1a;line-height:2;font-size:13.5pt}'+
@@ -6554,7 +6602,16 @@ function openOfficialMulti(docTitle,parts,opts){
    '</div>'+
    '<script>function sz(a5){document.body.classList.toggle("s5",a5);document.querySelector(".b4").classList.toggle("on",!a5);document.querySelector(".b5").classList.toggle("on",a5);var st=document.querySelector("style#pgs");if(st)st.textContent=a5?"@page{size:A5;margin:0}":"@page{size:A4;margin:0}"}setTimeout(function(){window.print()},700)<\/script>'+
    '<style id="pgs">@page{size:'+(size0==='A5'?'A5':'A4')+';margin:0}</style>'+
-   '</body></html>');
+   '</body></html>';
+  /* v3.10 — مسیر موبایل: iframe مخفی (مرورگر) یا چاپ نیتیو اندروید (اپلیکیشن)؛ بدون window.open */
+  if(mszIsMobileBrowser()){
+    const ok=mszPrintDoc(docTitle,fullHtml,docTitle);
+    if(ok) return;
+    /* اگر موبایل مسیر iframe را رد کرد، به مسیر دسکتاپ برمی‌گردیم */
+  }
+  const w=window.open('','_blank');
+  if(!w){ toast('پنجرهٔ چاپ مرورگر مسدود است؛ لطفاً اجازه پاپ‌آپ دهید','error'); return; }
+  w.document.write(fullHtml);
   w.document.close();
 }
 function getImamSign(){ try{ const r=one("SELECT v FROM app_kv WHERE k='imam_sign'"); return r?r.v:null; }catch(e){ return null; } }
@@ -9488,6 +9545,34 @@ function setLoading(show,text){
   ov.hidden=!show;
   if(show) ov.classList.remove('hidden'); else ov.classList.add('hidden');
 }
+/* ============================================================
+   v3.10 — بازیابی خودکار داده هنگام راه‌اندازی (ضد بن‌بست، ضد از دسترس خارج‌شدن)
+   زنجیرهٔ ترمیم: ۱) دادهٔ محلی ۲) ابر ۳) پشتیبان‌های محلی db_pre_cloud/db_backup_1/db_backup_2
+   قانون طلایی: هیچ نسخه‌ای هرگز پاک نمی‌شود — نسخهٔ خراب به db_broken_<زمان> بایگانی می‌شود.
+   ============================================================ */
+async function bootTryCloudBytes(){
+  setLoading(true,'در حال بازیابی داده از ابر…');
+  const meta=await cloudFetchMeta();
+  if(!meta||!meta.cipher) throw new Error('دادهٔ ابری در دسترس نیست');
+  const bytes=await decryptPayload(meta,await cloudKey());
+  return new window.SQL.Database(bytes);
+}
+async function bootTryBackupBytes(){
+  setLoading(true,'در حال بررسی پشتیبان‌های محلی…');
+  const keys=['db_pre_cloud','db_backup_1','db_backup_2'];
+  for(let i=0;i<keys.length;i++){
+    try{
+      const p=await idbGet(keys[i]);
+      if(p&&p.cipher){
+        const bytes=await decryptPayload(p,cryptoKey);
+        const tdb=new window.SQL.Database(bytes);
+        try{ tdb.exec('SELECT 1'); }catch(e2){ continue; }
+        return tdb;
+      }
+    }catch(e){ console.warn('پشتیبان محلی '+keys[i]+' قابل استفاده نیست',e); }
+  }
+  throw new Error('پشتیبان‌های محلی قابل استفاده نیستند');
+}
 async function boot(){
   try{
     if(typeof initSqlJs==='undefined') throw new Error('موتور دیتابیس sql.js به‌درستی بارگذاری نشد.');
@@ -9506,8 +9591,23 @@ async function boot(){
     let stored=null;
     try{ stored=await idbGet('db'); }catch(e){ console.warn('idb read failed',e); }
     if(stored && stored.cipher){
-      const bytes=await decryptPayload(stored,cryptoKey);
-      db=new SQL.Database(bytes);
+      try{
+        const bytes=await decryptPayload(stored,cryptoKey);
+        db=new SQL.Database(bytes);
+      }catch(decErr){
+        /* v3.10 — ترمیم خودکار: بایگانی نسخهٔ خراب (هیچ داده‌ای حذف نمی‌شود) → ابر → پشتیبان محلی */
+        console.warn('رمزگشایی دادهٔ محلی ناموفق — آغاز ترمیم خودکار',decErr);
+        try{ await idbPut('db_broken_'+Date.now(),stored); }catch(e){ console.warn('archive broken failed',e); }
+        let recovered=false;
+        const pref=window._mszBootPref;
+        const chain=pref==='backup'?['backup','cloud']:(pref==='cloud'?['cloud','backup']:['cloud','backup']);
+        for(let i=0;i<chain.length&&!recovered;i++){
+          try{ db=(chain[i]==='cloud')?await bootTryCloudBytes():await bootTryBackupBytes(); recovered=true; window._mszRecoveredFrom=chain[i]; }catch(e){ console.warn('recover via '+chain[i]+' failed',e); }
+        }
+        if(!recovered) throw decErr;
+        setLoading(true,'در حال تثبیت دادهٔ بازیابی‌شده…');
+        await idbPut('db',await encryptBytes(await db.export(),cryptoKey));
+      }
     }else{
       setLoading(true,'در حال آماده‌سازی اولیه سامانه…');
       db=await buildSeed();
@@ -9519,20 +9619,26 @@ async function boot(){
     const sess=sessionStorage.getItem('msz_session');
     if(sess){
       const u=one('SELECT * FROM users WHERE username=? AND active=1',[sess]);
-      if(u){ startApp(u); setLoading(false); return; }
+      if(u){ startApp(u); setLoading(false); if(window._mszRecoveredFrom){ try{ toast('سامانه ترمیم شد — داده از '+(window._mszRecoveredFrom==='cloud'?'ابر':'پشتیبان محلی')+' بازیابی شد ✓'); }catch(e){} window._mszRecoveredFrom=null; } return; }
       sessionStorage.removeItem('msz_session');
     }
     showLogin();
     setLoading(false);
+    if(window._mszRecoveredFrom){ try{ toast('سامانه ترمیم شد — داده از '+(window._mszRecoveredFrom==='cloud'?'ابر':'پشتیبان محلی')+' بازیابی شد ✓'); }catch(e){} window._mszRecoveredFrom=null; }
   }catch(err){
     console.error(err);
     setLoading(false);
     const ov=$('#loadingOverlay'); if(ov) ov.classList.add('hidden');
     const be=$('#bootError');
     be.hidden=false;
-    $('#bootErrorMsg').textContent='جزئیات: '+(err&&err.message?err.message:err)+' — این سامانه به Web Crypto و IndexedDB مرورگر نیاز دارد؛ تمام اجزا به‌صورت کامل داخل فایل قرار دارند و به اینترنت نیاز نیست.';
+    const isNetErr=!navigator.onLine;
+    $('#bootErrorMsg').textContent='جزئیات: '+(err&&err.message?err.message:err)+(isNetErr?' — اینترنت قطع است؛ پس از وصل‌شدن «تلاش مجدد» را بزنید.':' — با «بازیابی از ابر» یا «بازیابی از پشتیبان محلی» می‌توانید ادامه دهید؛ داده‌های ثبت‌شدهٔ شما حفظ می‌شوند.');
   }
 }
+/* v3.10 — دکمه‌های صفحهٔ خطای راه‌اندازی */
+function mszBootRetry(){ window._mszBootPref=null; const be=$('#bootError'); if(be) be.hidden=true; setLoading(true,'در حال راه‌اندازی مجدد…'); boot(); }
+function mszBootRecover(){ window._mszBootPref='cloud'; const be=$('#bootError'); if(be) be.hidden=true; setLoading(true,'در حال بازیابی از ابر…'); boot(); }
+function mszBootLocalBackup(){ window._mszBootPref='backup'; const be=$('#bootError'); if(be) be.hidden=true; setLoading(true,'در حال بازیابی از پشتیبان محلی…'); boot(); }
 
 /* ---------- global delegation ---------- */
 /* v3.8 — اقدام‌های مجاز در حالت مشاهدهٔ پنل امام جماعت (ناوبری تب‌ها + مشاهده/چاپ/خروجی) */
