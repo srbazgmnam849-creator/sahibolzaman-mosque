@@ -21,6 +21,7 @@ import android.view.View
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
 import android.webkit.JavascriptInterface
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -41,20 +42,19 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.snackbar.Snackbar
 
 /**
- * سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — پوستهٔ نیتیو اندروید v3.10
+ * سامانه یکپارچه مدیریت مسجد صاحب الزمان (عج) — پوستهٔ نیتیو اندروید v3.11
  *
- * قابلیت‌های نیتیو این نسخه (v3.10 — versionCode 15):
- * ۱) چاپ و خروجی PDF نیتیو (AndroidBridge.printDoc): سند رسمی از وب به پوسته داده می‌شود و
- *    چارچوب چاپ اندروید (ذخیرهٔ PDF) باز می‌شود — پیش از این window.open در WebView مسدود بود
- *    و خروجی PDF در موبایل خراب بود؛ اکنون کامل کار می‌کند (A4/A5).
- * ۲) سرور جایگزین (Mirror): اگر دسترسی به github.io موقتاً قطع باشد (از دسترس خارج‌شدن سامانه و اپ)،
- *    اپ به‌طور خودکار نسخهٔ آینهٔ jsDelivr را بارگذاری می‌کند و صفحهٔ خطا هم دکمهٔ سرور جایگزین دارد.
- * ۳) پشتیبانی چندپنجره‌ای WebView: بازشدن window.open/_blank در خود اپ (به‌جای مسدودشدن).
- * ۴) قابلیت‌های نگه‌داشته‌شده: پل همگام‌سازی، حالت آفلاین، Deep Link، خروج دومرحله‌ای،
- *    اسپلش، کشیدن برای تازه‌سازی، صفحهٔ خطای فارسی، آپلود فایل، DownloadManager و نشست پایدار.
+ * قابلیت‌های نیتیو این نسخه (v3.11 — versionCode 16):
+ * ۱) لایهٔ چندسروری کامل برای عبور از اختلال/فیلتر github.io در اینترنت داخلی:
+ *    علاوه بر خطای صریح بارگذاری (onReceivedError)، اگر صفحه طی ۱۵ ثانیه کامل نشود
+ *    (وقت‌گذران/پاسخ خالیِ فیلترینگ) یا فرایند رندر منجل شود، اپ به‌طور خودکار
+ *    آینهٔ jsDelivr را بارگذاری می‌کند.
+ * ۲) چاپ و خروجی PDF نیتیو (AndroidBridge.printDoc) — ذخیرهٔ PDF در چارچوب چاپ اندروید (A4/A5).
+ * ۳) پشتیبانی چندپنجره‌ای WebView، پل همگام‌سازی، حالت آفلاین، Deep Link،
+ *    خروج دومرحله‌ای، اسپلش، کشیدن برای تازه‌سازی، صفحهٔ خطای فارسی، آپلود فایل و DownloadManager.
  *
- * - URL از res/values/strings.xml (app_url) خوانده می‌شود؛ اپ و سایت همیشه از یک
- *   منبع واحد کد و یک مخزن دادهٔ رمزنگاری‌شدهٔ مشترک استفاده می‌کنند.
+ * - URL سرور اصلی و جایگزین از res/values/strings.xml خوانده می‌شود؛ همگام‌سازی داده
+ *   از api.github.com انجام می‌شود و به دامنهٔ نمایش صفحه وابسته نیست.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -73,6 +73,29 @@ class MainActivity : AppCompatActivity() {
     /** v3.10 — وضعیت تلاش برای سرور جایگزین */
     private var mirrorTried = false
     private var usedMirror = false
+
+    /** v3.11 — نگهبان وقفهٔ بارگذاری: اگر صفحه طی مدت تعیین‌شده کامل نشود، سرور جایگزین آزموده می‌شود */
+    private val watchdogHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var pageLoading = false
+    private var watchdogFired = false
+
+    /** v3.11 — مهلت مجاز بارگذاری صفحه؛ پس از آن سرور جایگزین آزموده می‌شود */
+    private companion object { const val WATCHDOG_TIMEOUT_MS = 15_000L }
+
+    /** v3.11 — کاری که نگهبان وقفه انجام می‌دهد */
+    private val loadWatchdogRunnable = object : Runnable {
+        override fun run() {
+            if (!pageLoading || isError) return
+            watchdogFired = true
+            pageLoading = false
+            if (tryMirrorFallback("")) {
+                Snackbar.make(root, "بارگذاری کند/ناکام ماند — سرور جایگزین آزموده می‌شود", Snackbar.LENGTH_LONG).show()
+            } else {
+                isError = true
+                loadErrorPage("بارگذاری صفحه در مدت مجاز کامل نشد")
+            }
+        }
+    }
 
     /** آیا آخرین بارگذاری فریم اصلی با خطا مواجه شده است؟ */
     private var isError = false
@@ -130,6 +153,26 @@ class MainActivity : AppCompatActivity() {
         } else {
             webView.loadUrl(deepLinkUrl() ?: mainUrl)
         }
+    }
+
+    // ------------------------------------------------------------------ //
+    // لایهٔ چندسروری (v3.11): تلاش برای سرور جایگزین
+    // ------------------------------------------------------------------ //
+
+    /**
+     * v3.11 — اگر تابه‌حال سرور جایگزین امتحان نشده، آن را بارگذاری می‌کند.
+     * خروجی true یعنی میرور در حال بارگذاری است و فراخوان نباید صفحهٔ خطا نشان دهد.
+     * همگام‌سازی داده از api.github.com است؛ پس میرور هیچ خطری برای داده ندارد.
+     */
+    private fun tryMirrorFallback(reason: String): Boolean {
+        return if (mirrorUrl.isNotBlank() && !mirrorTried && !usedMirror) {
+            mirrorTried = true
+            usedMirror = true
+            pageLoading = false
+            watchdogHandler.removeCallbacks(loadWatchdogRunnable)
+            webView.loadUrl(mirrorUrl)
+            true
+        } else false
     }
 
     // ------------------------------------------------------------------ //
@@ -217,12 +260,19 @@ class MainActivity : AppCompatActivity() {
                 super.onPageStarted(view, url, favicon)
                 // شروع بارگذاری جدید => حالت خطا ریست می‌شود
                 isError = false
+                // v3.11 — شروع نگهبان وقفهٔ بارگذاری
+                pageLoading = true
+                watchdogFired = false
+                watchdogHandler.postDelayed(loadWatchdogRunnable, WATCHDOG_TIMEOUT_MS)
             }
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
                 // توقف انیمیشن «کشیدن برای تازه‌سازی»
                 swipeRefresh.isRefreshing = false
+                // v3.11 — بارگذاری کامل شد: نگهبان لغو می‌شود
+                pageLoading = false
+                watchdogHandler.removeCallbacks(loadWatchdogRunnable)
                 // v3.10 — بارگذاری موفق: وضعیت میرور بازنشانی می‌شود
                 if (!url.startsWith("data:") && !url.startsWith("about:")) {
                     usedMirror = (Uri.parse(url).host == Uri.parse(mirrorUrl).host)
@@ -237,19 +287,19 @@ class MainActivity : AppCompatActivity() {
             ) {
                 // فقط خطای فریم اصلی (نه تصاویر/اسکریپت‌های فرعی) مدیریت می‌شود
                 if (request.isForMainFrame) {
-                    // v3.10 — اگر سرور اصلی در دسترس نبود، نخست سرور جایگزین امتحان می‌شود
-                    val host = request.url.host
-                    val mainHost = Uri.parse(mainUrl).host
-                    if (!mirrorTried && !usedMirror && host == mainHost && mirrorUrl.isNotBlank()) {
-                        mirrorTried = true
-                        usedMirror = true
-                        Snackbar.make(root, "سرور اصلی در دسترس نبود — سرور جایگزین آزموده می‌شود", Snackbar.LENGTH_LONG).show()
-                        view.loadUrl(mirrorUrl)
-                        return
-                    }
+                    // v3.10/v3.11 — اگر سرور اصلی در دسترس نبود، نخست سرور جایگزین امتحان می‌شود
+                    if (tryMirrorFallback("")) return
                     isError = true
                     loadErrorPage(error.description?.toString() ?: "")
                 }
+            }
+
+            /** v3.11 — فرایند رندر منجل شد: به‌جای صفحهٔ خاکستری، سرور جایگزین آزموده می‌شود */
+            override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+                if (tryMirrorFallback("فرایند نمایش متوقف شد")) return true
+                isError = true
+                loadErrorPage("فرایند نمایش متوقف شد")
+                return true
             }
         }
 
@@ -469,8 +519,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** صفحه خطای فارسی/RTL با دکمه «تلاش مجدد» */
+    /** صفحه خطای فارسی/RTL با دکمه «تلاش مجدد» و «سرور جایگزین» */
     private fun loadErrorPage(detail: String) {
+        pageLoading = false
+        watchdogHandler.removeCallbacks(loadWatchdogRunnable)
         val safeDetail = detail.take(200).replace("<", "&lt;").replace(">", "&gt;")
         val html = """
             <!DOCTYPE html>

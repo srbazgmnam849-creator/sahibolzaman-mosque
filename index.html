@@ -667,6 +667,10 @@ tr.row-ov td{color:#8E2020}
       <button type="button" class="btn btn-outline" onclick="mszBootRecover()" style="min-width:150px">بازیابی از ابر</button>
       <button type="button" class="btn btn-ghost" onclick="mszBootLocalBackup()" style="min-width:150px">بازیابی از پشتیبان محلی</button>
     </div>
+    <!-- v3.11 — عبور از اختلال/فیلتر دامنهٔ سرور اصلی روی اینترنت داخلی -->
+    <div style="margin-top:10px;display:flex;justify-content:center">
+      <button type="button" class="btn btn-outline" onclick="mszSwitchHost()" style="min-width:220px;border-color:var(--gold)">🌐 تغییر به سرور جایگزین (عبور از فیلتر)</button>
+    </div>
     <div class="t2" style="margin-top:10px;font-size:12px;opacity:.8">در همهٔ حالت‌ها داده‌های ثبت‌شدهٔ شما حفظ می‌شود — نسخهٔ خراب پیش از هر جایگزینی بایگانی می‌شود.</div>
   </div>
 </div>
@@ -694,8 +698,12 @@ tr.row-ov td{color:#8E2020}
       <button type="submit" id="loginBtn" class="btn btn-primary btn-block">ورود به سامانه</button>
     </form>
     <a class="apk-link" href="app/app.apk" download>📥 دانلود اپلیکیشن اندروید (APK)</a>
+    <!-- v3.11 — نوار وضعیت سرور: اگر صفحه از سرور جایگزین بارگذاری شده باشد، وضعیت و مسیر بازگشت به سرور اصلی نمایش داده می‌شود -->
+    <div id="mirrorStrip" class="hidden" style="margin:10px 8px 0;padding:9px 12px;border-radius:10px;background:rgba(180,154,96,.12);border:1px solid rgba(180,154,96,.4);font-size:12px;line-height:1.9;color:#6b5b2a;text-align:center">
+      <span id="mirrorStripText"></span>
+    </div>
   </div>
-  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۱۰</div>
+  <div class="login-foot">سامانه یکپارچه مدیریت مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۱۱</div>
 </div>
 
 <!-- ======== APP SHELL ======== -->
@@ -747,7 +755,7 @@ tr.row-ov td{color:#8E2020}
     </div>
     <main id="viewRoot" class="view-root"></main>
     <footer class="app-foot">
-      <span class="brand">مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۱۰ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
+      <span class="brand">مسجد صاحب‌الزمان (عج) — نسخه عملیاتی ۳.۱۱ · طراحی جدید · همگام‌سازی وب‌سایت ↔ اپلیکیشن</span>
     </footer>
   </div>
 </div>
@@ -2121,6 +2129,7 @@ function refreshTicker(){
 function showLogin(){
   $('#appShell').classList.add('hidden');
   $('#loginScreen').classList.remove('hidden');
+  try{ mszMirrorStrip(); }catch(e){} /* v3.11 — وضعیت سرور جایگزین در صفحهٔ ورود */
   const pf=$('#loginForm');
   if(!pf.dataset.bound){
     pf.dataset.bound='1';
@@ -8552,7 +8561,7 @@ function entSection(k){
    ارتباط مالی: قرارداد اجاره و اطلاعات املاک این‌جاست؛ ثبت دریافت و تأیید
    درآمد و پرداخت‌ها فقط در پنل معاونت امور مالی انجام می‌شود.
    ============================================================ */
-const MSZ_VERSION='v3.9';
+const MSZ_VERSION='v3.11';
 const OMR_TABS=[
  {id:'dash',label:'داشبورد'},
  {id:'proj',label:'پروژه‌های عمرانی'},
@@ -9639,6 +9648,55 @@ async function boot(){
 function mszBootRetry(){ window._mszBootPref=null; const be=$('#bootError'); if(be) be.hidden=true; setLoading(true,'در حال راه‌اندازی مجدد…'); boot(); }
 function mszBootRecover(){ window._mszBootPref='cloud'; const be=$('#bootError'); if(be) be.hidden=true; setLoading(true,'در حال بازیابی از ابر…'); boot(); }
 function mszBootLocalBackup(){ window._mszBootPref='backup'; const be=$('#bootError'); if(be) be.hidden=true; setLoading(true,'در حال بازیابی از پشتیبان محلی…'); boot(); }
+
+/* ============================================================================ */
+/* v3.11 — لایهٔ چندسروری (عبور از فیلتر اینترنت داخلی روی دامنهٔ github.io)     */
+/* ---------------------------------------------------------------------------- */
+/* دامنهٔ github.io برای کاربران اینترنت داخلی به‌صورت دوره‌ای مختل/فیلتر می‌شود؛ */
+/* همگام‌سازی داده‌ها اما از api.github.com انجام می‌شود و مستقل از دامنهٔ سایت   */
+/* کار می‌کند — بنابراین در صورت قطع سرور اصلی، سامانه می‌تواند از آینهٔ jsDelivr */
+/* بارگذاری شود بدون هیچ خطری برای داده‌ها (داده در هر دو حالت از همان کانال ابری */
+/* مشترک می‌آید و پیش از هر جایگزینی بایگانی می‌شود).                            */
+/* ============================================================================ */
+const MSZ_HOSTS=(function(){
+  var PRIMARY='https://srbazgmnam849-creator.github.io/sahibolzaman-mosque/index.html';
+  var MIRRORS=[
+    {id:'jsdelivr',label:'سرور جایگزین (CDN جهانی jsDelivr)',url:'https://cdn.jsdelivr.net/gh/srbazgmnam849-creator/sahibolzaman-mosque@main/index.html'}
+  ];
+  var origin='',path='';
+  try{ origin=location.origin; path=location.pathname; }catch(e){}
+  var cur=PRIMARY, curId='primary';
+  if(origin.indexOf('srbazgmnam849-creator.github.io')<0){
+    for(var i=0;i<MIRRORS.length;i++){ if(origin.indexOf('cdn.jsdelivr.net')>=0){ cur=MIRRORS[i].url; curId=MIRRORS[i].id; break; } }
+  }
+  return {primary:PRIMARY,mirrors:MIRRORS,current:cur,currentId:curId,isPrimary:curId==='primary'};
+})();
+function mszSwitchHost(){
+  var target, msg;
+  if(MSZ_HOSTS.isPrimary){ target=MSZ_HOSTS.mirrors[0].url; msg='در حال انتقال به سرور جایگزین…'; try{ localStorage.setItem('msz_host_pref','jsdelivr'); }catch(e){} }
+  else{ target=MSZ_HOSTS.primary; msg='در حال بازگشت به سرور اصلی…'; try{ localStorage.setItem('msz_host_pref',''); }catch(e){} }
+  setLoading(true,msg);
+  setTimeout(function(){ try{ location.href=target; }catch(e){} },300);
+}
+/* نوار وضعیت سرور در صفحهٔ ورود: فقط وقتی روی آینه هستیم دیده می‌شود؛ سلامت سرور اصلی */
+/* به‌صورت تنبل (پس از نمایش صفحهٔ ورود) بررسی می‌شود تا بارگذاری کند نشود.            */
+function mszMirrorStrip(){
+  try{
+    var strip=$('#mirrorStrip'), txt=$('#mirrorStripText');
+    if(!strip||!txt) return;
+    if(MSZ_HOSTS.isPrimary) return; /* روی سرور اصلی: نوار لازم نیست */
+    strip.classList.remove('hidden');
+    txt.textContent='⚡ در حال استفاده از سرور جایگزین (دسترسی به سرور اصلی برقرار نیست) — همگام‌سازی داده‌ها از کانال ابری مشترک فعال است و به کدام سرور وابسته نیست.';
+    var t=setTimeout(function(){
+      var done=false;
+      var img=new Image();
+      img.onload=function(){ done=true; txt.innerHTML='✅ اتصال به سرور اصلی برقرار است — <a href="javascript:void(0)" id="mszBackPrimary" style="color:#1a5276;font-weight:700;text-decoration:underline">بازگشت به سرور اصلی</a>'; var a=$('#mszBackPrimary'); if(a) a.onclick=mszSwitchHost; };
+      img.onerror=function(){ /* آینه باقی می‌ماند */ };
+      img.src='https://srbazgmnam849-creator.github.io/sahibolzaman-mosque/_assets/mirror-ping.png?t='+Date.now();
+      setTimeout(function(){ if(!img.complete) img.src=''; },6000);
+    },600);
+  }catch(e){}
+}
 
 /* ---------- global delegation ---------- */
 /* v3.8 — اقدام‌های مجاز در حالت مشاهدهٔ پنل امام جماعت (ناوبری تب‌ها + مشاهده/چاپ/خروجی) */
